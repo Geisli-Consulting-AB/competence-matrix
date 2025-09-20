@@ -1,0 +1,39 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function validCompetence(data) {
+      // Required fields
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.level is int && data.level >= 1 && data.level <= 4 &&
+             // Optional fields with type checks if present
+             (!data.keys().hasAny(['ownerName']) || data.ownerName is string) &&
+             (!data.keys().hasAny(['updatedAt']) || data.updatedAt is timestamp);
+    }
+
+    // Each user can access only their own documents under users/{uid}
+    match /users/{userId} {
+      // You may have other subcollections under users; default deny unless specified
+
+      // Competences subcollection
+      match /competences/{competenceId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId) && validCompetence(request.resource.data);
+        allow delete: if isOwner(userId);
+      }
+
+      // Optionally allow the user doc itself to be read/written by the owner (tighten as needed)
+      allow read, write: if isOwner(userId);
+    }
+
+    // Deny everything else by default
+  }
+}
