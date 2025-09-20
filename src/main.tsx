@@ -6,7 +6,7 @@ import { CssBaseline, ThemeProvider, createTheme } from '@mui/material'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ThemeProvider theme={createTheme()}>
+    <ThemeProvider theme={createTheme({ palette: { mode: 'dark' } })}>
       <CssBaseline />
       <App />
     </ThemeProvider>
