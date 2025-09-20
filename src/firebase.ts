@@ -1,5 +1,6 @@
 import { initializeApp } from 'firebase/app'
 import { getAuth, GoogleAuthProvider } from 'firebase/auth'
+import { getFirestore } from 'firebase/firestore'
 
 // Vite environment variables must be prefixed with VITE_
 const firebaseConfig = {
@@ -17,3 +18,4 @@ const app = initializeApp(firebaseConfig)
 // Initialize Firebase Authentication and provider
 export const auth = getAuth(app)
 export const googleProvider = new GoogleAuthProvider()
+export const db = getFirestore(app)

@@ -1,20 +1,56 @@
 import { useState, useEffect } from 'react'
 import './App.css'
-import { auth, googleProvider } from './firebase'
+import { auth, googleProvider, db } from './firebase'
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth'
 import type { User } from 'firebase/auth'
-import { Button, Container, Stack, Typography, Box, TextField, Radio, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip } from '@mui/material'
+import { Button, Container, Stack, Typography, Box, TextField, Radio, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton } from '@mui/material'
+import { doc, onSnapshot, setDoc, serverTimestamp } from 'firebase/firestore'
+import AddIcon from '@mui/icons-material/Add'
+
+type CompetenceRow = { id: string; name: string; level: number }
 
 function App() {
   const [user, setUser] = useState<User | null>(null)
-  const [compName, setCompName] = useState('')
-  const [compLevel, setCompLevel] = useState<number>(1)
-  const [competences, setCompetences] = useState<Array<{ id: string; name: string; level: number }>>([])
+  const [competences, setCompetences] = useState<CompetenceRow[]>([])
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => setUser(u))
     return () => unsub()
   }, [])
+
+  useEffect(() => {
+    if (!user) {
+      setCompetences([])
+      return
+    }
+    const userDocRef = doc(db, 'users', user.uid)
+    const unsub = onSnapshot(userDocRef, (snap) => {
+      const data = snap.data() as any || {}
+      const rows: CompetenceRow[] = Array.isArray(data.competences)
+        ? data.competences.map((r: any) => ({
+            id: String(r.id || ''),
+            name: String(r.name || ''),
+            level: Number(r.level || 1),
+          }))
+        : []
+      setCompetences(rows)
+    })
+    return () => unsub()
+  }, [user])
+
+  const persistAll = async (rows: CompetenceRow[]) => {
+    if (!user) return
+    const ownerName = user.displayName || user.email || 'unknown'
+    const cleaned = rows
+      .filter((r) => r.name && r.name.trim().length > 0)
+      .map((r) => ({ id: r.id, name: r.name.trim(), level: Math.min(4, Math.max(1, r.level)) }))
+    const userDocRef = doc(db, 'users', user.uid)
+    await setDoc(
+      userDocRef,
+      { ownerName, competences: cleaned, updatedAt: serverTimestamp() },
+      { merge: true },
+    )
+  }
 
   const handleLogin = async () => {
     try {
@@ -35,7 +71,7 @@ function App() {
   }
 
   return (
-    <Container maxWidth="md" sx={{ py: 4 }}>
+    <Container maxWidth="lg" sx={{ py: 4 }}>
       <Stack spacing={3}>
         <Box>
           {user ? (
@@ -58,76 +94,65 @@ function App() {
           <Typography variant="h6" gutterBottom>
             Competences
           </Typography>
-          <TableContainer>
-            <Table size="small">
+          <TableContainer sx={{ overflowX: 'auto' }}>
+            <Table size="small" sx={{ minWidth: 900 }}>
               <TableHead>
                 <TableRow>
                   <TableCell>Competence</TableCell>
-                  <TableCell align="center">No knowledge</TableCell>
+                  <TableCell align="center">Want to learn</TableCell>
                   <TableCell align="center">Beginner</TableCell>
                   <TableCell align="center">Proficient</TableCell>
                   <TableCell align="center">Expert</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {/* Input row for adding a new competence */}
-                <TableRow hover>
-                  <TableCell component="th" scope="row">
-                    <Stack direction="row" spacing={1} alignItems="center">
+                {competences.map((c, idx) => (
+                  <TableRow key={c.id} hover>
+                    <TableCell component="th" scope="row" sx={{ minWidth: 300 }}>
                       <TextField
-                        label="Competence name"
+                        placeholder="Competence name"
                         size="small"
-                        value={compName}
-                        onChange={(e) => setCompName(e.target.value)}
+                        value={c.name}
+                        onChange={async (e) => {
+                          const name = e.target.value
+                          const nextRows = competences.map((row, i) => (i === idx ? { ...row, name } : row))
+                          setCompetences(nextRows)
+                          await persistAll(nextRows)
+                        }}
                         fullWidth
                       />
-                      <Button
-                        variant="contained"
-                        onClick={() => {
-                          const name = compName.trim()
-                          const level = Math.min(4, Math.max(1, compLevel))
-                          if (!name) return
-                          setCompetences((prev) => [
-                            { id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, name, level },
-                            ...prev,
-                          ])
-                          setCompName('')
-                          setCompLevel(1)
-                        }}
-                      >
-                        Add
-                      </Button>
-                    </Stack>
-                  </TableCell>
-                  {[1,2,3,4].map((lvl) => (
-                    <TableCell key={lvl} align="center">
-                      <Radio
-                        checked={compLevel === lvl}
-                        onChange={() => setCompLevel(lvl)}
-                        value={String(lvl)}
-                        inputProps={{ 'aria-label': String(lvl) }}
-                      />
                     </TableCell>
-                  ))}
-                </TableRow>
-                {competences.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} align="center">
-                      <Typography variant="body2" color="text.secondary">No competences yet</Typography>
-                    </TableCell>
+                    {[1, 2, 3, 4].map((lvl) => (
+                      <TableCell key={lvl} align="center">
+                        <Radio
+                          name={`level-${c.id}`}
+                          checked={c.level === lvl}
+                          onChange={async () => {
+                            const nextRows = competences.map((row, i) => (i === idx ? { ...row, level: lvl } : row))
+                            setCompetences(nextRows)
+                            await persistAll(nextRows)
+                          }}
+                          value={String(lvl)}
+                          inputProps={{ 'aria-label': String(lvl) }}
+                        />
+                      </TableCell>
+                    ))}
                   </TableRow>
-                ) : (
-                  competences.map((c) => (
-                    <TableRow key={c.id} hover>
-                      <TableCell component="th" scope="row">{c.name}</TableCell>
-                      {[1,2,3,4].map((lvl) => (
-                        <TableCell key={lvl} align="center">
-                          {c.level === lvl ? <Chip size="small" color="primary" label="Selected" /> : null}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                )}
+                ))}
+                <TableRow>
+                  <TableCell colSpan={5} align="center">
+                    <IconButton color="primary" onClick={async () => {
+                      const nextRows = [
+                        ...competences,
+                        { id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, name: '', level: 1 },
+                      ]
+                      setCompetences(nextRows)
+                      await persistAll(nextRows)
+                    }} aria-label="add competence">
+                      <AddIcon />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
               </TableBody>
             </Table>
           </TableContainer>
