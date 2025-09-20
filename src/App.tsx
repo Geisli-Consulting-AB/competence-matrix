@@ -5,11 +5,14 @@ import './App.css'
 import { auth, googleProvider } from './firebase'
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth'
 import type { User } from 'firebase/auth'
-import { Button, Container, Stack, Typography, Box } from '@mui/material'
+import { Button, Container, Stack, Typography, Box, TextField, FormControl, InputLabel, Select, MenuItem, Paper, List, ListItem, ListItemText, Divider } from '@mui/material'
 
 function App() {
   const [count, setCount] = useState(0)
   const [user, setUser] = useState<User | null>(null)
+  const [compName, setCompName] = useState('')
+  const [compLevel, setCompLevel] = useState<number>(1)
+  const [competences, setCompetences] = useState<Array<{ id: string; name: string; level: number }>>([])
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => setUser(u))
@@ -76,6 +79,69 @@ function App() {
         <Typography variant="caption" className="read-the-docs" align="center">
           Click on the Vite and React logos to learn more
         </Typography>
+
+        <Paper elevation={3} sx={{ p: 2, width: '100%' }}>
+          <Typography variant="h6" gutterBottom>
+            Add Competence
+          </Typography>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ xs: 'stretch', sm: 'center' }}>
+            <TextField
+              label="Competence name"
+              value={compName}
+              onChange={(e) => setCompName(e.target.value)}
+              fullWidth
+            />
+            <FormControl sx={{ minWidth: 120 }}>
+              <InputLabel id="level-label">Level</InputLabel>
+              <Select
+                labelId="level-label"
+                label="Level"
+                value={compLevel}
+                onChange={(e) => setCompLevel(Number(e.target.value))}
+              >
+                {[1, 2, 3, 4].map((lvl) => (
+                  <MenuItem key={lvl} value={lvl}>{lvl}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <Button
+              variant="contained"
+              onClick={() => {
+                const name = compName.trim()
+                const level = Math.min(4, Math.max(1, compLevel))
+                if (!name) return
+                setCompetences((prev) => [
+                  { id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, name, level },
+                  ...prev,
+                ])
+                setCompName('')
+                setCompLevel(1)
+              }}
+            >
+              Add
+            </Button>
+          </Stack>
+        </Paper>
+
+        <Paper elevation={1} sx={{ p: 2, width: '100%' }}>
+          <Typography variant="h6" gutterBottom>
+            Competences
+          </Typography>
+          {competences.length === 0 ? (
+            <Typography variant="body2" color="text.secondary">No competences yet</Typography>
+          ) : (
+            <List>
+              {competences.map((c, idx) => (
+                <Box key={c.id}>
+                  <ListItem>
+                    <ListItemText primary={c.name} secondary={`Level ${c.level}`} />
+                  </ListItem>
+                  {idx < competences.length - 1 && <Divider component="li" />}
+                </Box>
+              ))}
+            </List>
+          )}
+        </Paper>
       </Stack>
     </Container>
   )
