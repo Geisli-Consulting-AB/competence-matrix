@@ -5,7 +5,7 @@ import './App.css'
 import { auth, googleProvider } from './firebase'
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth'
 import type { User } from 'firebase/auth'
-import { Button, Container, Stack, Typography, Box, TextField, FormControl, InputLabel, Select, MenuItem, Paper, List, ListItem, ListItemText, Divider } from '@mui/material'
+import { Button, Container, Stack, Typography, Box, TextField, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, Paper, List, ListItem, ListItemText, Divider } from '@mui/material'
 
 function App() {
   const [count, setCount] = useState(0)
@@ -91,18 +91,19 @@ function App() {
               onChange={(e) => setCompName(e.target.value)}
               fullWidth
             />
-            <FormControl sx={{ minWidth: 120 }}>
-              <InputLabel id="level-label">Level</InputLabel>
-              <Select
-                labelId="level-label"
-                label="Level"
-                value={compLevel}
+            <FormControl>
+              <FormLabel id="level-label">Level</FormLabel>
+              <RadioGroup
+                row
+                aria-labelledby="level-label"
+                name="competence-level"
+                value={String(compLevel)}
                 onChange={(e) => setCompLevel(Number(e.target.value))}
               >
                 {[1, 2, 3, 4].map((lvl) => (
-                  <MenuItem key={lvl} value={lvl}>{lvl}</MenuItem>
+                  <FormControlLabel key={lvl} value={String(lvl)} control={<Radio />} label={String(lvl)} />
                 ))}
-              </Select>
+              </RadioGroup>
             </FormControl>
             <Button
               variant="contained"
