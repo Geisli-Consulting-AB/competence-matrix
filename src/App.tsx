@@ -1,14 +1,11 @@
 import { useState, useEffect } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
 import { auth, googleProvider } from './firebase'
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth'
 import type { User } from 'firebase/auth'
-import { Button, Container, Stack, Typography, Box, TextField, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, Paper, List, ListItem, ListItemText, Divider } from '@mui/material'
+import { Button, Container, Stack, Typography, Box, TextField, Radio, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip } from '@mui/material'
 
 function App() {
-  const [count, setCount] = useState(0)
   const [user, setUser] = useState<User | null>(null)
   const [compName, setCompName] = useState('')
   const [compLevel, setCompLevel] = useState<number>(1)
@@ -38,21 +35,11 @@ function App() {
   }
 
   return (
-    <Container maxWidth="sm" sx={{ py: 6 }}>
-      <Stack spacing={3} alignItems="center">
-        <Stack direction="row" spacing={2} alignItems="center">
-          <a href="https://vite.dev" target="_blank">
-            <img src={viteLogo} className="logo" alt="Vite logo" />
-          </a>
-          <a href="https://react.dev" target="_blank">
-            <img src={reactLogo} className="logo react" alt="React logo" />
-          </a>
-        </Stack>
-        <Typography variant="h4" component="h1">Vite + React</Typography>
-
+    <Container maxWidth="md" sx={{ py: 4 }}>
+      <Stack spacing={3}>
         <Box>
           {user ? (
-            <Stack spacing={1} alignItems="center">
+            <Stack spacing={1} direction="row" alignItems="center" justifyContent="space-between">
               <Typography variant="body1">
                 Signed in as {user.displayName || user.email}
               </Typography>
@@ -67,81 +54,83 @@ function App() {
           )}
         </Box>
 
-        <Stack spacing={2} alignItems="center">
-          <Button variant="contained" onClick={() => setCount((count) => count + 1)}>
-            count is {count}
-          </Button>
-          <Typography variant="body2">
-            Edit <code>src/App.tsx</code> and save to test HMR
-          </Typography>
-        </Stack>
-
-        <Typography variant="caption" className="read-the-docs" align="center">
-          Click on the Vite and React logos to learn more
-        </Typography>
-
-        <Paper elevation={3} sx={{ p: 2, width: '100%' }}>
-          <Typography variant="h6" gutterBottom>
-            Add Competence
-          </Typography>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ xs: 'stretch', sm: 'center' }}>
-            <TextField
-              label="Competence name"
-              value={compName}
-              onChange={(e) => setCompName(e.target.value)}
-              fullWidth
-            />
-            <FormControl>
-              <FormLabel id="level-label">Level</FormLabel>
-              <RadioGroup
-                row
-                aria-labelledby="level-label"
-                name="competence-level"
-                value={String(compLevel)}
-                onChange={(e) => setCompLevel(Number(e.target.value))}
-              >
-                {[1, 2, 3, 4].map((lvl) => (
-                  <FormControlLabel key={lvl} value={String(lvl)} control={<Radio />} label={String(lvl)} />
-                ))}
-              </RadioGroup>
-            </FormControl>
-            <Button
-              variant="contained"
-              onClick={() => {
-                const name = compName.trim()
-                const level = Math.min(4, Math.max(1, compLevel))
-                if (!name) return
-                setCompetences((prev) => [
-                  { id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, name, level },
-                  ...prev,
-                ])
-                setCompName('')
-                setCompLevel(1)
-              }}
-            >
-              Add
-            </Button>
-          </Stack>
-        </Paper>
-
         <Paper elevation={1} sx={{ p: 2, width: '100%' }}>
           <Typography variant="h6" gutterBottom>
             Competences
           </Typography>
-          {competences.length === 0 ? (
-            <Typography variant="body2" color="text.secondary">No competences yet</Typography>
-          ) : (
-            <List>
-              {competences.map((c, idx) => (
-                <Box key={c.id}>
-                  <ListItem>
-                    <ListItemText primary={c.name} secondary={`Level ${c.level}`} />
-                  </ListItem>
-                  {idx < competences.length - 1 && <Divider component="li" />}
-                </Box>
-              ))}
-            </List>
-          )}
+          <TableContainer>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Competence</TableCell>
+                  <TableCell align="center">No knowledge</TableCell>
+                  <TableCell align="center">Beginner</TableCell>
+                  <TableCell align="center">Proficient</TableCell>
+                  <TableCell align="center">Expert</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {/* Input row for adding a new competence */}
+                <TableRow hover>
+                  <TableCell component="th" scope="row">
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <TextField
+                        label="Competence name"
+                        size="small"
+                        value={compName}
+                        onChange={(e) => setCompName(e.target.value)}
+                        fullWidth
+                      />
+                      <Button
+                        variant="contained"
+                        onClick={() => {
+                          const name = compName.trim()
+                          const level = Math.min(4, Math.max(1, compLevel))
+                          if (!name) return
+                          setCompetences((prev) => [
+                            { id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, name, level },
+                            ...prev,
+                          ])
+                          setCompName('')
+                          setCompLevel(1)
+                        }}
+                      >
+                        Add
+                      </Button>
+                    </Stack>
+                  </TableCell>
+                  {[1,2,3,4].map((lvl) => (
+                    <TableCell key={lvl} align="center">
+                      <Radio
+                        checked={compLevel === lvl}
+                        onChange={() => setCompLevel(lvl)}
+                        value={String(lvl)}
+                        inputProps={{ 'aria-label': String(lvl) }}
+                      />
+                    </TableCell>
+                  ))}
+                </TableRow>
+                {competences.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} align="center">
+                      <Typography variant="body2" color="text.secondary">No competences yet</Typography>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  competences.map((c) => (
+                    <TableRow key={c.id} hover>
+                      <TableCell component="th" scope="row">{c.name}</TableCell>
+                      {[1,2,3,4].map((lvl) => (
+                        <TableCell key={lvl} align="center">
+                          {c.level === lvl ? <Chip size="small" color="primary" label="Selected" /> : null}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
         </Paper>
       </Stack>
     </Container>
