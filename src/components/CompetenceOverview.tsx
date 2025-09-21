@@ -13,17 +13,11 @@ import {
   CircularProgress,
   Alert,
   Tooltip,
-  useTheme,
-  IconButton,
-  TextField,
-  Autocomplete,
-  Stack,
-  Button
+  useTheme
 } from '@mui/material'
-import SwapHorizIcon from '@mui/icons-material/SwapHoriz'
-import ClearIcon from '@mui/icons-material/Clear'
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
-import ChevronRightIcon from '@mui/icons-material/ChevronRight'
+import LevelLegend from './LevelLegend'
+import ScrollControls from './ScrollControls'
+import CompetenceFilters from './CompetenceFilters'
 import { getAllUsersCompetences, auth } from '../firebase'
 import { onAuthStateChanged } from 'firebase/auth'
 import type { User } from 'firebase/auth'
@@ -54,6 +48,7 @@ const LEVEL_LABELS = {
   3: 'Proficient',
   4: 'Expert'
 }
+
 
 export default function CompetenceOverview() {
   const theme = useTheme()
@@ -260,194 +255,31 @@ export default function CompetenceOverview() {
 
   return (
     <Box>
-      {/* Filters */}
-      <Box sx={{ mb: 3 }}>
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="center">
-          <Autocomplete
-            multiple
-            options={users.map(user => user.ownerName)}
-            value={selectedUsers}
-            onChange={(_, newValue) => setSelectedUsers(newValue)}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label="Filter Team Members"
-                placeholder="Select team members..."
-                size="small"
-                sx={{ minWidth: 250 }}
-              />
-            )}
-            renderTags={(value, getTagProps) =>
-              value.map((option, index) => (
-                <Chip
-                  label={option}
-                  size="small"
-                  {...getTagProps({ index })}
-                  sx={{
-                    backgroundColor: theme.palette.grey[700],
-                    color: theme.palette.common.white,
-                    '& .MuiChip-deleteIcon': {
-                      color: theme.palette.common.white
-                    }
-                  }}
-                />
-              ))
-            }
-          />
-          <Autocomplete
-            multiple
-            options={allCompetences}
-            value={selectedCompetences}
-            onChange={(_, newValue) => setSelectedCompetences(newValue)}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label="Filter Competences"
-                placeholder="Select competences..."
-                size="small"
-                sx={{ minWidth: 250 }}
-              />
-            )}
-            renderTags={(value, getTagProps) =>
-              value.map((option, index) => (
-                <Chip
-                  label={option}
-                  size="small"
-                  {...getTagProps({ index })}
-                  sx={{
-                    backgroundColor: theme.palette.grey[700],
-                    color: theme.palette.common.white,
-                    '& .MuiChip-deleteIcon': {
-                      color: theme.palette.common.white
-                    }
-                  }}
-                />
-              ))
-            }
-          />
-          {/* Control buttons on the right */}
-          <Stack direction="row" spacing={1} sx={{ ml: 'auto' }}>
-            <Tooltip title={isTransposed ? "Switch to show competences on left and users on top" : "Switch to show users on left and competences on top"}>
-              <Button 
-                onClick={() => setIsTransposed(!isTransposed)}
-                startIcon={<SwapHorizIcon />}
-                size="small"
-                sx={{ 
-                  backgroundColor: theme.palette.grey[800],
-                  color: theme.palette.common.white,
-                  '&:hover': {
-                    backgroundColor: theme.palette.grey[700]
-                  },
-                  textTransform: 'none'
-                }}
-              >
-                Transpose
-              </Button>
-            </Tooltip>
-            {(selectedUsers.length > 0 || selectedCompetences.length > 0 || selectedLevels.length > 0) && (
-              <Tooltip title="Clear all filters">
-                <IconButton 
-                  onClick={clearFilters}
-                  sx={{ 
-                    backgroundColor: theme.palette.grey[800],
-                    color: theme.palette.common.white,
-                    '&:hover': {
-                      backgroundColor: theme.palette.grey[700]
-                    }
-                  }}
-                >
-                  <ClearIcon />
-                </IconButton>
-              </Tooltip>
-            )}
-          </Stack>
-        </Stack>
-      </Box>
+      <CompetenceFilters 
+        users={users}
+        allCompetences={allCompetences}
+        selectedUsers={selectedUsers}
+        selectedCompetences={selectedCompetences}
+        selectedLevels={selectedLevels}
+        isTransposed={isTransposed}
+        onUsersChange={setSelectedUsers}
+        onCompetencesChange={setSelectedCompetences}
+        onTransposeToggle={() => setIsTransposed(!isTransposed)}
+        onClearFilters={clearFilters}
+      />
 
-      {/* Legend / Level Filters */}
-      <Box sx={{ mb: 3, display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
-          <Typography variant="body2" sx={{ mr: 1, color: 'text.secondary' }}>
-            Filter by level:
-          </Typography>
-        {Object.entries(LEVEL_LABELS).map(([level, label]) => {
-          const levelNum = parseInt(level)
-          const isSelected = selectedLevels.includes(levelNum)
-          return (
-            <Chip
-              key={level}
-              label={`${level}. ${label}`}
-              size="small"
-              clickable
-              onClick={() => {
-                if (isSelected) {
-                  setSelectedLevels(selectedLevels.filter(l => l !== levelNum))
-                } else {
-                  setSelectedLevels([...selectedLevels, levelNum])
-                }
-              }}
-              sx={{
-                backgroundColor: LEVEL_COLORS[levelNum as keyof typeof LEVEL_COLORS],
-                color: levelNum === 1 ? 'black' : 'white',
-                opacity: isSelected ? 1 : 0.6,
-                border: isSelected ? '2px solid white' : 'none',
-                '&:hover': {
-                  opacity: 1,
-                  transform: 'scale(1.05)'
-                },
-                transition: 'all 0.2s ease'
-              }}
-            />
-          )
-        })}
-        </Box>
-        
-        {/* Horizontal scroll controls */}
-        {(canScrollLeft || canScrollRight) && (
-          <Stack direction="row" spacing={1}>
-            <Tooltip title="Scroll left">
-              <IconButton 
-                onClick={scrollLeft}
-                disabled={!canScrollLeft}
-                size="small"
-                sx={{ 
-                  backgroundColor: theme.palette.grey[800],
-                  color: theme.palette.common.white,
-                  '&:hover': {
-                    backgroundColor: theme.palette.grey[700]
-                  },
-                  '&:disabled': {
-                    backgroundColor: theme.palette.grey[600],
-                    color: theme.palette.grey[400]
-                  }
-                }}
-              >
-                <ChevronLeftIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Scroll right">
-              <IconButton 
-                onClick={scrollRight}
-                disabled={!canScrollRight}
-                size="small"
-                sx={{ 
-                  backgroundColor: theme.palette.grey[800],
-                  color: theme.palette.common.white,
-                  '&:hover': {
-                    backgroundColor: theme.palette.grey[700]
-                  },
-                  '&:disabled': {
-                    backgroundColor: theme.palette.grey[600],
-                    color: theme.palette.grey[400]
-                  }
-                }}
-              >
-                <ChevronRightIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          </Stack>
-        )}
-      </Box>
+      <LevelLegend 
+        selectedLevels={selectedLevels}
+        onLevelsChange={setSelectedLevels}
+        scrollControls={
+          <ScrollControls 
+            canScrollLeft={canScrollLeft}
+            canScrollRight={canScrollRight}
+            onScrollLeft={scrollLeft}
+            onScrollRight={scrollRight}
+          />
+        }
+      />
 
       <TableContainer 
         component={Paper} 
