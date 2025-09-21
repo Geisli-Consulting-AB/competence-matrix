@@ -30,8 +30,10 @@ service cloud.firestore {
         allow delete: if isOwner(userId);
       }
 
-      // Optionally allow the user doc itself to be read/written by the owner (tighten as needed)
-      allow read, write: if isOwner(userId);
+      // Allow any authenticated user to read user documents (for team overview)
+      // but only allow users to write to their own documents
+      allow read: if isSignedIn();
+      allow write: if isOwner(userId);
     }
 
     // Deny everything else by default

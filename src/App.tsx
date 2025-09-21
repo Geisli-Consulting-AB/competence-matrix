@@ -1,63 +1,79 @@
 import { useState, useEffect } from 'react'
 import './App.css'
-import { auth, googleProvider, db } from './firebase'
-import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth'
+import { auth, googleProvider, subscribeToUserCompetences, saveUserCompetences, getAllUsersCompetences } from './firebase'
+import { onAuthStateChanged, signInWithPopup, signInWithRedirect, signOut, getRedirectResult } from 'firebase/auth'
 import type { User } from 'firebase/auth'
-import { Button, Container, Stack, Typography, Box, TextField, Radio, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton } from '@mui/material'
-import { doc, onSnapshot, setDoc, serverTimestamp } from 'firebase/firestore'
-import AddIcon from '@mui/icons-material/Add'
+import { Button, Container, Stack, Typography, Box, Paper, Tabs, Tab } from '@mui/material'
+import CompetenceTable from './components/CompetenceTable'
+import CompetenceOverview from './components/CompetenceOverview'
 
 type CompetenceRow = { id: string; name: string; level: number }
 
 function App() {
   const [user, setUser] = useState<User | null>(null)
   const [competences, setCompetences] = useState<CompetenceRow[]>([])
+  const [currentTab, setCurrentTab] = useState(0)
+  const [existingCompetences, setExistingCompetences] = useState<string[]>([])
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => setUser(u))
+    
+    // Handle redirect result on app initialization
+    getRedirectResult(auth).then((result) => {
+      if (result) {
+        console.log('Redirect login successful:', result.user)
+      }
+    }).catch((error) => {
+      console.error('Redirect result error:', error)
+    })
+    
     return () => unsub()
   }, [])
 
   useEffect(() => {
     if (!user) {
       setCompetences([])
+      setExistingCompetences([])
       return
     }
-    const userDocRef = doc(db, 'users', user.uid)
-    const unsub = onSnapshot(userDocRef, (snap) => {
-      const data = snap.data() as any || {}
-      const rows: CompetenceRow[] = Array.isArray(data.competences)
-        ? data.competences.map((r: any) => ({
-            id: String(r.id || ''),
-            name: String(r.name || ''),
-            level: Number(r.level || 1),
-          }))
-        : []
-      setCompetences(rows)
-    })
+    const unsub = subscribeToUserCompetences(user.uid, (rows) => setCompetences(rows))
     return () => unsub()
+  }, [user])
+
+  // Fetch existing competences for autocomplete suggestions
+  useEffect(() => {
+    if (!user) return
+    
+    const fetchExistingCompetences = async () => {
+      try {
+        const data = await getAllUsersCompetences()
+        setExistingCompetences(data.allCompetences)
+      } catch (error) {
+        console.error('Failed to fetch existing competences:', error)
+      }
+    }
+    
+    fetchExistingCompetences()
   }, [user])
 
   const persistAll = async (rows: CompetenceRow[]) => {
     if (!user) return
     const ownerName = user.displayName || user.email || 'unknown'
-    const cleaned = rows
-      .filter((r) => r.name && r.name.trim().length > 0)
-      .map((r) => ({ id: r.id, name: r.name.trim(), level: Math.min(4, Math.max(1, r.level)) }))
-    const userDocRef = doc(db, 'users', user.uid)
-    await setDoc(
-      userDocRef,
-      { ownerName, competences: cleaned, updatedAt: serverTimestamp() },
-      { merge: true },
-    )
+    await saveUserCompetences(user.uid, ownerName, rows)
   }
 
   const handleLogin = async () => {
     try {
       await signInWithPopup(auth, googleProvider)
     } catch (err) {
-      console.error('Login failed', err)
-      alert('Login failed. Check console for details.')
+      console.error('Popup login failed, trying redirect...', err)
+      try {
+        // Fallback to redirect if popup fails
+        await signInWithRedirect(auth, googleProvider)
+      } catch (redirectErr) {
+        console.error('Login failed', redirectErr)
+        alert('Login failed. Check console for details.')
+      }
     }
   }
 
@@ -90,72 +106,33 @@ function App() {
           )}
         </Box>
 
-        <Paper elevation={1} sx={{ p: 2, width: '100%' }}>
-          <Typography variant="h6" gutterBottom>
-            Competences
-          </Typography>
-          <TableContainer sx={{ overflowX: 'auto' }}>
-            <Table size="small" sx={{ minWidth: 900 }}>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Competence</TableCell>
-                  <TableCell align="center">Want to learn</TableCell>
-                  <TableCell align="center">Beginner</TableCell>
-                  <TableCell align="center">Proficient</TableCell>
-                  <TableCell align="center">Expert</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {competences.map((c, idx) => (
-                  <TableRow key={c.id} hover>
-                    <TableCell component="th" scope="row" sx={{ minWidth: 300 }}>
-                      <TextField
-                        placeholder="Competence name"
-                        size="small"
-                        value={c.name}
-                        onChange={async (e) => {
-                          const name = e.target.value
-                          const nextRows = competences.map((row, i) => (i === idx ? { ...row, name } : row))
-                          setCompetences(nextRows)
-                          await persistAll(nextRows)
-                        }}
-                        fullWidth
-                      />
-                    </TableCell>
-                    {[1, 2, 3, 4].map((lvl) => (
-                      <TableCell key={lvl} align="center">
-                        <Radio
-                          name={`level-${c.id}`}
-                          checked={c.level === lvl}
-                          onChange={async () => {
-                            const nextRows = competences.map((row, i) => (i === idx ? { ...row, level: lvl } : row))
-                            setCompetences(nextRows)
-                            await persistAll(nextRows)
-                          }}
-                          value={String(lvl)}
-                          inputProps={{ 'aria-label': String(lvl) }}
-                        />
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))}
-                <TableRow>
-                  <TableCell colSpan={5} align="center">
-                    <IconButton color="primary" onClick={async () => {
-                      const nextRows = [
-                        ...competences,
-                        { id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, name: '', level: 1 },
-                      ]
-                      setCompetences(nextRows)
-                      await persistAll(nextRows)
-                    }} aria-label="add competence">
-                      <AddIcon />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </TableContainer>
+        <Paper elevation={1} sx={{ width: '100%' }}>
+          <Tabs 
+            value={currentTab} 
+            onChange={(_, newValue) => setCurrentTab(newValue)}
+            sx={{ borderBottom: 1, borderColor: 'divider' }}
+          >
+            <Tab label="My Competences" />
+            <Tab label="Team Overview" />
+          </Tabs>
+          
+          <Box sx={{ p: 2 }}>
+            {currentTab === 0 && (
+              <>
+                <Typography variant="h6" gutterBottom>
+                  My Competences
+                </Typography>
+                <CompetenceTable
+                  competences={competences}
+                  onChange={setCompetences}
+                  onSave={persistAll}
+                  existingCompetences={existingCompetences}
+                />
+              </>
+            )}
+            
+            {currentTab === 1 && <CompetenceOverview />}
+          </Box>
         </Paper>
       </Stack>
     </Container>

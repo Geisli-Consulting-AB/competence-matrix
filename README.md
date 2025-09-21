@@ -1,11 +1,73 @@
-# React + TypeScript + Vite
+# Competence Matrix
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A React + TypeScript application for managing and tracking team competencies. Built with Vite, Material-UI, and Firebase.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- 🔐 Google Authentication
+- 📊 Competence tracking with 4 skill levels (Want to learn, Beginner, Proficient, Expert)
+- 🔄 Real-time data synchronization with Firebase Firestore
+- 📱 Responsive Material-UI design
+- 🌱 Database seeding with sample data
+
+## Quick Start
+
+1. **Clone and install dependencies:**
+   ```bash
+   npm install
+   ```
+
+2. **Seed the database with sample data:**
+   ```bash
+   npm run seed
+   ```
+   This will populate your Firebase database with 15 sample users and their competencies using your existing `.env` configuration.
+
+3. **Start the development server:**
+   ```bash
+   npm run dev
+   ```
+
+## Database Structure
+
+The application stores data in Firestore with the following structure:
+
+```
+users/{userId}
+├── ownerName: string
+├── competences: array
+│   ├── id: string
+│   ├── name: string
+│   └── level: number (1-4)
+├── updatedAt: timestamp
+└── seeded?: boolean
+```
+
+## Skill Levels
+
+- **Level 1**: Want to learn
+- **Level 2**: Beginner
+- **Level 3**: Proficient  
+- **Level 4**: Expert
+
+## Sample Data
+
+The seeding script creates 15 diverse user profiles with competencies across various technology domains:
+
+- **Frontend**: React, Vue.js, Angular, TypeScript, Material-UI, etc.
+- **Backend**: Node.js, Python, Java, C#, Go, Ruby, etc.
+- **Databases**: PostgreSQL, MongoDB, Redis, Firebase, etc.
+- **Cloud & DevOps**: AWS, Docker, Kubernetes, CI/CD, etc.
+- **Mobile**: React Native, Flutter, iOS, Android
+- **Data Science**: Python, TensorFlow, Tableau, etc.
+- **Design & UX**: Figma, Adobe XD, UI/UX Design
+- **Project Management**: Agile, Scrum, Leadership
+
+Each user has 8-15 competencies with realistic skill level distributions:
+- Want to learn: ~15%
+- Beginner: ~30% 
+- Proficient: ~40%
+- Expert: ~15%
 
 ## Expanding the ESLint configuration
 
