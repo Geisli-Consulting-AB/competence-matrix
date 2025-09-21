@@ -337,9 +337,9 @@ export default function CompetenceOverview() {
         component={Paper} 
         ref={tableContainerRef}
         onScroll={updateScrollButtons}
-        sx={{ maxHeight: '70vh', overflow: 'auto' }}
+        sx={{ maxHeight: '70vh', overflow: 'auto', backgroundColor: '#121212' }}
       >
-          <Table stickyHeader size="small">
+          <Table size="small">
           {!isTransposed ? (
             // Original layout: Competences on left, Users on top
             <>
@@ -350,11 +350,12 @@ export default function CompetenceOverview() {
                       minWidth: 80, 
                       maxWidth: 120,
                       fontWeight: 'bold',
-                      backgroundColor: 'transparent',
+                      backgroundColor: '#121212',
                       color: theme.palette.common.white,
                       position: 'sticky',
                       left: 0,
-                      zIndex: 3,
+                      top: 0,
+                      zIndex: 10,
                       fontSize: '0.7rem',
                       verticalAlign: 'bottom',
                       paddingLeft: '5px'
@@ -370,13 +371,18 @@ export default function CompetenceOverview() {
                         minWidth: 24,
                         maxWidth: 32,
                         fontWeight: 'bold',
-                        backgroundColor: 'transparent',
+                        backgroundColor: '#121212',
                         color: theme.palette.common.white,
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: 10,
                         writingMode: 'vertical-lr',
                         textOrientation: 'mixed',
                         fontSize: '0.7rem',
                         padding: '2px 1px',
-                        verticalAlign: 'bottom'
+                        '& > *': {
+                          verticalAlign: 'middle'
+                        }
                       }}
                     >
                       {user.ownerName}
@@ -430,7 +436,8 @@ export default function CompetenceOverview() {
                         return (
                           <TableCell key={user.userId} align="center" sx={{ padding: '2px 1px' }}>
                             {level && shouldShowLevel ? (
-                              <Tooltip title={
+                              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                                <Tooltip title={
                                 <Box>
                                   <Typography variant="caption" display="block" sx={{ fontWeight: 'bold' }}>
                                     {user.ownerName}
@@ -455,13 +462,13 @@ export default function CompetenceOverview() {
                                     justifyContent: 'center',
                                     fontSize: '0.7rem',
                                     fontWeight: 'bold',
-                                    margin: '0 auto',
                                     cursor: 'pointer'
                                   }}
                                 >
                                   {level}
                                 </Box>
                               </Tooltip>
+                              </Box>
                             ) : (
                               <Box sx={{ width: 20, height: 20, margin: '0 auto' }} />
                             )}
@@ -483,11 +490,12 @@ export default function CompetenceOverview() {
                       minWidth: 80, 
                       maxWidth: 120,
                       fontWeight: 'bold',
-                      backgroundColor: 'transparent',
+                      backgroundColor: '#121212',
                       color: theme.palette.common.white,
                       position: 'sticky',
                       left: 0,
-                      zIndex: 3,
+                      top: 0,
+                      zIndex: 10,
                       fontSize: '0.7rem',
                       verticalAlign: 'bottom',
                       paddingLeft: '5px'
@@ -503,13 +511,18 @@ export default function CompetenceOverview() {
                         minWidth: 24,
                         maxWidth: 32,
                         fontWeight: 'bold',
-                        backgroundColor: 'transparent',
+                        backgroundColor: '#121212',
                         color: theme.palette.common.white,
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: 10,
                         writingMode: 'vertical-lr',
                         textOrientation: 'mixed',
                         fontSize: '0.7rem',
                         padding: '2px 1px',
-                        verticalAlign: 'bottom'
+                        '& > *': {
+                          verticalAlign: 'middle'
+                        }
                       }}
                     >
                       {competenceName}
@@ -563,7 +576,8 @@ export default function CompetenceOverview() {
                         return (
                           <TableCell key={competenceName} align="center" sx={{ padding: '2px 1px' }}>
                             {level && shouldShowLevel ? (
-                              <Tooltip title={
+                              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                                <Tooltip title={
                                 <Box>
                                   <Typography variant="caption" display="block" sx={{ fontWeight: 'bold' }}>
                                     {user.ownerName}
@@ -588,13 +602,13 @@ export default function CompetenceOverview() {
                                     justifyContent: 'center',
                                     fontSize: '0.7rem',
                                     fontWeight: 'bold',
-                                    margin: '0 auto',
                                     cursor: 'pointer'
                                   }}
                                 >
                                   {level}
                                 </Box>
                               </Tooltip>
+                              </Box>
                             ) : (
                               <Box sx={{ width: 20, height: 20, margin: '0 auto' }} />
                             )}

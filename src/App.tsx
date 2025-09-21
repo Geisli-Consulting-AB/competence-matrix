@@ -17,6 +17,7 @@ function App() {
   const [currentTab, setCurrentTab] = useState(0)
   const [existingCompetences, setExistingCompetences] = useState<string[]>([])
   const [categories, setCategories] = useState<{id: string; name: string; color: string}[]>([])
+  const [competenceMatrix, setCompetenceMatrix] = useState<{ [competenceName: string]: { [userId: string]: number } }>({})
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => setUser(u))
@@ -65,6 +66,19 @@ function App() {
       try {
         const data = await getAllUsersCompetences()
         setExistingCompetences(data.allCompetences)
+        
+        // Build competence matrix
+        const matrix: { [competenceName: string]: { [userId: string]: number } } = {}
+        data.allCompetences.forEach(competenceName => {
+          matrix[competenceName] = {}
+          data.users.forEach(userData => {
+            const userCompetence = userData.competences.find(c => c.name === competenceName)
+            if (userCompetence) {
+              matrix[competenceName][userData.userId] = userCompetence.level
+            }
+          })
+        })
+        setCompetenceMatrix(matrix)
       } catch (error) {
         console.error('Failed to fetch existing competences:', error)
       }
@@ -150,7 +164,11 @@ function App() {
               )}
               {currentTab === 1 && (
                 <Stack spacing={4}>
-                  <CategoryManagement existingCompetences={existingCompetences} user={user} />
+                  <CategoryManagement 
+                    existingCompetences={existingCompetences} 
+                    user={user} 
+                    competenceMatrix={competenceMatrix}
+                  />
                   <CompetenceMapping 
                     existingCompetences={existingCompetences} 
                     categories={categories}

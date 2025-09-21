@@ -30,11 +30,13 @@ interface Category {
 interface CategoryManagementProps {
   existingCompetences: string[];
   user: User | null;
+  competenceMatrix?: { [competenceName: string]: { [userId: string]: number } };
 }
 
 const CategoryManagement: React.FC<CategoryManagementProps> = ({
   existingCompetences,
   user,
+  competenceMatrix = {},
 }) => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [newCategoryName, setNewCategoryName] = useState("");
@@ -99,6 +101,11 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
 
   const getRandomColor = () => {
     return categoryColors[Math.floor(Math.random() * categoryColors.length)];
+  };
+
+  const isCompetenceUsedByUsers = (competenceName: string) => {
+    const users = competenceMatrix[competenceName] || {};
+    return Object.keys(users).length > 0;
   };
 
   const handleCreateCategory = async () => {
@@ -372,22 +379,36 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                               >
                                 {comp}
                               </Typography>
-                              <IconButton
-                                size="small"
-                                onClick={() =>
-                                  handleRemoveCompetence(category.id, comp)
+                              <Tooltip
+                                title={
+                                  isCompetenceUsedByUsers(comp)
+                                    ? "Cannot delete: competence is assigned to users"
+                                    : "Remove competence from category"
                                 }
-                                sx={{
-                                  color: category.color,
-                                  ml: 0.5,
-                                  p: 0.25,
-                                  "&:hover": {
-                                    backgroundColor: "rgba(255, 255, 255, 0.1)",
-                                  },
-                                }}
                               >
-                                <TrashIcon fontSize="small" />
-                              </IconButton>
+                                <span>
+                                  <IconButton
+                                    size="small"
+                                    onClick={() =>
+                                      handleRemoveCompetence(category.id, comp)
+                                    }
+                                    disabled={isCompetenceUsedByUsers(comp)}
+                                    sx={{
+                                      color: isCompetenceUsedByUsers(comp) ? "grey.500" : category.color,
+                                      ml: 0.5,
+                                      p: 0.25,
+                                      "&:hover": {
+                                        backgroundColor: "rgba(255, 255, 255, 0.1)",
+                                      },
+                                      "&.Mui-disabled": {
+                                        color: "grey.500",
+                                      },
+                                    }}
+                                  >
+                                    <TrashIcon fontSize="small" />
+                                  </IconButton>
+                                </span>
+                              </Tooltip>
                             </Box>
                           ))}
                         </Box>
