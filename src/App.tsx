@@ -94,6 +94,19 @@ function App() {
             <Typography variant="h3" component="h1" gutterBottom sx={{ mb: 4 }}>
               Competence Matrix
             </Typography>
+            <Box sx={{ mb: 4, display: 'flex', justifyContent: 'center' }}>
+              <img 
+                src="/matrix.png" 
+                alt="Competence Matrix" 
+                style={{ 
+                  maxWidth: '100%', 
+                  height: 'auto', 
+                  maxHeight: '300px',
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+                }} 
+              />
+            </Box>
             <Button variant="contained" color="primary" onClick={handleLogin}>
               Login with Google
             </Button>
