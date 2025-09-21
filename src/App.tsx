@@ -91,10 +91,7 @@ function App() {
       <Stack spacing={3}>
         <Box>
           {user ? (
-            <Stack spacing={1} direction="row" alignItems="center" justifyContent="space-between">
-              <Typography variant="body1">
-                Signed in as {user.displayName || user.email}
-              </Typography>
+            <Stack spacing={1} direction="row" alignItems="center" justifyContent="flex-end">
               <Button variant="outlined" color="primary" onClick={handleLogout}>
                 Logout
               </Button>
@@ -112,12 +109,15 @@ function App() {
             onChange={(_, newValue) => setCurrentTab(newValue)}
             sx={{ borderBottom: 1, borderColor: 'divider' }}
           >
-            <Tab label="My Competences" />
             <Tab label="Team Overview" />
+            <Tab label="My Competences" />
           </Tabs>
           
           <Box sx={{ p: 2 }}>
             {currentTab === 0 && (
+              <CompetenceOverview />
+            )}
+            {currentTab === 1 && (
               <>
                 <Typography variant="h6" gutterBottom>
                   My Competences
@@ -130,8 +130,6 @@ function App() {
                 />
               </>
             )}
-            
-            {currentTab === 1 && <CompetenceOverview />}
           </Box>
         </Paper>
       </Stack>

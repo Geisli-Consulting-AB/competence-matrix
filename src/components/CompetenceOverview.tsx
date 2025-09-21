@@ -17,7 +17,8 @@ import {
   IconButton,
   TextField,
   Autocomplete,
-  Stack
+  Stack,
+  Button
 } from '@mui/material'
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz'
 import ClearIcon from '@mui/icons-material/Clear'
@@ -63,6 +64,7 @@ export default function CompetenceOverview() {
   const [isTransposed, setIsTransposed] = useState(false) // false = competences on left, true = users on left
   const [selectedUsers, setSelectedUsers] = useState<string[]>([])
   const [selectedCompetences, setSelectedCompetences] = useState<string[]>([])
+  const [selectedLevels, setSelectedLevels] = useState<number[]>([])
 
   // Listen to authentication state changes
   useEffect(() => {
@@ -128,6 +130,27 @@ export default function CompetenceOverview() {
     ? allCompetences.filter(comp => selectedCompetences.includes(comp))
     : allCompetences
 
+  // Apply level filtering by filtering out competences that don't have any users with selected levels
+  const levelFilteredCompetences = selectedLevels.length > 0
+    ? filteredCompetences.filter(competenceName => {
+        const relevantUserIds = filteredUsers.map(u => u.userId)
+        const levels = Object.entries(competenceMatrix[competenceName] || {})
+          .filter(([userId]) => relevantUserIds.includes(userId))
+          .map(([, level]) => level)
+        return levels.some(level => selectedLevels.includes(level))
+      })
+    : filteredCompetences
+
+  // For transposed view, also filter users based on selected levels
+  const levelFilteredUsers = selectedLevels.length > 0
+    ? filteredUsers.filter(user => {
+        return filteredCompetences.some(competenceName => {
+          const level = competenceMatrix[competenceName]?.[user.userId]
+          return level && selectedLevels.includes(level)
+        })
+      })
+    : filteredUsers
+
   const getCompetenceStats = (competenceName: string) => {
     // Only count stats from filtered users
     const relevantUserIds = filteredUsers.map(u => u.userId)
@@ -152,6 +175,7 @@ export default function CompetenceOverview() {
   const clearFilters = () => {
     setSelectedUsers([])
     setSelectedCompetences([])
+    setSelectedLevels([])
   }
 
 
@@ -189,53 +213,9 @@ export default function CompetenceOverview() {
 
   return (
     <Box>
-      <Box>
-        <Typography variant="h5" gutterBottom>
-          Team Competence Overview
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          {filteredUsers.length} team members • {filteredCompetences.length} competences
-          {(selectedUsers.length > 0 || selectedCompetences.length > 0) && (
-            <span> (filtered from {users.length} • {allCompetences.length})</span>
-          )}
-        </Typography>
-      </Box>
-      <Stack direction="row" spacing={1}>
-        <Tooltip title={isTransposed ? "Show competences on left" : "Show users on left"}>
-          <IconButton 
-            onClick={() => setIsTransposed(!isTransposed)}
-            sx={{ 
-              backgroundColor: theme.palette.grey[800],
-              color: theme.palette.common.white,
-              '&:hover': {
-                backgroundColor: theme.palette.grey[700]
-              }
-            }}
-          >
-            <SwapHorizIcon />
-          </IconButton>
-        </Tooltip>
-        {(selectedUsers.length > 0 || selectedCompetences.length > 0) && (
-          <Tooltip title="Clear all filters">
-            <IconButton 
-              onClick={clearFilters}
-              sx={{ 
-                backgroundColor: theme.palette.grey[800],
-                color: theme.palette.common.white,
-                '&:hover': {
-                  backgroundColor: theme.palette.grey[700]
-                }
-              }}
-            >
-              <ClearIcon />
-            </IconButton>
-          </Tooltip>
-        )}
-      </Stack>
-
       {/* Filters */}
       <Box sx={{ mb: 3 }}>
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="center">
           <Autocomplete
             multiple
             options={users.map(user => user.ownerName)}
@@ -298,26 +278,84 @@ export default function CompetenceOverview() {
               ))
             }
           />
+          {/* Control buttons on the right */}
+          <Stack direction="row" spacing={1} sx={{ ml: 'auto' }}>
+            <Tooltip title={isTransposed ? "Switch to show competences on left and users on top" : "Switch to show users on left and competences on top"}>
+              <Button 
+                onClick={() => setIsTransposed(!isTransposed)}
+                startIcon={<SwapHorizIcon />}
+                size="small"
+                sx={{ 
+                  backgroundColor: theme.palette.grey[800],
+                  color: theme.palette.common.white,
+                  '&:hover': {
+                    backgroundColor: theme.palette.grey[700]
+                  },
+                  textTransform: 'none'
+                }}
+              >
+                Transpose
+              </Button>
+            </Tooltip>
+            {(selectedUsers.length > 0 || selectedCompetences.length > 0 || selectedLevels.length > 0) && (
+              <Tooltip title="Clear all filters">
+                <IconButton 
+                  onClick={clearFilters}
+                  sx={{ 
+                    backgroundColor: theme.palette.grey[800],
+                    color: theme.palette.common.white,
+                    '&:hover': {
+                      backgroundColor: theme.palette.grey[700]
+                    }
+                  }}
+                >
+                  <ClearIcon />
+                </IconButton>
+              </Tooltip>
+            )}
+          </Stack>
         </Stack>
       </Box>
 
-      {/* Legend */}
-      <Box sx={{ mb: 3, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-        {Object.entries(LEVEL_LABELS).map(([level, label]) => (
-          <Chip
-            key={level}
-            label={`${level}. ${label}`}
-            size="small"
-            sx={{
-              backgroundColor: LEVEL_COLORS[parseInt(level) as keyof typeof LEVEL_COLORS],
-              color: parseInt(level) === 1 ? 'black' : 'white'
-            }}
-          />
-        ))}
+      {/* Legend / Level Filters */}
+      <Box sx={{ mb: 3, display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+        <Typography variant="body2" sx={{ mr: 1, color: 'text.secondary' }}>
+          Filter by level:
+        </Typography>
+        {Object.entries(LEVEL_LABELS).map(([level, label]) => {
+          const levelNum = parseInt(level)
+          const isSelected = selectedLevels.includes(levelNum)
+          return (
+            <Chip
+              key={level}
+              label={`${level}. ${label}`}
+              size="small"
+              clickable
+              onClick={() => {
+                if (isSelected) {
+                  setSelectedLevels(selectedLevels.filter(l => l !== levelNum))
+                } else {
+                  setSelectedLevels([...selectedLevels, levelNum])
+                }
+              }}
+              sx={{
+                backgroundColor: LEVEL_COLORS[levelNum as keyof typeof LEVEL_COLORS],
+                color: levelNum === 1 ? 'black' : 'white',
+                opacity: isSelected ? 1 : 0.6,
+                border: isSelected ? '2px solid white' : 'none',
+                '&:hover': {
+                  opacity: 1,
+                  transform: 'scale(1.05)'
+                },
+                transition: 'all 0.2s ease'
+              }}
+            />
+          )
+        })}
       </Box>
 
       <TableContainer component={Paper} sx={{ maxHeight: '70vh', overflow: 'auto' }}>
-        <Table stickyHeader size="small">
+          <Table stickyHeader size="small">
           {!isTransposed ? (
             // Original layout: Competences on left, Users on top
             <>
@@ -325,15 +363,15 @@ export default function CompetenceOverview() {
                 <TableRow>
                   <TableCell 
                     sx={{ 
-                      minWidth: 120, 
-                      maxWidth: 150,
+                      minWidth: 60, 
+                      maxWidth: 90,
                       fontWeight: 'bold',
                       backgroundColor: theme.palette.grey[800],
                       color: theme.palette.common.white,
                       position: 'sticky',
                       left: 0,
                       zIndex: 2,
-                      fontSize: '0.875rem'
+                      fontSize: '0.7rem'
                     }}
                   >
                     Competence
@@ -341,30 +379,30 @@ export default function CompetenceOverview() {
                   <TableCell 
                     align="center" 
                     sx={{ 
-                      minWidth: 50,
-                      maxWidth: 60,
+                      minWidth: 30,
+                      maxWidth: 40,
                       fontWeight: 'bold',
                       backgroundColor: theme.palette.grey[800],
                       color: theme.palette.common.white,
-                      fontSize: '0.875rem'
+                      fontSize: '0.7rem'
                     }}
                   >
                     Stats
                   </TableCell>
-                  {filteredUsers.map(user => (
+                  {levelFilteredUsers.map(user => (
                     <TableCell 
                       key={user.userId} 
                       align="center" 
                       sx={{ 
-                        minWidth: 60,
-                        maxWidth: 80,
+                        minWidth: 32,
+                        maxWidth: 45,
                         fontWeight: 'bold',
                         backgroundColor: theme.palette.grey[800],
                         color: theme.palette.common.white,
                         writingMode: 'vertical-lr',
                         textOrientation: 'mixed',
-                        fontSize: '0.75rem',
-                        padding: '8px 4px'
+                        fontSize: '0.65rem',
+                        padding: '4px 1px'
                       }}
                     >
                       {user.ownerName}
@@ -373,27 +411,42 @@ export default function CompetenceOverview() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {filteredCompetences.map(competenceName => {
+                {levelFilteredCompetences.map(competenceName => {
                   const stats = getCompetenceStats(competenceName)
                   return (
                     <TableRow key={competenceName} hover>
                       <TableCell 
                         component="th" 
                         scope="row"
+                        onClick={() => {
+                          if (selectedCompetences.includes(competenceName)) {
+                            setSelectedCompetences(selectedCompetences.filter(c => c !== competenceName))
+                          } else {
+                            setSelectedCompetences([...selectedCompetences, competenceName])
+                          }
+                        }}
                         sx={{ 
                           fontWeight: 'medium',
-                          backgroundColor: theme.palette.grey[900],
+                          backgroundColor: selectedCompetences.includes(competenceName) 
+                            ? theme.palette.primary.dark 
+                            : theme.palette.grey[900],
                           color: theme.palette.common.white,
                           position: 'sticky',
                           left: 0,
                           zIndex: 1,
                           borderRight: `1px solid ${theme.palette.divider}`,
-                          fontSize: '0.875rem',
-                          padding: '8px 12px',
-                          maxWidth: 150,
+                          fontSize: '0.7rem',
+                          padding: '4px 6px',
+                          maxWidth: 90,
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap'
+                          whiteSpace: 'nowrap',
+                          cursor: 'pointer',
+                          '&:hover': {
+                            backgroundColor: selectedCompetences.includes(competenceName)
+                              ? theme.palette.primary.main
+                              : theme.palette.grey[800]
+                          }
                         }}
                       >
                         {competenceName}
@@ -422,12 +475,25 @@ export default function CompetenceOverview() {
                           />
                         </Tooltip>
                       </TableCell>
-                      {filteredUsers.map(user => {
+                      {levelFilteredUsers.map(user => {
                         const level = competenceMatrix[competenceName]?.[user.userId]
+                        const shouldShowLevel = selectedLevels.length === 0 || (level && selectedLevels.includes(level))
                         return (
                           <TableCell key={user.userId} align="center">
-                            {level ? (
-                              <Tooltip title={`${LEVEL_LABELS[level as keyof typeof LEVEL_LABELS]}`}>
+                            {level && shouldShowLevel ? (
+                              <Tooltip title={
+                                <Box>
+                                  <Typography variant="caption" display="block" sx={{ fontWeight: 'bold' }}>
+                                    {user.ownerName}
+                                  </Typography>
+                                  <Typography variant="caption" display="block">
+                                    {competenceName}
+                                  </Typography>
+                                  <Typography variant="caption" display="block" sx={{ color: LEVEL_COLORS[level as keyof typeof LEVEL_COLORS] }}>
+                                    {LEVEL_LABELS[level as keyof typeof LEVEL_LABELS]}
+                                  </Typography>
+                                </Box>
+                              }>
                                 <Box
                                   sx={{
                                     width: 24,
@@ -465,15 +531,15 @@ export default function CompetenceOverview() {
                 <TableRow>
                   <TableCell 
                     sx={{ 
-                      minWidth: 120, 
-                      maxWidth: 150,
+                      minWidth: 60, 
+                      maxWidth: 90,
                       fontWeight: 'bold',
                       backgroundColor: theme.palette.grey[800],
                       color: theme.palette.common.white,
                       position: 'sticky',
                       left: 0,
                       zIndex: 2,
-                      fontSize: '0.875rem'
+                      fontSize: '0.7rem'
                     }}
                   >
                     User
@@ -481,30 +547,30 @@ export default function CompetenceOverview() {
                   <TableCell 
                     align="center" 
                     sx={{ 
-                      minWidth: 50,
-                      maxWidth: 60,
+                      minWidth: 30,
+                      maxWidth: 40,
                       fontWeight: 'bold',
                       backgroundColor: theme.palette.grey[800],
                       color: theme.palette.common.white,
-                      fontSize: '0.875rem'
+                      fontSize: '0.7rem'
                     }}
                   >
                     Stats
                   </TableCell>
-                  {filteredCompetences.map(competenceName => (
+                  {levelFilteredCompetences.map(competenceName => (
                     <TableCell 
                       key={competenceName} 
                       align="center" 
                       sx={{ 
-                        minWidth: 60,
-                        maxWidth: 80,
+                        minWidth: 32,
+                        maxWidth: 45,
                         fontWeight: 'bold',
                         backgroundColor: theme.palette.grey[800],
                         color: theme.palette.common.white,
                         writingMode: 'vertical-lr',
                         textOrientation: 'mixed',
-                        fontSize: '0.75rem',
-                        padding: '8px 4px'
+                        fontSize: '0.65rem',
+                        padding: '4px 1px'
                       }}
                     >
                       {competenceName}
@@ -513,7 +579,7 @@ export default function CompetenceOverview() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {users.map(user => {
+                {levelFilteredUsers.map(user => {
                   const userCompetenceCount = user.competences.length
                   const userAvgLevel = userCompetenceCount > 0 
                     ? user.competences.reduce((sum, comp) => sum + comp.level, 0) / userCompetenceCount 
@@ -524,20 +590,35 @@ export default function CompetenceOverview() {
                       <TableCell 
                         component="th" 
                         scope="row"
+                        onClick={() => {
+                          if (selectedUsers.includes(user.ownerName)) {
+                            setSelectedUsers(selectedUsers.filter(u => u !== user.ownerName))
+                          } else {
+                            setSelectedUsers([...selectedUsers, user.ownerName])
+                          }
+                        }}
                         sx={{ 
                           fontWeight: 'medium',
-                          backgroundColor: theme.palette.grey[900],
+                          backgroundColor: selectedUsers.includes(user.ownerName) 
+                            ? theme.palette.primary.dark 
+                            : theme.palette.grey[900],
                           color: theme.palette.common.white,
                           position: 'sticky',
                           left: 0,
                           zIndex: 1,
                           borderRight: `1px solid ${theme.palette.divider}`,
-                          fontSize: '0.875rem',
-                          padding: '8px 12px',
-                          maxWidth: 150,
+                          fontSize: '0.7rem',
+                          padding: '4px 6px',
+                          maxWidth: 90,
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap'
+                          whiteSpace: 'nowrap',
+                          cursor: 'pointer',
+                          '&:hover': {
+                            backgroundColor: selectedUsers.includes(user.ownerName)
+                              ? theme.palette.primary.main
+                              : theme.palette.grey[800]
+                          }
                         }}
                       >
                         {user.ownerName}
@@ -561,12 +642,25 @@ export default function CompetenceOverview() {
                           />
                         </Tooltip>
                       </TableCell>
-                      {allCompetences.map(competenceName => {
+                      {levelFilteredCompetences.map(competenceName => {
                         const level = competenceMatrix[competenceName]?.[user.userId]
+                        const shouldShowLevel = selectedLevels.length === 0 || (level && selectedLevels.includes(level))
                         return (
                           <TableCell key={competenceName} align="center">
-                            {level ? (
-                              <Tooltip title={`${LEVEL_LABELS[level as keyof typeof LEVEL_LABELS]}`}>
+                            {level && shouldShowLevel ? (
+                              <Tooltip title={
+                                <Box>
+                                  <Typography variant="caption" display="block" sx={{ fontWeight: 'bold' }}>
+                                    {user.ownerName}
+                                  </Typography>
+                                  <Typography variant="caption" display="block">
+                                    {competenceName}
+                                  </Typography>
+                                  <Typography variant="caption" display="block" sx={{ color: LEVEL_COLORS[level as keyof typeof LEVEL_COLORS] }}>
+                                    {LEVEL_LABELS[level as keyof typeof LEVEL_LABELS]}
+                                  </Typography>
+                                </Box>
+                              }>
                                 <Box
                                   sx={{
                                     width: 24,
