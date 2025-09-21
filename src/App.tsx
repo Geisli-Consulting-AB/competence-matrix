@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import './App.css'
-import { auth, googleProvider, subscribeToUserCompetences, saveUserCompetences, getAllUsersCompetences } from './firebase'
+import { auth, googleProvider, subscribeToUserCompetences, saveUserCompetences, getAllUsersCompetences, subscribeToUserCategories } from './firebase'
 import { onAuthStateChanged, signInWithPopup, signInWithRedirect, signOut, getRedirectResult } from 'firebase/auth'
 import type { User } from 'firebase/auth'
 import { Button, Container, Stack, Typography, Box, Paper, Tabs, Tab } from '@mui/material'
 import CompetenceTable from './components/CompetenceTable'
 import CompetenceOverview from './components/CompetenceOverview'
+import CategoryManagement from './components/CategoryManagement'
+import CompetenceMapping from './components/CompetenceMapping'
 
 type CompetenceRow = { id: string; name: string; level: number }
 
@@ -14,6 +16,7 @@ function App() {
   const [competences, setCompetences] = useState<CompetenceRow[]>([])
   const [currentTab, setCurrentTab] = useState(0)
   const [existingCompetences, setExistingCompetences] = useState<string[]>([])
+  const [categories, setCategories] = useState<{id: string; name: string; color: string}[]>([])
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => setUser(u))
@@ -26,18 +29,32 @@ function App() {
     }).catch((error) => {
       console.error('Redirect result error:', error)
     })
+
+    // Listen for custom tab switch events
+    const handleTabSwitch = (event: CustomEvent) => {
+      setCurrentTab(event.detail)
+    }
+    window.addEventListener('switchTab', handleTabSwitch as EventListener)
     
-    return () => unsub()
+    return () => {
+      unsub()
+      window.removeEventListener('switchTab', handleTabSwitch as EventListener)
+    }
   }, [])
 
   useEffect(() => {
     if (!user) {
       setCompetences([])
       setExistingCompetences([])
+      setCategories([])
       return
     }
-    const unsub = subscribeToUserCompetences(user.uid, (rows) => setCompetences(rows))
-    return () => unsub()
+    const unsubCompetences = subscribeToUserCompetences(user.uid, (rows) => setCompetences(rows))
+    const unsubCategories = subscribeToUserCategories(user.uid, (cats) => setCategories(cats))
+    return () => {
+      unsubCompetences()
+      unsubCategories()
+    }
   }, [user])
 
   // Fetch existing competences for autocomplete suggestions
@@ -87,7 +104,7 @@ function App() {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
+    <Container maxWidth={false} sx={{ py: 4, px: 2 }}>
       <Stack spacing={3}>
         {!user ? (
           <Box sx={{ textAlign: 'center' }}>
@@ -119,6 +136,7 @@ function App() {
                 onChange={(_, newValue) => setCurrentTab(newValue)}
               >
                 <Tab label="Team Overview" />
+                <Tab label="Manage Competences" />
                 <Tab label="My Competences" />
               </Tabs>
               <Button variant="outlined" color="primary" onClick={handleLogout} sx={{ mr: 2 }}>
@@ -131,6 +149,16 @@ function App() {
                 <CompetenceOverview />
               )}
               {currentTab === 1 && (
+                <Stack spacing={4}>
+                  <CategoryManagement existingCompetences={existingCompetences} user={user} />
+                  <CompetenceMapping 
+                    existingCompetences={existingCompetences} 
+                    categories={categories}
+                    user={user}
+                  />
+                </Stack>
+              )}
+              {currentTab === 2 && (
                 <>
                   <Typography variant="h6" gutterBottom>
                     My Competences

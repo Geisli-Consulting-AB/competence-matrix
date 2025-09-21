@@ -9,19 +9,20 @@ import {
   Paper,
   Typography,
   Box,
-  Chip,
   CircularProgress,
   Alert,
   Tooltip,
-  useTheme
+  useTheme,
+  Link
 } from '@mui/material'
 import LevelLegend from './LevelLegend'
 import ScrollControls from './ScrollControls'
 import CompetenceFilters from './CompetenceFilters'
-import { getAllUsersCompetences, auth } from '../firebase'
+import CategoryFilter from './CategoryFilter'
+import { getAllUsersCompetences, auth, subscribeToUserCategories } from '../firebase'
 import { onAuthStateChanged } from 'firebase/auth'
 import type { User } from 'firebase/auth'
-import type { CompetenceRow } from '../firebase'
+import type { CompetenceRow, Category } from '../firebase'
 
 type UserData = {
   userId: string
@@ -56,12 +57,14 @@ export default function CompetenceOverview() {
   const [users, setUsers] = useState<UserData[]>([])
   const [allCompetences, setAllCompetences] = useState<string[]>([])
   const [competenceMatrix, setCompetenceMatrix] = useState<CompetenceMatrix>({})
+  const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isTransposed, setIsTransposed] = useState(false) // false = competences on left, true = users on left
   const [selectedUsers, setSelectedUsers] = useState<string[]>([])
   const [selectedCompetences, setSelectedCompetences] = useState<string[]>([])
   const [selectedLevels, setSelectedLevels] = useState<number[]>([])
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [canScrollLeft, setCanScrollLeft] = useState(false)
   const [canScrollRight, setCanScrollRight] = useState(false)
   const tableContainerRef = useRef<HTMLDivElement>(null)
@@ -75,6 +78,7 @@ export default function CompetenceOverview() {
         setUsers([])
         setAllCompetences([])
         setCompetenceMatrix({})
+        setCategories([])
         setLoading(false)
         setError(null)
       }
@@ -121,14 +125,38 @@ export default function CompetenceOverview() {
     fetchData()
   }, [user])
 
+  // Subscribe to categories
+  useEffect(() => {
+    if (!user?.uid) {
+      setCategories([])
+      return
+    }
+
+    const unsubscribe = subscribeToUserCategories(user.uid, (cats) => {
+      setCategories(cats)
+    })
+
+    return () => unsubscribe()
+  }, [user?.uid])
+
   // Filter data based on selected filters
   const filteredUsers = selectedUsers.length > 0 
     ? users.filter(user => selectedUsers.includes(user.ownerName))
     : users
+
+  // Apply category filtering first
+  const categoryFilteredCompetences = selectedCategories.length > 0
+    ? allCompetences.filter(competenceName => {
+        return selectedCategories.some(categoryId => {
+          const category = categories.find(cat => cat.id === categoryId)
+          return category?.competences.includes(competenceName)
+        })
+      })
+    : allCompetences
     
   const filteredCompetences = selectedCompetences.length > 0
-    ? allCompetences.filter(comp => selectedCompetences.includes(comp))
-    : allCompetences
+    ? categoryFilteredCompetences.filter(comp => selectedCompetences.includes(comp))
+    : categoryFilteredCompetences
 
   // Apply level filtering by filtering out competences that don't have any users with selected levels
   const levelFilteredCompetences = selectedLevels.length > 0
@@ -151,32 +179,26 @@ export default function CompetenceOverview() {
       })
     : filteredUsers
 
-  const getCompetenceStats = (competenceName: string) => {
-    // Only count stats from filtered users
-    const relevantUserIds = filteredUsers.map(u => u.userId)
-    const levels = Object.entries(competenceMatrix[competenceName] || {})
-      .filter(([userId]) => relevantUserIds.includes(userId))
-      .map(([, level]) => level)
-    
-    const total = levels.length
-    if (total === 0) return { total: 0, average: 0, distribution: {} }
-    
-    const sum = levels.reduce((acc, level) => acc + level, 0)
-    const average = sum / total
-    
-    const distribution = levels.reduce((acc, level) => {
-      acc[level] = (acc[level] || 0) + 1
-      return acc
-    }, {} as { [level: number]: number })
-    
-    return { total, average, distribution }
-  }
 
   const clearFilters = () => {
     setSelectedUsers([])
     setSelectedCompetences([])
     setSelectedLevels([])
+    setSelectedCategories([])
   }
+
+  // Calculate unmapped competences
+  const getUnmappedCompetences = () => {
+    const mappedCompetences = new Set<string>()
+    categories.forEach(category => {
+      category.competences.forEach(competence => {
+        mappedCompetences.add(competence)
+      })
+    })
+    return allCompetences.filter(comp => !mappedCompetences.has(comp))
+  }
+
+  const unmappedCompetences = getUnmappedCompetences()
 
   // Check scroll position and update scroll button states
   const updateScrollButtons = () => {
@@ -268,18 +290,48 @@ export default function CompetenceOverview() {
         onClearFilters={clearFilters}
       />
 
-      <LevelLegend 
-        selectedLevels={selectedLevels}
-        onLevelsChange={setSelectedLevels}
-        scrollControls={
+      <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
+          <LevelLegend 
+            selectedLevels={selectedLevels}
+            onLevelsChange={setSelectedLevels}
+          />
+          <CategoryFilter
+            categories={categories}
+            selectedCategories={selectedCategories}
+            onCategoriesChange={setSelectedCategories}
+          />
+        </Box>
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1 }}>
+          {unmappedCompetences.length > 0 && (
+            <Link
+              href="#"
+              onClick={(e) => {
+                e.preventDefault()
+                // Switch to the "Manage Competences" tab (index 1)
+                const event = new CustomEvent('switchTab', { detail: 1 })
+                window.dispatchEvent(event)
+              }}
+              sx={{
+                color: theme.palette.warning.main,
+                textDecoration: 'none',
+                fontSize: '0.875rem',
+                '&:hover': {
+                  textDecoration: 'underline'
+                }
+              }}
+            >
+              {unmappedCompetences.length} unmapped competence{unmappedCompetences.length !== 1 ? 's' : ''}
+            </Link>
+          )}
           <ScrollControls 
             canScrollLeft={canScrollLeft}
             canScrollRight={canScrollRight}
             onScrollLeft={scrollLeft}
             onScrollRight={scrollRight}
           />
-        }
-      />
+        </Box>
+      </Box>
 
       <TableContainer 
         component={Paper} 
@@ -298,43 +350,33 @@ export default function CompetenceOverview() {
                       minWidth: 80, 
                       maxWidth: 120,
                       fontWeight: 'bold',
-                      backgroundColor: theme.palette.grey[800],
+                      backgroundColor: 'transparent',
                       color: theme.palette.common.white,
                       position: 'sticky',
                       left: 0,
                       zIndex: 3,
-                      fontSize: '0.7rem'
+                      fontSize: '0.7rem',
+                      verticalAlign: 'bottom',
+                      paddingLeft: '5px'
                     }}
                   >
                     Competence
                   </TableCell>
-                  <TableCell 
-                    align="center" 
-                    sx={{ 
-                      minWidth: 30,
-                      maxWidth: 40,
-                      fontWeight: 'bold',
-                      backgroundColor: theme.palette.grey[800],
-                      color: theme.palette.common.white,
-                      fontSize: '0.7rem'
-                    }}
-                  >
-                    Stats
-                  </TableCell>
                   {levelFilteredUsers.map(user => (
                     <TableCell 
                       key={user.userId} 
-                      align="center" 
+                      align="left" 
                       sx={{ 
-                        minWidth: 32,
-                        maxWidth: 45,
+                        minWidth: 24,
+                        maxWidth: 32,
                         fontWeight: 'bold',
-                        backgroundColor: theme.palette.grey[800],
+                        backgroundColor: 'transparent',
                         color: theme.palette.common.white,
                         writingMode: 'vertical-lr',
                         textOrientation: 'mixed',
-                        fontSize: '0.65rem',
-                        padding: '4px 1px'
+                        fontSize: '0.7rem',
+                        padding: '2px 1px',
+                        verticalAlign: 'bottom'
                       }}
                     >
                       {user.ownerName}
@@ -344,7 +386,6 @@ export default function CompetenceOverview() {
               </TableHead>
               <TableBody>
                 {levelFilteredCompetences.map(competenceName => {
-                  const stats = getCompetenceStats(competenceName)
                   return (
                     <TableRow key={competenceName} hover>
                       <TableCell 
@@ -369,7 +410,7 @@ export default function CompetenceOverview() {
                           borderRight: `1px solid ${theme.palette.divider}`,
                           fontSize: '0.7rem',
                           padding: '4px 6px',
-                          maxWidth: 120,
+                          maxWidth: 100,
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
@@ -383,35 +424,11 @@ export default function CompetenceOverview() {
                       >
                         {competenceName}
                       </TableCell>
-                      <TableCell align="center">
-                        <Tooltip title={
-                          <Box>
-                            <Typography variant="caption" display="block">
-                              {stats.total} team members
-                            </Typography>
-                            <Typography variant="caption" display="block">
-                              Avg: {stats.average.toFixed(1)}
-                            </Typography>
-                            {Object.entries(stats.distribution).map(([level, count]) => (
-                              <Typography key={level} variant="caption" display="block">
-                                Level {level}: {count}
-                              </Typography>
-                            ))}
-                          </Box>
-                        }>
-                          <Chip
-                            label={`${stats.total}`}
-                            size="small"
-                            variant="outlined"
-                            sx={{ minWidth: 40 }}
-                          />
-                        </Tooltip>
-                      </TableCell>
                       {levelFilteredUsers.map(user => {
                         const level = competenceMatrix[competenceName]?.[user.userId]
                         const shouldShowLevel = selectedLevels.length === 0 || (level && selectedLevels.includes(level))
                         return (
-                          <TableCell key={user.userId} align="center">
+                          <TableCell key={user.userId} align="center" sx={{ padding: '2px 1px' }}>
                             {level && shouldShowLevel ? (
                               <Tooltip title={
                                 <Box>
@@ -428,15 +445,15 @@ export default function CompetenceOverview() {
                               }>
                                 <Box
                                   sx={{
-                                    width: 24,
-                                    height: 24,
+                                    width: 20,
+                                    height: 20,
                                     borderRadius: '50%',
                                     backgroundColor: LEVEL_COLORS[level as keyof typeof LEVEL_COLORS],
                                     color: level === 1 ? 'black' : 'white',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    fontSize: '0.75rem',
+                                    fontSize: '0.7rem',
                                     fontWeight: 'bold',
                                     margin: '0 auto',
                                     cursor: 'pointer'
@@ -446,7 +463,7 @@ export default function CompetenceOverview() {
                                 </Box>
                               </Tooltip>
                             ) : (
-                              <Box sx={{ width: 24, height: 24, margin: '0 auto' }} />
+                              <Box sx={{ width: 20, height: 20, margin: '0 auto' }} />
                             )}
                           </TableCell>
                         )
@@ -466,43 +483,33 @@ export default function CompetenceOverview() {
                       minWidth: 80, 
                       maxWidth: 120,
                       fontWeight: 'bold',
-                      backgroundColor: theme.palette.grey[800],
+                      backgroundColor: 'transparent',
                       color: theme.palette.common.white,
                       position: 'sticky',
                       left: 0,
                       zIndex: 3,
-                      fontSize: '0.7rem'
+                      fontSize: '0.7rem',
+                      verticalAlign: 'bottom',
+                      paddingLeft: '5px'
                     }}
                   >
                     User
                   </TableCell>
-                  <TableCell 
-                    align="center" 
-                    sx={{ 
-                      minWidth: 30,
-                      maxWidth: 40,
-                      fontWeight: 'bold',
-                      backgroundColor: theme.palette.grey[800],
-                      color: theme.palette.common.white,
-                      fontSize: '0.7rem'
-                    }}
-                  >
-                    Stats
-                  </TableCell>
                   {levelFilteredCompetences.map(competenceName => (
                     <TableCell 
                       key={competenceName} 
-                      align="center" 
+                      align="left" 
                       sx={{ 
-                        minWidth: 32,
-                        maxWidth: 45,
+                        minWidth: 24,
+                        maxWidth: 32,
                         fontWeight: 'bold',
-                        backgroundColor: theme.palette.grey[800],
+                        backgroundColor: 'transparent',
                         color: theme.palette.common.white,
                         writingMode: 'vertical-lr',
                         textOrientation: 'mixed',
-                        fontSize: '0.65rem',
-                        padding: '4px 1px'
+                        fontSize: '0.7rem',
+                        padding: '2px 1px',
+                        verticalAlign: 'bottom'
                       }}
                     >
                       {competenceName}
@@ -512,11 +519,6 @@ export default function CompetenceOverview() {
               </TableHead>
               <TableBody>
                 {levelFilteredUsers.map(user => {
-                  const userCompetenceCount = user.competences.length
-                  const userAvgLevel = userCompetenceCount > 0 
-                    ? user.competences.reduce((sum, comp) => sum + comp.level, 0) / userCompetenceCount 
-                    : 0
-                  
                   return (
                     <TableRow key={user.userId} hover>
                       <TableCell 
@@ -541,7 +543,7 @@ export default function CompetenceOverview() {
                           borderRight: `1px solid ${theme.palette.divider}`,
                           fontSize: '0.7rem',
                           padding: '4px 6px',
-                          maxWidth: 120,
+                          maxWidth: 100,
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
@@ -555,30 +557,11 @@ export default function CompetenceOverview() {
                       >
                         {user.ownerName}
                       </TableCell>
-                      <TableCell align="center">
-                        <Tooltip title={
-                          <Box>
-                            <Typography variant="caption" display="block">
-                              {userCompetenceCount} competences
-                            </Typography>
-                            <Typography variant="caption" display="block">
-                              Avg: {userAvgLevel.toFixed(1)}
-                            </Typography>
-                          </Box>
-                        }>
-                          <Chip
-                            label={`${userCompetenceCount}`}
-                            size="small"
-                            variant="outlined"
-                            sx={{ minWidth: 40 }}
-                          />
-                        </Tooltip>
-                      </TableCell>
                       {levelFilteredCompetences.map(competenceName => {
                         const level = competenceMatrix[competenceName]?.[user.userId]
                         const shouldShowLevel = selectedLevels.length === 0 || (level && selectedLevels.includes(level))
                         return (
-                          <TableCell key={competenceName} align="center">
+                          <TableCell key={competenceName} align="center" sx={{ padding: '2px 1px' }}>
                             {level && shouldShowLevel ? (
                               <Tooltip title={
                                 <Box>
@@ -595,15 +578,15 @@ export default function CompetenceOverview() {
                               }>
                                 <Box
                                   sx={{
-                                    width: 24,
-                                    height: 24,
+                                    width: 20,
+                                    height: 20,
                                     borderRadius: '50%',
                                     backgroundColor: LEVEL_COLORS[level as keyof typeof LEVEL_COLORS],
                                     color: level === 1 ? 'black' : 'white',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    fontSize: '0.75rem',
+                                    fontSize: '0.7rem',
                                     fontWeight: 'bold',
                                     margin: '0 auto',
                                     cursor: 'pointer'
@@ -613,7 +596,7 @@ export default function CompetenceOverview() {
                                 </Box>
                               </Tooltip>
                             ) : (
-                              <Box sx={{ width: 24, height: 24, margin: '0 auto' }} />
+                              <Box sx={{ width: 20, height: 20, margin: '0 auto' }} />
                             )}
                           </TableCell>
                         )
