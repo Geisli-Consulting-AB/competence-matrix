@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   Table,
   TableBody,
@@ -22,6 +22,8 @@ import {
 } from '@mui/material'
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz'
 import ClearIcon from '@mui/icons-material/Clear'
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
+import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import { getAllUsersCompetences, auth } from '../firebase'
 import { onAuthStateChanged } from 'firebase/auth'
 import type { User } from 'firebase/auth'
@@ -65,6 +67,9 @@ export default function CompetenceOverview() {
   const [selectedUsers, setSelectedUsers] = useState<string[]>([])
   const [selectedCompetences, setSelectedCompetences] = useState<string[]>([])
   const [selectedLevels, setSelectedLevels] = useState<number[]>([])
+  const [canScrollLeft, setCanScrollLeft] = useState(false)
+  const [canScrollRight, setCanScrollRight] = useState(false)
+  const tableContainerRef = useRef<HTMLDivElement>(null)
 
   // Listen to authentication state changes
   useEffect(() => {
@@ -177,6 +182,48 @@ export default function CompetenceOverview() {
     setSelectedCompetences([])
     setSelectedLevels([])
   }
+
+  // Check scroll position and update scroll button states
+  const updateScrollButtons = () => {
+    if (tableContainerRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = tableContainerRef.current
+      setCanScrollLeft(scrollLeft > 0)
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1)
+    }
+  }
+
+  // Scroll functions
+  const scrollLeft = () => {
+    if (tableContainerRef.current) {
+      const scrollAmount = tableContainerRef.current.clientWidth * 0.9
+      tableContainerRef.current.scrollBy({ left: -scrollAmount, behavior: 'smooth' })
+      setTimeout(updateScrollButtons, 100)
+    }
+  }
+
+  const scrollRight = () => {
+    if (tableContainerRef.current) {
+      const scrollAmount = tableContainerRef.current.clientWidth * 0.9
+      tableContainerRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' })
+      setTimeout(updateScrollButtons, 100)
+    }
+  }
+
+  // Update scroll buttons when data changes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      updateScrollButtons()
+      setTimeout(updateScrollButtons, 500)
+    }, 100)
+    return () => clearTimeout(timer)
+  }, [levelFilteredUsers, levelFilteredCompetences, isTransposed])
+
+  // Also update on window resize
+  useEffect(() => {
+    const handleResize = () => updateScrollButtons()
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
 
   if (!user) {
@@ -318,10 +365,11 @@ export default function CompetenceOverview() {
       </Box>
 
       {/* Legend / Level Filters */}
-      <Box sx={{ mb: 3, display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
-        <Typography variant="body2" sx={{ mr: 1, color: 'text.secondary' }}>
-          Filter by level:
-        </Typography>
+      <Box sx={{ mb: 3, display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+          <Typography variant="body2" sx={{ mr: 1, color: 'text.secondary' }}>
+            Filter by level:
+          </Typography>
         {Object.entries(LEVEL_LABELS).map(([level, label]) => {
           const levelNum = parseInt(level)
           const isSelected = selectedLevels.includes(levelNum)
@@ -352,9 +400,61 @@ export default function CompetenceOverview() {
             />
           )
         })}
+        </Box>
+        
+        {/* Horizontal scroll controls */}
+        {(canScrollLeft || canScrollRight) && (
+          <Stack direction="row" spacing={1}>
+            <Tooltip title="Scroll left">
+              <IconButton 
+                onClick={scrollLeft}
+                disabled={!canScrollLeft}
+                size="small"
+                sx={{ 
+                  backgroundColor: theme.palette.grey[800],
+                  color: theme.palette.common.white,
+                  '&:hover': {
+                    backgroundColor: theme.palette.grey[700]
+                  },
+                  '&:disabled': {
+                    backgroundColor: theme.palette.grey[600],
+                    color: theme.palette.grey[400]
+                  }
+                }}
+              >
+                <ChevronLeftIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Scroll right">
+              <IconButton 
+                onClick={scrollRight}
+                disabled={!canScrollRight}
+                size="small"
+                sx={{ 
+                  backgroundColor: theme.palette.grey[800],
+                  color: theme.palette.common.white,
+                  '&:hover': {
+                    backgroundColor: theme.palette.grey[700]
+                  },
+                  '&:disabled': {
+                    backgroundColor: theme.palette.grey[600],
+                    color: theme.palette.grey[400]
+                  }
+                }}
+              >
+                <ChevronRightIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+        )}
       </Box>
 
-      <TableContainer component={Paper} sx={{ maxHeight: '70vh', overflow: 'auto' }}>
+      <TableContainer 
+        component={Paper} 
+        ref={tableContainerRef}
+        onScroll={updateScrollButtons}
+        sx={{ maxHeight: '70vh', overflow: 'auto' }}
+      >
           <Table stickyHeader size="small">
           {!isTransposed ? (
             // Original layout: Competences on left, Users on top
@@ -363,14 +463,14 @@ export default function CompetenceOverview() {
                 <TableRow>
                   <TableCell 
                     sx={{ 
-                      minWidth: 60, 
-                      maxWidth: 90,
+                      minWidth: 80, 
+                      maxWidth: 120,
                       fontWeight: 'bold',
                       backgroundColor: theme.palette.grey[800],
                       color: theme.palette.common.white,
                       position: 'sticky',
                       left: 0,
-                      zIndex: 2,
+                      zIndex: 3,
                       fontSize: '0.7rem'
                     }}
                   >
@@ -437,7 +537,7 @@ export default function CompetenceOverview() {
                           borderRight: `1px solid ${theme.palette.divider}`,
                           fontSize: '0.7rem',
                           padding: '4px 6px',
-                          maxWidth: 90,
+                          maxWidth: 120,
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
@@ -531,14 +631,14 @@ export default function CompetenceOverview() {
                 <TableRow>
                   <TableCell 
                     sx={{ 
-                      minWidth: 60, 
-                      maxWidth: 90,
+                      minWidth: 80, 
+                      maxWidth: 120,
                       fontWeight: 'bold',
                       backgroundColor: theme.palette.grey[800],
                       color: theme.palette.common.white,
                       position: 'sticky',
                       left: 0,
-                      zIndex: 2,
+                      zIndex: 3,
                       fontSize: '0.7rem'
                     }}
                   >
@@ -609,7 +709,7 @@ export default function CompetenceOverview() {
                           borderRight: `1px solid ${theme.palette.divider}`,
                           fontSize: '0.7rem',
                           padding: '4px 6px',
-                          maxWidth: 90,
+                          maxWidth: 120,
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
