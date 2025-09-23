@@ -17,7 +17,7 @@ const db = getFirestore(app)
 export type CompetenceRow = { id: string; name: string; level: number }
 
 // Sample competences covering various technology areas
-const sampleCompetences = [
+export const sampleCompetences = [
   // Frontend Technologies
   'React', 'Vue.js', 'Angular', 'JavaScript', 'TypeScript', 'HTML/CSS', 'Sass/SCSS',
   'Tailwind CSS', 'Material-UI', 'Bootstrap', 'Webpack', 'Vite', 'Next.js', 'Nuxt.js',

@@ -9,16 +9,9 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Button,
   Chip,
-  Alert,
   LinearProgress
 } from '@mui/material'
-import { Save as SaveIcon, Refresh as RefreshIcon } from '@mui/icons-material'
 import { saveUserCategories } from '../firebase'
 import type { User } from 'firebase/auth'
 
@@ -49,7 +42,6 @@ const CompetenceMapping: React.FC<CompetenceMappingProps> = ({
   const [unmappedCompetences, setUnmappedCompetences] = useState<UnmappedCompetence[]>([])
   const [mappings, setMappings] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
 
   // Get unmapped competences by filtering out those already in categories
   useEffect(() => {
@@ -121,34 +113,9 @@ const CompetenceMapping: React.FC<CompetenceMappingProps> = ({
       })
     } catch (error) {
       console.error('Failed to save competence to category:', error)
-      setSaveStatus('error')
     }
   }
 
-  const handleSaveMappings = async () => {
-    setSaveStatus('saving')
-    
-    // Simulate API call
-    setTimeout(() => {
-      console.log('Saving mappings:', mappings)
-      setSaveStatus('saved')
-      
-      // Reset status after 2 seconds
-      setTimeout(() => setSaveStatus('idle'), 2000)
-    }, 1000)
-  }
-
-  const handleRefresh = () => {
-    setLoading(true)
-    // Simulate refresh
-    setTimeout(() => {
-      setLoading(false)
-    }, 1000)
-  }
-
-  const getMappedCount = () => {
-    return Object.keys(mappings).filter(key => mappings[key]).length
-  }
 
   return (
     <Box>

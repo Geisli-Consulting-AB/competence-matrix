@@ -28,13 +28,11 @@ interface Category {
 }
 
 interface CategoryManagementProps {
-  existingCompetences: string[];
   user: User | null;
   competenceMatrix?: { [competenceName: string]: { [userId: string]: number } };
 }
 
 const CategoryManagement: React.FC<CategoryManagementProps> = ({
-  existingCompetences,
   user,
   competenceMatrix = {},
 }) => {

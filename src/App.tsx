@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import './App.css'
-import { auth, googleProvider, subscribeToUserCompetences, saveUserCompetences, getAllUsersCompetences, subscribeToUserCategories } from './firebase'
+import { auth, googleProvider, subscribeToUserCompetences, saveUserCompetences, getAllUsersCompetences, subscribeToUserCategories, type Category } from './firebase'
 import { onAuthStateChanged, signInWithPopup, signInWithRedirect, signOut, getRedirectResult } from 'firebase/auth'
 import type { User } from 'firebase/auth'
 import { Button, Container, Stack, Typography, Box, Paper, Tabs, Tab } from '@mui/material'
@@ -16,7 +16,7 @@ function App() {
   const [competences, setCompetences] = useState<CompetenceRow[]>([])
   const [currentTab, setCurrentTab] = useState(0)
   const [existingCompetences, setExistingCompetences] = useState<string[]>([])
-  const [categories, setCategories] = useState<{id: string; name: string; color: string}[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
   const [competenceMatrix, setCompetenceMatrix] = useState<{ [competenceName: string]: { [userId: string]: number } }>({})
 
   useEffect(() => {
@@ -165,7 +165,6 @@ function App() {
               {currentTab === 1 && (
                 <Stack spacing={4}>
                   <CategoryManagement 
-                    existingCompetences={existingCompetences} 
                     user={user} 
                     competenceMatrix={competenceMatrix}
                   />
