@@ -10,7 +10,9 @@ import {
   TableHead,
   TableRow,
   Chip,
-  LinearProgress
+  LinearProgress,
+  Card,
+  CardContent
 } from '@mui/material'
 import { saveUserCategories } from '../firebase'
 import type { User } from 'firebase/auth'
@@ -118,7 +120,7 @@ const CompetenceMapping: React.FC<CompetenceMappingProps> = ({
 
 
   return (
-    <Box>
+    <Box className="mobile-mapping-container">
       {/* Competences Table */}
       <Paper elevation={1}>
         {loading ? (
@@ -135,48 +137,87 @@ const CompetenceMapping: React.FC<CompetenceMappingProps> = ({
             </Typography>
           </Box>
         ) : (
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Unmapped Competence</TableCell>
-                  <TableCell>Assign to Category</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {unmappedCompetences.map((competence) => (
-                  <TableRow key={competence.name}>
-                    <TableCell>
-                      <Typography variant="body2" fontWeight="medium">
-                        {competence.name}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                        {categories.map((category) => (
-                          <Chip
-                            key={category.id}
-                            label={category.name}
-                            clickable
-                            variant={mappings[competence.name] === category.id ? "filled" : "outlined"}
-                            onClick={() => handleMappingChange(competence.name, category.id)}
-                            sx={{
-                              borderColor: category.color,
-                              color: mappings[competence.name] === category.id ? 'white' : category.color,
-                              backgroundColor: mappings[competence.name] === category.id ? category.color : 'transparent',
-                              '&:hover': {
-                                backgroundColor: mappings[competence.name] === category.id ? category.color : `${category.color}20`,
-                              }
-                            }}
-                          />
-                        ))}
-                      </Box>
-                    </TableCell>
+          <>
+            {/* Desktop Table View */}
+            <TableContainer className="mobile-hide-table">
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Unmapped Competence</TableCell>
+                    <TableCell>Assign to Category</TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                </TableHead>
+                <TableBody>
+                  {unmappedCompetences.map((competence) => (
+                    <TableRow key={competence.name}>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight="medium">
+                          {competence.name}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                          {categories.map((category) => (
+                            <Chip
+                              key={category.id}
+                              label={category.name}
+                              clickable
+                              variant={mappings[competence.name] === category.id ? "filled" : "outlined"}
+                              onClick={() => handleMappingChange(competence.name, category.id)}
+                              sx={{
+                                borderColor: category.color,
+                                color: mappings[competence.name] === category.id ? 'white' : category.color,
+                                backgroundColor: mappings[competence.name] === category.id ? category.color : 'transparent',
+                                '&:hover': {
+                                  backgroundColor: mappings[competence.name] === category.id ? category.color : `${category.color}20`,
+                                }
+                              }}
+                            />
+                          ))}
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+            
+            {/* Mobile Card View */}
+            <Box className="mobile-show-cards">
+              {unmappedCompetences.map((competence) => (
+                <Card key={competence.name} className="mobile-mapping-card" elevation={2}>
+                  <CardContent>
+                    <Typography variant="body2" fontWeight="medium" className="mobile-mapping-title">
+                      {competence.name}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
+                      Assign to Category:
+                    </Typography>
+                    <Box className="mobile-mapping-chips">
+                      {categories.map((category) => (
+                        <Chip
+                          key={category.id}
+                          label={category.name}
+                          clickable
+                          variant={mappings[competence.name] === category.id ? "filled" : "outlined"}
+                          onClick={() => handleMappingChange(competence.name, category.id)}
+                          className="mobile-mapping-chip"
+                          sx={{
+                            borderColor: category.color,
+                            color: mappings[competence.name] === category.id ? 'white' : category.color,
+                            backgroundColor: mappings[competence.name] === category.id ? category.color : 'transparent',
+                            '&:hover': {
+                              backgroundColor: mappings[competence.name] === category.id ? category.color : `${category.color}20`,
+                            }
+                          }}
+                        />
+                      ))}
+                    </Box>
+                  </CardContent>
+                </Card>
+              ))}
+            </Box>
+          </>
         )}
       </Paper>
     </Box>

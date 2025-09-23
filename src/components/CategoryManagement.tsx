@@ -199,6 +199,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
             }}
             size="small"
             sx={{ maxWidth: "40%", width: "40%" }}
+            className="mobile-category-input"
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 handleCreateCategory();
@@ -230,59 +231,63 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                     primary={
                       <Box
                         sx={{ display: "flex", alignItems: "center", gap: 1, justifyContent: "center" }}
+                        className="mobile-category-header"
                       >
                         <Typography
                           variant="h6"
                           sx={{ color: category.color, fontWeight: "bold" }}
+                          className="mobile-category-title"
                         >
                           {category.name} ({category.competences.length})
                         </Typography>
-                        <IconButton
-                          size="small"
-                          aria-label="expand"
-                          onClick={() => handleToggleExpanded(category.id)}
-                          sx={{
-                            color: category.color,
-                            p: 0.5,
-                            "&:hover": {
-                              backgroundColor: "rgba(255, 255, 255, 0.1)",
-                            },
-                          }}
-                        >
-                          {expandedCategories.has(category.id) ? (
-                            <ExpandLessIcon fontSize="small" />
-                          ) : (
-                            <ExpandMoreIcon fontSize="small" />
-                          )}
-                        </IconButton>
-                        <Tooltip
-                          title={
-                            category.competences.length > 0
-                              ? "Remove all competences before deleting this category"
-                              : "Delete category"
-                          }
-                        >
-                          <span>
-                            <IconButton
-                              size="small"
-                              aria-label="delete"
-                              onClick={() => handleDeleteCategory(category.id)}
-                              disabled={category.competences.length > 0}
-                              sx={{
-                                color: category.competences.length > 0 ? "grey.500" : category.color,
-                                p: 0.5,
-                                "&:hover": {
-                                  backgroundColor: "rgba(255, 255, 255, 0.1)",
-                                },
-                                "&.Mui-disabled": {
-                                  color: "grey.500",
-                                },
-                              }}
-                            >
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </span>
-                        </Tooltip>
+                        <Box className="mobile-category-actions">
+                          <IconButton
+                            size="small"
+                            aria-label="expand"
+                            onClick={() => handleToggleExpanded(category.id)}
+                            sx={{
+                              color: category.color,
+                              p: 0.5,
+                              "&:hover": {
+                                backgroundColor: "rgba(255, 255, 255, 0.1)",
+                              },
+                            }}
+                          >
+                            {expandedCategories.has(category.id) ? (
+                              <ExpandLessIcon fontSize="small" />
+                            ) : (
+                              <ExpandMoreIcon fontSize="small" />
+                            )}
+                          </IconButton>
+                          <Tooltip
+                            title={
+                              category.competences.length > 0
+                                ? "Remove all competences before deleting this category"
+                                : "Delete category"
+                            }
+                          >
+                            <span>
+                              <IconButton
+                                size="small"
+                                aria-label="delete"
+                                onClick={() => handleDeleteCategory(category.id)}
+                                disabled={category.competences.length > 0}
+                                sx={{
+                                  color: category.competences.length > 0 ? "grey.500" : category.color,
+                                  p: 0.5,
+                                  "&:hover": {
+                                    backgroundColor: "rgba(255, 255, 255, 0.1)",
+                                  },
+                                  "&.Mui-disabled": {
+                                    color: "grey.500",
+                                  },
+                                }}
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                        </Box>
                       </Box>
                     }
                   />
@@ -290,7 +295,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
 
                 {/* Competences management interface */}
                 {expandedCategories.has(category.id) && (
-                  <Box sx={{ pl: 2, pr: 2, pb: 2, width: "40%", mx: "auto" }}>
+                  <Box sx={{ pl: 2, pr: 2, pb: 2, width: "40%", mx: "auto" }} className="mobile-category-expanded">
                     <Paper
                       elevation={2}
                       sx={{
@@ -313,6 +318,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                             }
                           }}
                           size="small"
+                          className="mobile-competence-input"
                           sx={{
                             maxWidth: "100%",
                             width: "100%",
@@ -353,6 +359,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                             gap: 1,
                             mt: 1,
                           }}
+                          className="mobile-competence-chips"
                         >
                           {category.competences.map((comp) => (
                             <Box
@@ -374,6 +381,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                                   color: category.color,
                                   fontSize: "0.875rem",
                                 }}
+                                className="mobile-competence-chip"
                               >
                                 {comp}
                               </Typography>

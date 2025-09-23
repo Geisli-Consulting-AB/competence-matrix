@@ -1,13 +1,12 @@
 import { 
   Box, 
-  Stack, 
   Autocomplete, 
   TextField, 
   Chip, 
-  Button, 
   Tooltip, 
   IconButton, 
-  useTheme 
+  useTheme,
+  useMediaQuery 
 } from '@mui/material'
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz'
 import ClearIcon from '@mui/icons-material/Clear'
@@ -43,12 +42,18 @@ export default function CompetenceFilters({
   onClearFilters
 }: CompetenceFiltersProps) {
   const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
   
   const hasActiveFilters = selectedUsers.length > 0 || selectedCompetences.length > 0 || selectedLevels.length > 0
 
   return (
-    <Box sx={{ mb: 3 }}>
-      <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="center">
+    <Box sx={{ mb: 3, mt: '5px' }}>
+      <Box sx={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: 1, 
+        width: '100%'
+      }}>
         <Autocomplete
           multiple
           options={users.map(user => user.ownerName)}
@@ -57,10 +62,10 @@ export default function CompetenceFilters({
           renderInput={(params) => (
             <TextField
               {...params}
-              label="Filter Team Members"
+              label={isMobile ? "Team" : "Filter Team Members"}
               placeholder="Select team members..."
               size="small"
-              sx={{ minWidth: 250 }}
+              sx={{ width: isMobile ? 150 : 250 }}
             />
           )}
           renderTags={(value, getTagProps) =>
@@ -88,10 +93,10 @@ export default function CompetenceFilters({
           renderInput={(params) => (
             <TextField
               {...params}
-              label="Filter Competences"
+              label={isMobile ? "Competences" : "Filter Competences"}
               placeholder="Select competences..."
               size="small"
-              sx={{ minWidth: 250 }}
+              sx={{ width: isMobile ? 150 : 250 }}
             />
           )}
           renderTags={(value, getTagProps) =>
@@ -111,12 +116,11 @@ export default function CompetenceFilters({
             ))
           }
         />
-        {/* Control buttons on the right */}
-        <Stack direction="row" spacing={1} sx={{ ml: 'auto' }}>
+        {/* Control buttons */}
+        <Box sx={{ display: 'flex', gap: 0.5, marginLeft: 'auto' }}>
           <Tooltip title={isTransposed ? "Switch to show competences on left and users on top" : "Switch to show users on left and competences on top"}>
-            <Button 
+            <IconButton 
               onClick={onTransposeToggle}
-              startIcon={<SwapHorizIcon />}
               size="small"
               sx={{ 
                 backgroundColor: theme.palette.grey[800],
@@ -124,30 +128,36 @@ export default function CompetenceFilters({
                 '&:hover': {
                   backgroundColor: theme.palette.grey[700]
                 },
-                textTransform: 'none'
+                minWidth: 'auto',
+                width: isMobile ? 32 : 'auto',
+                height: isMobile ? 32 : 'auto'
               }}
             >
-              Transpose
-            </Button>
+              <SwapHorizIcon fontSize="small" />
+            </IconButton>
           </Tooltip>
           {hasActiveFilters && (
             <Tooltip title="Clear all filters">
               <IconButton 
                 onClick={onClearFilters}
+                size="small"
                 sx={{ 
                   backgroundColor: theme.palette.grey[800],
                   color: theme.palette.common.white,
                   '&:hover': {
                     backgroundColor: theme.palette.grey[700]
-                  }
+                  },
+                  minWidth: 'auto',
+                  width: isMobile ? 32 : 'auto',
+                  height: isMobile ? 32 : 'auto'
                 }}
               >
-                <ClearIcon />
+                <ClearIcon fontSize="small" />
               </IconButton>
             </Tooltip>
           )}
-        </Stack>
-      </Stack>
+        </Box>
+      </Box>
     </Box>
   )
 }

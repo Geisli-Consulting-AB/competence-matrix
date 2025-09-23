@@ -1,0 +1,218 @@
+/* Mobile-specific styles for Competence Matrix */
+
+/* Mobile breakpoints */
+@media (max-width: 768px) {
+  /* App container adjustments - 5px gap */
+  .MuiContainer-root {
+    padding-left: 5px !important;
+    padding-right: 5px !important;
+    padding-top: 5px !important;
+    padding-bottom: 5px !important;
+    margin: 0 !important;
+    max-width: none !important;
+  }
+
+  /* Keep minimal body margins on mobile */
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Keep minimal root padding */
+  #root {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Header and title adjustments */
+  .mobile-title {
+    font-size: 2rem !important;
+    margin-bottom: 1rem !important;
+  }
+
+  .mobile-image {
+    max-height: 200px !important;
+    margin-bottom: 1rem !important;
+  }
+
+  /* Tab navigation for mobile */
+  .mobile-tabs {
+    min-height: 48px;
+  }
+
+  .mobile-tabs .MuiTab-root {
+    min-width: 0 !important;
+    padding: 6px 8px !important;
+    font-size: 0.75rem !important;
+  }
+
+  .mobile-tab-panel {
+    padding: 8px !important;
+  }
+
+  /* Full screen mobile layout */
+  .mobile-full-screen {
+    width: 100vw !important;
+    min-height: 100vh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Adjust paper components for full screen */
+  .MuiPaper-root {
+    border-radius: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Login button */
+  .mobile-login-button {
+    width: 100% !important;
+    max-width: 280px !important;
+  }
+
+  /* Logout button positioning */
+  .mobile-logout-container {
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+  }
+
+  .mobile-logout-button {
+    margin: 0 8px 0 0 !important;
+    font-size: 0.75rem !important;
+    padding: 4px 8px !important;
+    min-width: auto !important;
+  }
+}
+
+/* Small mobile devices */
+@media (max-width: 480px) {
+  .mobile-title {
+    font-size: 1.5rem !important;
+  }
+
+  .mobile-tabs .MuiTab-root {
+    font-size: 0.7rem !important;
+    padding: 4px 6px !important;
+  }
+
+  .mobile-tab-panel {
+    padding: 4px !important;
+  }
+}
+
+/* Category Management mobile styles */
+@media (max-width: 768px) {
+  .mobile-category-input {
+    width: 90% !important;
+    max-width: 90% !important;
+  }
+
+  .mobile-category-expanded {
+    width: 95% !important;
+    margin: 0 auto !important;
+  }
+
+  .mobile-category-header {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  .mobile-category-title {
+    font-size: 1.1rem !important;
+    text-align: center !important;
+  }
+
+  .mobile-category-actions {
+    display: flex !important;
+    gap: 8px !important;
+  }
+
+  .mobile-competence-input {
+    width: 100% !important;
+  }
+
+  .mobile-competence-chips {
+    justify-content: center !important;
+  }
+
+  .mobile-competence-chip {
+    margin: 2px !important;
+    font-size: 0.75rem !important;
+  }
+}
+
+/* Competence Mapping mobile styles */
+@media (max-width: 768px) {
+  .mobile-mapping-container {
+    overflow-x: hidden !important;
+  }
+
+  .mobile-mapping-card {
+    margin-bottom: 16px !important;
+    padding: 12px !important;
+  }
+
+  .mobile-mapping-title {
+    font-size: 0.9rem !important;
+    font-weight: 600 !important;
+    margin-bottom: 8px !important;
+  }
+
+  .mobile-mapping-chips {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    justify-content: flex-start !important;
+  }
+
+  .mobile-mapping-chip {
+    font-size: 0.75rem !important;
+    height: 28px !important;
+  }
+
+  /* Hide table on mobile, show cards instead */
+  .mobile-hide-table {
+    display: none !important;
+  }
+
+  .mobile-show-cards {
+    display: block !important;
+  }
+}
+
+/* Desktop - hide mobile cards */
+@media (min-width: 769px) {
+  .mobile-show-cards {
+    display: none !important;
+  }
+}
+
+/* General mobile improvements */
+@media (max-width: 768px) {
+  /* Improve touch targets */
+  .MuiIconButton-root {
+    padding: 8px !important;
+  }
+
+  /* Better spacing for mobile */
+  .MuiPaper-root {
+    margin-bottom: 8px !important;
+  }
+
+  /* Improve text readability */
+  .MuiTypography-body2 {
+    font-size: 0.875rem !important;
+    line-height: 1.4 !important;
+  }
+
+  /* Better form inputs on mobile */
+  .MuiTextField-root {
+    margin-bottom: 8px !important;
+  }
+
+  .MuiOutlinedInput-root {
+    font-size: 0.875rem !important;
+  }
+}

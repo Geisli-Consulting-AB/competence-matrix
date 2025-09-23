@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import './App.css'
+import './mobile.css'
 import { auth, googleProvider, subscribeToUserCompetences, saveUserCompetences, getAllUsersCompetences, subscribeToUserCategories, type Category } from './firebase'
 import { onAuthStateChanged, signInWithPopup, signInWithRedirect, signOut, getRedirectResult } from 'firebase/auth'
 import type { User } from 'firebase/auth'
-import { Button, Container, Stack, Typography, Box, Paper, Tabs, Tab } from '@mui/material'
+import { Button, Container, Stack, Typography, Box, Paper, Tabs, Tab, useMediaQuery, useTheme } from '@mui/material'
 import CompetenceTable from './components/CompetenceTable'
 import CompetenceOverview from './components/CompetenceOverview'
 import CategoryManagement from './components/CategoryManagement'
@@ -12,6 +13,8 @@ import CompetenceMapping from './components/CompetenceMapping'
 type CompetenceRow = { id: string; name: string; level: number }
 
 function App() {
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
   const [user, setUser] = useState<User | null>(null)
   const [competences, setCompetences] = useState<CompetenceRow[]>([])
   const [currentTab, setCurrentTab] = useState(0)
@@ -118,17 +121,18 @@ function App() {
   }
 
   return (
-    <Container maxWidth={false} sx={{ py: 4, px: 2 }}>
-      <Stack spacing={3}>
+    <Container maxWidth={false} sx={{ py: isMobile ? '5px' : 4, px: isMobile ? '5px' : 2 }}>
+      <Stack spacing={isMobile ? 1 : 3}>
         {!user ? (
           <Box sx={{ textAlign: 'center' }}>
-            <Typography variant="h3" component="h1" gutterBottom sx={{ mb: 4 }}>
+            <Typography variant="h3" component="h1" gutterBottom sx={{ mb: 4 }} className="mobile-title">
               Competence Matrix
             </Typography>
             <Box sx={{ mb: 4, display: 'flex', justifyContent: 'center' }}>
               <img 
                 src="/matrix.png" 
                 alt="Competence Matrix" 
+                className="mobile-image"
                 style={{ 
                   maxWidth: '100%', 
                   height: 'auto', 
@@ -138,27 +142,28 @@ function App() {
                 }} 
               />
             </Box>
-            <Button variant="contained" color="primary" onClick={handleLogin}>
+            <Button variant="contained" color="primary" onClick={handleLogin} className="mobile-login-button">
               Login with Google
             </Button>
           </Box>
         ) : (
           <Paper elevation={1} sx={{ width: '100%' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: 1, borderColor: 'divider' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: 1, borderColor: 'divider' }} className="mobile-logout-container">
               <Tabs 
                 value={currentTab} 
                 onChange={(_, newValue) => setCurrentTab(newValue)}
+                className="mobile-tabs"
               >
-                <Tab label="Team Overview" />
-                <Tab label="Manage Competences" />
+                <Tab label={isMobile ? "Overview" : "Team Overview"} />
+                <Tab label={isMobile ? "Manage" : "Manage Competences"} />
                 <Tab label="My Competences" />
               </Tabs>
-              <Button variant="outlined" color="primary" onClick={handleLogout} sx={{ mr: 2 }}>
+              <Button variant="outlined" color="primary" onClick={handleLogout} sx={{ mr: 2 }} className="mobile-logout-button">
                 Logout
               </Button>
             </Box>
             
-            <Box sx={{ p: 2 }}>
+            <Box sx={{ p: 2 }} className="mobile-tab-panel">
               {currentTab === 0 && (
                 <CompetenceOverview />
               )}
