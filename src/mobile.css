@@ -215,4 +215,57 @@
   .MuiOutlinedInput-root {
     font-size: 0.875rem !important;
   }
+
+  /* Filter row layout on mobile */
+  .mobile-filter-row {
+    gap: 8px !important;
+    flex-wrap: wrap !important; /* allow items to wrap so only two sit per row */
+  }
+
+  /* Reduce margin-bottom of upper filter wrapper on mobile */
+  .mobile-filter-wrapper-upper {
+    margin-bottom: 0px !important;
+  }
+
+  /* Reduce margin-bottom of lower filter wrapper on mobile */
+  .mobile-filter-wrapper-lower {
+    margin-bottom: 0px !important;
+  }
+
+  /* Unified filter styling - both lines use identical structure now */
+  .mobile-filter-row > * {
+    width: 50% !important;
+    flex: 1 !important;
+    max-width: 50% !important;
+  }
+
+  /* Actions area (e.g., Clear button) should span full width and align to the right */
+  .mobile-filter-actions {
+    width: 100% !important;
+    max-width: 100% !important;
+    display: flex !important;
+    justify-content: flex-end !important;
+  }
+
+  /* Force all Autocomplete components to take full width of their container */
+  .mobile-filter-row .MuiAutocomplete-root {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Force all TextField components to take full width */
+  .mobile-filter-row .MuiTextField-root {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Override any hardcoded widths in nested components */
+  .mobile-filter-row .MuiTextField-root .MuiInputBase-root {
+    width: 100% !important;
+  }
+
+  .mobile-filter-row .MuiPaper-root {
+    width: 100% !important;
+    margin: 0 !important;
+  }
 }

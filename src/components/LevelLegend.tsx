@@ -1,4 +1,4 @@
-import { Box, Typography, Chip, useTheme } from '@mui/material'
+import { Box, Typography, Chip, useTheme, Autocomplete, TextField, useMediaQuery } from '@mui/material'
 
 const LEVEL_COLORS = {
   1: '#ffeb3b', // Want to learn - Yellow
@@ -21,6 +21,7 @@ interface LevelLegendProps {
 
 export default function LevelLegend({ selectedLevels, onLevelsChange }: LevelLegendProps) {
   const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
 
   const handleLevelToggle = (levelNum: number) => {
     if (selectedLevels.includes(levelNum)) {
@@ -30,6 +31,61 @@ export default function LevelLegend({ selectedLevels, onLevelsChange }: LevelLeg
     }
   }
 
+  if (isMobile) {
+    // Mobile: Select box
+    const levelOptions = Object.entries(LEVEL_LABELS).map(([level, label]) => ({
+      value: parseInt(level),
+      label: `${level}. ${label}`
+    }))
+
+    const selectedLevelLabels = selectedLevels.map(level => 
+      levelOptions.find(option => option.value === level)?.label || ''
+    ).filter(Boolean)
+
+    return (
+      <Autocomplete
+        multiple
+        options={levelOptions.map(option => option.label)}
+        value={selectedLevelLabels}
+        onChange={(_, newValue) => {
+          const newLevels = newValue.map(label => {
+            const option = levelOptions.find(opt => opt.label === label)
+            return option ? option.value : 0
+          }).filter(level => level > 0)
+          onLevelsChange(newLevels)
+        }}
+        renderInput={(params) => (
+          <TextField
+            {...params}
+            label="Levels"
+            size="small"
+            sx={{ width: '100%' }}
+          />
+        )}
+        renderTags={(value, getTagProps) =>
+          value.map((option, index) => {
+            const levelNum = levelOptions.find(opt => opt.label === option)?.value || 1
+            return (
+              <Chip
+                label={option}
+                size="small"
+                {...getTagProps({ index })}
+                sx={{
+                  backgroundColor: LEVEL_COLORS[levelNum as keyof typeof LEVEL_COLORS],
+                  color: theme.palette.getContrastText(LEVEL_COLORS[levelNum as keyof typeof LEVEL_COLORS]),
+                  '& .MuiChip-deleteIcon': {
+                    color: theme.palette.getContrastText(LEVEL_COLORS[levelNum as keyof typeof LEVEL_COLORS])
+                  }
+                }}
+              />
+            )
+          })
+        }
+      />
+    )
+  }
+
+  // Desktop: Original chip-based design
   return (
     <Box sx={{ 
       mb: 3, 

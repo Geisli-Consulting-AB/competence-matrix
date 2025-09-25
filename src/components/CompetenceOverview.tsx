@@ -12,9 +12,11 @@ import {
   CircularProgress,
   Alert,
   Tooltip,
+  IconButton,
   useTheme,
-  Link
+  useMediaQuery
 } from '@mui/material'
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz'
 import LevelLegend from './LevelLegend'
 import ScrollControls from './ScrollControls'
 import CompetenceFilters from './CompetenceFilters'
@@ -53,6 +55,7 @@ const LEVEL_LABELS = {
 
 export default function CompetenceOverview() {
   const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
   const [user, setUser] = useState<User | null>(null)
   const [users, setUsers] = useState<UserData[]>([])
   const [allCompetences, setAllCompetences] = useState<string[]>([])
@@ -180,25 +183,7 @@ export default function CompetenceOverview() {
     : filteredUsers
 
 
-  const clearFilters = () => {
-    setSelectedUsers([])
-    setSelectedCompetences([])
-    setSelectedLevels([])
-    setSelectedCategories([])
-  }
-
-  // Calculate unmapped competences
-  const getUnmappedCompetences = () => {
-    const mappedCompetences = new Set<string>()
-    categories.forEach(category => {
-      category.competences.forEach(competence => {
-        mappedCompetences.add(competence)
-      })
-    })
-    return allCompetences.filter(comp => !mappedCompetences.has(comp))
-  }
-
-  const unmappedCompetences = getUnmappedCompetences()
+  // Clear button removed from UI; keep individual setters for external triggers if needed.
 
   // Check scroll position and update scroll button states
   const updateScrollButtons = () => {
@@ -243,6 +228,8 @@ export default function CompetenceOverview() {
   }, [])
 
 
+
+
   if (!user) {
     return (
       <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" minHeight="400px">
@@ -283,15 +270,17 @@ export default function CompetenceOverview() {
         selectedUsers={selectedUsers}
         selectedCompetences={selectedCompetences}
         selectedLevels={selectedLevels}
-        isTransposed={isTransposed}
         onUsersChange={setSelectedUsers}
         onCompetencesChange={setSelectedCompetences}
-        onTransposeToggle={() => setIsTransposed(!isTransposed)}
-        onClearFilters={clearFilters}
       />
 
-      <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start', justifyContent: 'space-between' }}>
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
+      <Box sx={{ mb: 0, mt: '0px' }} className="mobile-filter-wrapper-lower">
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 1, 
+          width: '100%'
+        }} className="mobile-filter-row">
           <LevelLegend 
             selectedLevels={selectedLevels}
             onLevelsChange={setSelectedLevels}
@@ -302,35 +291,16 @@ export default function CompetenceOverview() {
             onCategoriesChange={setSelectedCategories}
           />
         </Box>
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1 }}>
-          {unmappedCompetences.length > 0 && (
-            <Link
-              href="#"
-              onClick={(e) => {
-                e.preventDefault()
-                // Switch to the "Manage Competences" tab (index 1)
-                const event = new CustomEvent('switchTab', { detail: 1 })
-                window.dispatchEvent(event)
-              }}
-              sx={{
-                color: theme.palette.warning.main,
-                textDecoration: 'none',
-                fontSize: '0.875rem',
-                '&:hover': {
-                  textDecoration: 'underline'
-                }
-              }}
-            >
-              {unmappedCompetences.length} unmapped competence{unmappedCompetences.length !== 1 ? 's' : ''}
-            </Link>
-          )}
-          <ScrollControls 
-            canScrollLeft={canScrollLeft}
-            canScrollRight={canScrollRight}
-            onScrollLeft={scrollLeft}
-            onScrollRight={scrollRight}
-          />
-        </Box>
+        {!isMobile && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1 }}>
+            <ScrollControls 
+              canScrollLeft={canScrollLeft}
+              canScrollRight={canScrollRight}
+              onScrollLeft={scrollLeft}
+              onScrollRight={scrollRight}
+            />
+          </Box>
+        )}
       </Box>
 
       <TableContainer 
@@ -357,11 +327,30 @@ export default function CompetenceOverview() {
                       top: 0,
                       zIndex: 10,
                       fontSize: '0.7rem',
-                      verticalAlign: 'bottom',
+                      verticalAlign: 'middle',
                       paddingLeft: '5px'
                     }}
                   >
-                    Competence
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                      <Tooltip title={isTransposed ? "Switch to show competences on left and users on top" : "Switch to show users on left and competences on top"}>
+                        <IconButton 
+                          onClick={() => setIsTransposed(!isTransposed)}
+                          size="small"
+                          sx={{ 
+                            backgroundColor: theme.palette.grey[800],
+                            color: theme.palette.common.white,
+                            '&:hover': {
+                              backgroundColor: theme.palette.grey[700]
+                            },
+                            minWidth: 'auto',
+                            width: isMobile ? 32 : 28,
+                            height: isMobile ? 32 : 28
+                          }}
+                        >
+                          <SwapHorizIcon sx={{ fontSize: isMobile ? '18px' : '16px' }} />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
                   </TableCell>
                   {levelFilteredUsers.map(user => (
                     <TableCell 
@@ -497,11 +486,30 @@ export default function CompetenceOverview() {
                       top: 0,
                       zIndex: 10,
                       fontSize: '0.7rem',
-                      verticalAlign: 'bottom',
+                      verticalAlign: 'middle',
                       paddingLeft: '5px'
                     }}
                   >
-                    User
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                      <Tooltip title={isTransposed ? "Switch to show competences on left and users on top" : "Switch to show users on left and competences on top"}>
+                        <IconButton 
+                          onClick={() => setIsTransposed(!isTransposed)}
+                          size="small"
+                          sx={{ 
+                            backgroundColor: theme.palette.grey[800],
+                            color: theme.palette.common.white,
+                            '&:hover': {
+                              backgroundColor: theme.palette.grey[700]
+                            },
+                            minWidth: 'auto',
+                            width: isMobile ? 32 : 28,
+                            height: isMobile ? 32 : 28
+                          }}
+                        >
+                          <SwapHorizIcon sx={{ fontSize: isMobile ? '18px' : '16px' }} />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
                   </TableCell>
                   {levelFilteredCompetences.map(competenceName => (
                     <TableCell 

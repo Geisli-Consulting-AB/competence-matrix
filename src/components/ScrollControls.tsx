@@ -17,9 +17,10 @@ export default function ScrollControls({
 }: ScrollControlsProps) {
   const theme = useTheme()
 
-  if (!canScrollLeft && !canScrollRight) {
-    return null
-  }
+  // Always show scroll controls for debugging
+  // if (!canScrollLeft && !canScrollRight) {
+  //   return null
+  // }
 
   return (
     <Stack direction="row" spacing={1}>

@@ -3,13 +3,9 @@ import {
   Autocomplete, 
   TextField, 
   Chip, 
-  Tooltip, 
-  IconButton, 
   useTheme,
   useMediaQuery 
 } from '@mui/material'
-import SwapHorizIcon from '@mui/icons-material/SwapHoriz'
-import ClearIcon from '@mui/icons-material/Clear'
 
 interface CompetenceFiltersProps {
   // Filter data
@@ -20,13 +16,10 @@ interface CompetenceFiltersProps {
   selectedUsers: string[]
   selectedCompetences: string[]
   selectedLevels: number[]
-  isTransposed: boolean
   
   // Filter handlers
   onUsersChange: (users: string[]) => void
   onCompetencesChange: (competences: string[]) => void
-  onTransposeToggle: () => void
-  onClearFilters: () => void
 }
 
 export default function CompetenceFilters({
@@ -34,26 +27,21 @@ export default function CompetenceFilters({
   allCompetences,
   selectedUsers,
   selectedCompetences,
-  selectedLevels,
-  isTransposed,
+  selectedLevels: _selectedLevels,
   onUsersChange,
-  onCompetencesChange,
-  onTransposeToggle,
-  onClearFilters
+  onCompetencesChange
 }: CompetenceFiltersProps) {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
-  
-  const hasActiveFilters = selectedUsers.length > 0 || selectedCompetences.length > 0 || selectedLevels.length > 0
 
   return (
-    <Box sx={{ mb: 3, mt: '5px' }}>
+    <Box sx={{ mb: 3, mt: '5px' }} className="mobile-filter-wrapper-upper">
       <Box sx={{ 
         display: 'flex', 
         alignItems: 'center', 
         gap: 1, 
         width: '100%'
-      }}>
+      }} className="mobile-filter-row">
         <Autocomplete
           multiple
           options={users.map(user => user.ownerName)}
@@ -63,7 +51,6 @@ export default function CompetenceFilters({
             <TextField
               {...params}
               label={isMobile ? "Team" : "Filter Team Members"}
-              placeholder="Select team members..."
               size="small"
               sx={{ width: isMobile ? 150 : 250 }}
             />
@@ -94,7 +81,6 @@ export default function CompetenceFilters({
             <TextField
               {...params}
               label={isMobile ? "Competences" : "Filter Competences"}
-              placeholder="Select competences..."
               size="small"
               sx={{ width: isMobile ? 150 : 250 }}
             />
@@ -116,47 +102,7 @@ export default function CompetenceFilters({
             ))
           }
         />
-        {/* Control buttons */}
-        <Box sx={{ display: 'flex', gap: 0.5, marginLeft: 'auto' }}>
-          <Tooltip title={isTransposed ? "Switch to show competences on left and users on top" : "Switch to show users on left and competences on top"}>
-            <IconButton 
-              onClick={onTransposeToggle}
-              size="small"
-              sx={{ 
-                backgroundColor: theme.palette.grey[800],
-                color: theme.palette.common.white,
-                '&:hover': {
-                  backgroundColor: theme.palette.grey[700]
-                },
-                minWidth: 'auto',
-                width: isMobile ? 32 : 'auto',
-                height: isMobile ? 32 : 'auto'
-              }}
-            >
-              <SwapHorizIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-          {hasActiveFilters && (
-            <Tooltip title="Clear all filters">
-              <IconButton 
-                onClick={onClearFilters}
-                size="small"
-                sx={{ 
-                  backgroundColor: theme.palette.grey[800],
-                  color: theme.palette.common.white,
-                  '&:hover': {
-                    backgroundColor: theme.palette.grey[700]
-                  },
-                  minWidth: 'auto',
-                  width: isMobile ? 32 : 'auto',
-                  height: isMobile ? 32 : 'auto'
-                }}
-              >
-                <ClearIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          )}
-        </Box>
+        {/* Control buttons removed as per request */}
       </Box>
     </Box>
   )

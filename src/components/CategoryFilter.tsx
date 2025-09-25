@@ -3,7 +3,10 @@ import {
   Box,
   Typography,
   Chip,
-  useTheme
+  useTheme,
+  Autocomplete,
+  TextField,
+  useMediaQuery
 } from '@mui/material'
 import type { Category } from '../firebase'
 
@@ -19,6 +22,11 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({
   onCategoriesChange
 }) => {
   const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
+
+  if (categories.length === 0) {
+    return null
+  }
 
   const handleCategoryClick = (categoryId: string) => {
     if (selectedCategories.includes(categoryId)) {
@@ -28,10 +36,57 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({
     }
   }
 
-  if (categories.length === 0) {
-    return null
+  if (isMobile) {
+    // Mobile: Select box
+    const selectedCategoryNames = selectedCategories.map(categoryId => {
+      const category = categories.find(cat => cat.id === categoryId)
+      return category ? category.name : ''
+    }).filter(Boolean)
+
+    return (
+      <Autocomplete
+        multiple
+        options={categories.map(category => category.name)}
+        value={selectedCategoryNames}
+        onChange={(_, newValue) => {
+          const newCategoryIds = newValue.map(name => {
+            const category = categories.find(cat => cat.name === name)
+            return category ? category.id : ''
+          }).filter(Boolean)
+          onCategoriesChange(newCategoryIds)
+        }}
+        renderInput={(params) => (
+          <TextField
+            {...params}
+            label="Categories"
+            size="small"
+            sx={{ width: '100%' }}
+          />
+        )}
+        renderTags={(value, getTagProps) =>
+          value.map((option, index) => {
+            const category = categories.find(cat => cat.name === option)
+            return (
+              <Chip
+                label={option}
+                size="small"
+                {...getTagProps({ index })}
+                sx={{
+                  backgroundColor: category?.color || theme.palette.grey[700],
+                  color: category ? theme.palette.getContrastText(category.color) : theme.palette.common.white,
+                  '& .MuiChip-deleteIcon': {
+                    color: category ? theme.palette.getContrastText(category.color) : theme.palette.common.white
+                  }
+                }}
+              />
+            )
+          })
+        }
+      />
+    )
   }
 
+  // Desktop: Original chip-based design
   return (
     <Box sx={{ 
       mb: 3, 
