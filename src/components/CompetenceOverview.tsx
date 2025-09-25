@@ -303,12 +303,355 @@ export default function CompetenceOverview() {
         )}
       </Box>
 
-      <TableContainer 
-        component={Paper} 
-        ref={tableContainerRef}
-        onScroll={updateScrollButtons}
-        sx={{ maxHeight: '70vh', overflow: 'auto', backgroundColor: '#121212' }}
-      >
+      {/* Mobile custom layout */}
+      {isMobile ? (
+        <Box sx={{ 
+          backgroundColor: '#121212', 
+          borderRadius: 1, 
+          overflowX: 'auto',
+          overflowY: 'hidden',
+          width: '100%',
+          maxWidth: '100vw'
+        }}>
+          <Box sx={{
+            width: !isTransposed 
+              ? `${80 + (levelFilteredUsers.length * 40)}px`
+              : `${80 + (levelFilteredCompetences.length * 40)}px`,
+            minWidth: '100%'
+          }}>
+            {/* Mobile header row */}
+            <Box sx={{ 
+              display: 'flex', 
+              backgroundColor: '#121212',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
+              minHeight: '120px'
+            }}>
+              {/* Corner cell */}
+              <Box sx={{ 
+                width: '80px', 
+                minWidth: '80px',
+                backgroundColor: '#121212',
+                borderRight: '1px solid rgba(255, 255, 255, 0.12)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '8px'
+              }}>
+                <Tooltip title={isTransposed ? "Switch to show competences on left and users on top" : "Switch to show users on left and competences on top"}>
+                  <IconButton 
+                    onClick={() => setIsTransposed(!isTransposed)}
+                    size="small"
+                    sx={{ 
+                      backgroundColor: theme.palette.grey[800],
+                      color: theme.palette.common.white,
+                      '&:hover': {
+                        backgroundColor: theme.palette.grey[700]
+                      },
+                      width: 32,
+                      height: 32
+                    }}
+                  >
+                    <SwapHorizIcon sx={{ fontSize: '18px' }} />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+              
+              {/* User headers */}
+            {!isTransposed ? (
+              levelFilteredUsers.map(user => (
+                <Box 
+                  key={user.userId}
+                  sx={{ 
+                    width: '40px', 
+                    minWidth: '40px',
+                    backgroundColor: '#121212',
+                    borderRight: '1px solid rgba(255, 255, 255, 0.12)',
+                    display: 'flex',
+                    alignItems: 'flex-end',
+                    justifyContent: 'center',
+                    padding: '8px 4px',
+                    writingMode: 'vertical-lr',
+                    textOrientation: 'mixed'
+                  }}
+                >
+                  <Typography 
+                    variant="caption" 
+                    sx={{ 
+                      color: theme.palette.common.white,
+                      fontWeight: 'bold',
+                      fontSize: '0.7rem',
+                      writingMode: 'vertical-lr',
+                      textOrientation: 'mixed',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {user.ownerName}
+                  </Typography>
+                </Box>
+              ))
+            ) : (
+              levelFilteredCompetences.map(competenceName => (
+                <Box 
+                  key={competenceName}
+                  sx={{ 
+                    width: '40px', 
+                    minWidth: '40px',
+                    backgroundColor: '#121212',
+                    borderRight: '1px solid rgba(255, 255, 255, 0.12)',
+                    display: 'flex',
+                    alignItems: 'flex-end',
+                    justifyContent: 'center',
+                    padding: '8px 4px',
+                    writingMode: 'vertical-lr',
+                    textOrientation: 'mixed'
+                  }}
+                >
+                  <Typography 
+                    variant="caption" 
+                    sx={{ 
+                      color: theme.palette.common.white,
+                      fontWeight: 'bold',
+                      fontSize: '0.7rem',
+                      writingMode: 'vertical-lr',
+                      textOrientation: 'mixed',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {competenceName}
+                  </Typography>
+                </Box>
+              ))
+            )}
+            </Box>
+            
+            {/* Mobile data rows */}
+            <Box sx={{ 
+              maxHeight: '60vh', 
+              overflowY: 'auto'
+            }}>
+            {!isTransposed ? (
+              levelFilteredCompetences.map(competenceName => (
+                <Box key={competenceName} sx={{ 
+                  display: 'flex',
+                  borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+                  '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.04)' }
+                }}>
+                  {/* Row header */}
+                  <Box 
+                    onClick={() => {
+                      if (selectedCompetences.includes(competenceName)) {
+                        setSelectedCompetences(selectedCompetences.filter(c => c !== competenceName))
+                      } else {
+                        setSelectedCompetences([...selectedCompetences, competenceName])
+                      }
+                    }}
+                    sx={{ 
+                      width: '80px',
+                      minWidth: '80px',
+                      backgroundColor: selectedCompetences.includes(competenceName) 
+                        ? theme.palette.primary.dark 
+                        : theme.palette.grey[900],
+                      borderRight: '1px solid rgba(255, 255, 255, 0.12)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '8px',
+                      cursor: 'pointer',
+                      '&:hover': {
+                        backgroundColor: selectedCompetences.includes(competenceName)
+                          ? theme.palette.primary.main
+                          : theme.palette.grey[800]
+                      }
+                    }}
+                  >
+                    <Typography 
+                      variant="caption" 
+                      sx={{ 
+                        color: theme.palette.common.white,
+                        fontSize: '0.7rem',
+                        fontWeight: 'medium',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      {competenceName}
+                    </Typography>
+                  </Box>
+                  
+                  {/* Data cells */}
+                  {levelFilteredUsers.map(user => {
+                    const level = competenceMatrix[competenceName]?.[user.userId]
+                    const shouldShowLevel = selectedLevels.length === 0 || (level && selectedLevels.includes(level))
+                    return (
+                      <Box 
+                        key={user.userId}
+                        sx={{ 
+                          width: '40px',
+                          minWidth: '40px',
+                          height: '40px',
+                          borderRight: '1px solid rgba(255, 255, 255, 0.12)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        {level && shouldShowLevel ? (
+                          <Tooltip title={
+                            <Box>
+                              <Typography variant="caption" display="block" sx={{ fontWeight: 'bold' }}>
+                                {user.ownerName}
+                              </Typography>
+                              <Typography variant="caption" display="block">
+                                {competenceName}
+                              </Typography>
+                              <Typography variant="caption" display="block" sx={{ color: LEVEL_COLORS[level as keyof typeof LEVEL_COLORS] }}>
+                                {LEVEL_LABELS[level as keyof typeof LEVEL_LABELS]}
+                              </Typography>
+                            </Box>
+                          }>
+                            <Box
+                              sx={{
+                                width: 20,
+                                height: 20,
+                                borderRadius: '50%',
+                                backgroundColor: LEVEL_COLORS[level as keyof typeof LEVEL_COLORS],
+                                color: level === 1 ? 'black' : 'white',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '0.7rem',
+                                fontWeight: 'bold',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              {level}
+                            </Box>
+                          </Tooltip>
+                        ) : (
+                          <Box sx={{ width: 20, height: 20 }} />
+                        )}
+                      </Box>
+                    )
+                  })}
+                </Box>
+              ))
+            ) : (
+              levelFilteredUsers.map(user => (
+                <Box key={user.userId} sx={{ 
+                  display: 'flex',
+                  borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+                  '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.04)' }
+                }}>
+                  {/* Row header */}
+                  <Box 
+                    onClick={() => {
+                      if (selectedUsers.includes(user.ownerName)) {
+                        setSelectedUsers(selectedUsers.filter(u => u !== user.ownerName))
+                      } else {
+                        setSelectedUsers([...selectedUsers, user.ownerName])
+                      }
+                    }}
+                    sx={{ 
+                      width: '80px',
+                      minWidth: '80px',
+                      backgroundColor: selectedUsers.includes(user.ownerName) 
+                        ? theme.palette.primary.dark 
+                        : theme.palette.grey[900],
+                      borderRight: '1px solid rgba(255, 255, 255, 0.12)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '8px',
+                      cursor: 'pointer',
+                      '&:hover': {
+                        backgroundColor: selectedUsers.includes(user.ownerName)
+                          ? theme.palette.primary.main
+                          : theme.palette.grey[800]
+                      }
+                    }}
+                  >
+                    <Typography 
+                      variant="caption" 
+                      sx={{ 
+                        color: theme.palette.common.white,
+                        fontSize: '0.7rem',
+                        fontWeight: 'medium',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      {user.ownerName}
+                    </Typography>
+                  </Box>
+                  
+                  {/* Data cells */}
+                  {levelFilteredCompetences.map(competenceName => {
+                    const level = competenceMatrix[competenceName]?.[user.userId]
+                    const shouldShowLevel = selectedLevels.length === 0 || (level && selectedLevels.includes(level))
+                    return (
+                      <Box 
+                        key={competenceName}
+                        sx={{ 
+                          width: '40px',
+                          minWidth: '40px',
+                          height: '40px',
+                          borderRight: '1px solid rgba(255, 255, 255, 0.12)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        {level && shouldShowLevel ? (
+                          <Tooltip title={
+                            <Box>
+                              <Typography variant="caption" display="block" sx={{ fontWeight: 'bold' }}>
+                                {user.ownerName}
+                              </Typography>
+                              <Typography variant="caption" display="block">
+                                {competenceName}
+                              </Typography>
+                              <Typography variant="caption" display="block" sx={{ color: LEVEL_COLORS[level as keyof typeof LEVEL_COLORS] }}>
+                                {LEVEL_LABELS[level as keyof typeof LEVEL_LABELS]}
+                              </Typography>
+                            </Box>
+                          }>
+                            <Box
+                              sx={{
+                                width: 20,
+                                height: 20,
+                                borderRadius: '50%',
+                                backgroundColor: LEVEL_COLORS[level as keyof typeof LEVEL_COLORS],
+                                color: level === 1 ? 'black' : 'white',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '0.7rem',
+                                fontWeight: 'bold',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              {level}
+                            </Box>
+                          </Tooltip>
+                        ) : (
+                          <Box sx={{ width: 20, height: 20 }} />
+                        )}
+                      </Box>
+                    )
+                  })}
+                </Box>
+              ))
+            )}
+            </Box>
+          </Box>
+        </Box>
+      ) : (
+        <TableContainer 
+          component={Paper} 
+          ref={tableContainerRef}
+          onScroll={updateScrollButtons}
+          sx={{ maxHeight: '70vh', overflow: 'auto', backgroundColor: '#121212' }}
+        >
           <Table size="small">
           {!isTransposed ? (
             // Original layout: Competences on left, Users on top
@@ -355,10 +698,12 @@ export default function CompetenceOverview() {
                   {levelFilteredUsers.map(user => (
                     <TableCell 
                       key={user.userId} 
-                      align="left" 
+                      align="left"
+                      className="vertical-header-cell"
                       sx={{ 
-                        minWidth: 24,
-                        maxWidth: 32,
+                        minWidth: 40,
+                        maxWidth: 40,
+                        width: 40,
                         fontWeight: 'bold',
                         backgroundColor: '#121212',
                         color: theme.palette.common.white,
@@ -366,11 +711,23 @@ export default function CompetenceOverview() {
                         top: 0,
                         zIndex: 10,
                         writingMode: 'vertical-lr',
+                        WebkitWritingMode: 'vertical-lr',
                         textOrientation: 'mixed',
+                        WebkitTextOrientation: 'mixed',
                         fontSize: '0.7rem',
                         padding: '2px 1px',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
                         '& > *': {
                           verticalAlign: 'middle'
+                        },
+                        // iOS specific fixes - let CSS handle the vertical text
+                        '@media (max-width: 768px)': {
+                          writingMode: 'vertical-lr !important',
+                          WebkitWritingMode: 'vertical-lr !important',
+                          textOrientation: 'mixed !important',
+                          WebkitTextOrientation: 'mixed !important'
                         }
                       }}
                     >
@@ -514,10 +871,12 @@ export default function CompetenceOverview() {
                   {levelFilteredCompetences.map(competenceName => (
                     <TableCell 
                       key={competenceName} 
-                      align="left" 
+                      align="left"
+                      className="vertical-header-cell"
                       sx={{ 
-                        minWidth: 24,
-                        maxWidth: 32,
+                        minWidth: 40,
+                        maxWidth: 40,
+                        width: 40,
                         fontWeight: 'bold',
                         backgroundColor: '#121212',
                         color: theme.palette.common.white,
@@ -525,11 +884,23 @@ export default function CompetenceOverview() {
                         top: 0,
                         zIndex: 10,
                         writingMode: 'vertical-lr',
+                        WebkitWritingMode: 'vertical-lr',
                         textOrientation: 'mixed',
+                        WebkitTextOrientation: 'mixed',
                         fontSize: '0.7rem',
                         padding: '2px 1px',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
                         '& > *': {
                           verticalAlign: 'middle'
+                        },
+                        // iOS specific fixes - let CSS handle the vertical text
+                        '@media (max-width: 768px)': {
+                          writingMode: 'vertical-lr !important',
+                          WebkitWritingMode: 'vertical-lr !important',
+                          textOrientation: 'mixed !important',
+                          WebkitTextOrientation: 'mixed !important'
                         }
                       }}
                     >
@@ -630,7 +1001,8 @@ export default function CompetenceOverview() {
             </>
           )}
         </Table>
-      </TableContainer>
+        </TableContainer>
+      )}
     </Box>
   )
 }
