@@ -50,7 +50,27 @@ function App() {
   }>({});
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => setUser(u));
+    const unsub = onAuthStateChanged(auth, async (u) => {
+      if (u) {
+        // Check if user's email domain is allowed
+        const ALLOWED_DOMAIN = 'geisli.se';
+        const email = u.email || '';
+        const verified = u.emailVerified;
+        
+        if (!verified) {
+          alert(`Please verify your email address before accessing the application.`);
+          await signOut(auth);
+          return;
+        }
+        
+        if (!email.endsWith(`@${ALLOWED_DOMAIN}`)) {
+          alert(`Access restricted to ${ALLOWED_DOMAIN} accounts only.\n\nPlease sign in with your company email address.`);
+          await signOut(auth);
+          return;
+        }
+      }
+      setUser(u);
+    });
 
     // Handle redirect result on app initialization
     getRedirectResult(auth)
@@ -192,14 +212,23 @@ function App() {
                 }}
               />
             </Box>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleLogin}
-              className="mobile-login-button"
-            >
-              Login with Google
-            </Button>
+            <Box sx={{ textAlign: "center" }}>
+              <Typography 
+                variant="body2" 
+                color="text.secondary" 
+                sx={{ mb: 2, fontStyle: "italic" }}
+              >
+                Only verified @geisli.se accounts are allowed
+              </Typography>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleLogin}
+                className="mobile-login-button"
+              >
+                Login with Google
+              </Button>
+            </Box>
           </Box>
         ) : (
           <Paper elevation={1} sx={{ width: "100%" }}>

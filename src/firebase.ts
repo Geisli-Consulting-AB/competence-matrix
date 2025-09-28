@@ -26,6 +26,13 @@ const app = initializeApp(firebaseConfig);
 // Initialize Firebase Authentication and provider
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
+
+// Add domain hint to encourage users to use their work email
+googleProvider.setCustomParameters({
+  hd: 'geisli.se', // Domain hint for Google Workspace
+  prompt: 'select_account' // Always show account selection
+});
+
 export const db = getFirestore(app);
 
 // Shared types
