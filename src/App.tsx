@@ -92,8 +92,12 @@ function App() {
 
   const persistAll = async (rows: CompetenceRow[]) => {
     if (!user) return
-    const ownerName = user.displayName || user.email || 'unknown'
-    await saveUserCompetences(user.uid, ownerName, rows)
+    try {
+      const ownerName = user.displayName || user.email || 'unknown'
+      await saveUserCompetences(user.uid, ownerName, rows)
+    } catch (error) {
+      console.error('Failed to save competences to database:', error)
+    }
   }
 
   const handleLogin = async () => {

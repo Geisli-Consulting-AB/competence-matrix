@@ -190,6 +190,87 @@ body {
   }
 }
 
+/* Competence Table mobile styles */
+@media (max-width: 768px) {
+  /* Mobile competence card layout */
+  .mobile-competence-card {
+    margin-bottom: 16px !important;
+    border-radius: 8px !important;
+  }
+
+  .mobile-competence-card-content {
+    padding: 12px !important;
+  }
+
+  /* First row: Input field + Delete button */
+  .mobile-competence-input-row {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .mobile-competence-autocomplete {
+    flex: 1 !important;
+  }
+
+  .mobile-competence-input {
+    width: 100% !important;
+  }
+
+  .mobile-competence-delete {
+    flex-shrink: 0 !important;
+    padding: 4px !important;
+  }
+
+  /* Second row: Level selection */
+  .mobile-competence-level-row {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  .mobile-level-label {
+    font-size: 0.75rem !important;
+    font-weight: 600 !important;
+    margin-bottom: 4px !important;
+  }
+
+  .mobile-level-radio-group {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+  }
+
+  .mobile-level-option {
+    margin: 0 !important;
+    padding: 2px 0 !important;
+  }
+
+  .mobile-level-option .MuiFormControlLabel-label {
+    font-size: 0.8rem !important;
+  }
+
+  .mobile-level-option .MuiRadio-root {
+    padding: 4px !important;
+  }
+
+  /* Add button styling */
+  .mobile-add-competence {
+    display: flex !important;
+    justify-content: center !important;
+    margin-top: 16px !important;
+    padding: 8px !important;
+  }
+
+  .mobile-add-button {
+    background-color: rgba(25, 118, 210, 0.08) !important;
+    border: 1px dashed rgba(25, 118, 210, 0.5) !important;
+    border-radius: 8px !important;
+    padding: 12px !important;
+  }
+}
+
 /* Desktop - hide mobile cards */
 @media (min-width: 769px) {
   .mobile-show-cards {

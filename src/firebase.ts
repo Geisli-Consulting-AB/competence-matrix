@@ -56,14 +56,13 @@ export function subscribeToUserCompetences(
   });
 }
 
-// Persist entire competences array for a user. Filters out empty names.
+// Persist entire competences array for a user. Allows empty names for new competences.
 export async function saveUserCompetences(
   userId: string,
   ownerName: string,
   rows: CompetenceRow[],
 ): Promise<void> {
   const cleaned = rows
-    .filter((r) => r.name && r.name.trim().length > 0)
     .map((r) => ({
       id: r.id,
       name: r.name.trim(),
@@ -114,9 +113,9 @@ export async function getAllUsersCompetences(): Promise<{
       competences,
     });
 
-    // Collect all unique competence names
+    // Collect all unique competence names (excluding empty names)
     competences.forEach((comp) => {
-      if (comp.name.trim()) {
+      if (comp.name && comp.name.trim()) {
         competenceSet.add(comp.name.trim());
       }
     });
