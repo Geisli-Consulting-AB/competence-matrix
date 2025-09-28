@@ -51,14 +51,6 @@ const LEVEL_COLORS = {
   4: "#2196f3", // Expert - Blue
 };
 
-// Function to get category color for a competence
-const getCategoryColor = (competenceName: string, categories: Category[]): string => {
-  const category = categories.find(cat => 
-    cat.competences.includes(competenceName)
-  );
-  return category?.color || "#666666"; // Default gray if not in any category
-};
-
 // Function to group competences by category
 const groupCompetencesByCategory = (competences: string[], categories: Category[]) => {
   const grouped: { [categoryName: string]: string[] } = {};
@@ -235,7 +227,7 @@ export default function CompetenceOverview() {
         })
       : filteredUsers;
 
-  // Group competences by category for organized display
+  // Group competences by category for mobile view (when competences are on left)
   const groupedCompetences = groupCompetencesByCategory(levelFilteredCompetences, categories);
 
   // Initialize all categories as expanded when they first appear
@@ -546,9 +538,7 @@ export default function CompetenceOverview() {
                           whiteSpace: "nowrap",
                         }}
                       >
-                        <span style={{ color: getCategoryColor(competenceName, categories) }}>
-                          {competenceName}
-                        </span>
+                        {competenceName}
                       </Typography>
                     </Box>
                   ))}
@@ -562,7 +552,62 @@ export default function CompetenceOverview() {
               }}
             >
               {!isTransposed
-                ? levelFilteredCompetences.map((competenceName) => (
+                ? Object.entries(groupedCompetences).map(([categoryName, competences]) => [
+                    // Category header row
+                    <Box
+                      key={`category-row-${categoryName}`}
+                      sx={{
+                        display: "flex",
+                        backgroundColor: theme.palette.grey[800],
+                        borderBottom: "2px solid rgba(255, 255, 255, 0.12)",
+                        cursor: "pointer",
+                        "&:hover": {
+                          backgroundColor: theme.palette.grey[700],
+                        },
+                      }}
+                      onClick={() => toggleCategoryExpansion(categoryName)}
+                    >
+                      <Box
+                        sx={{
+                          width: "80px",
+                          minWidth: "80px",
+                          display: "flex",
+                          alignItems: "center",
+                          padding: "8px",
+                          gap: 0.5,
+                        }}
+                      >
+                        {expandedCategories.has(categoryName) ? (
+                          <ExpandMoreIcon fontSize="small" />
+                        ) : (
+                          <ChevronRightIcon fontSize="small" />
+                        )}
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: categoryName === 'Uncategorized' ? "#666666" : 
+                              categories.find(cat => cat.name === categoryName)?.color || "#666666",
+                            fontWeight: "bold",
+                            fontSize: "0.8rem",
+                          }}
+                        >
+                          {categoryName}
+                        </Typography>
+                      </Box>
+                      {/* Empty cells for user columns */}
+                      {levelFilteredUsers.map((user) => (
+                        <Box
+                          key={user.userId}
+                          sx={{
+                            width: "40px",
+                            minWidth: "40px",
+                            height: "40px",
+                          }}
+                        />
+                      ))}
+                    </Box>,
+                    // Competence rows for this category (only if expanded)
+                    ...(expandedCategories.has(categoryName) ? competences.map((competenceName) => (
                     <Box
                       key={competenceName}
                       sx={{
@@ -622,9 +667,7 @@ export default function CompetenceOverview() {
                             whiteSpace: "nowrap",
                           }}
                         >
-                          <span style={{ color: getCategoryColor(competenceName, categories) }}>
-                            {competenceName}
-                          </span>
+                          {competenceName}
                         </Typography>
                       </Box>
 
@@ -713,7 +756,8 @@ export default function CompetenceOverview() {
                         );
                       })}
                     </Box>
-                  ))
+                  )) : [])
+                  ]).flat()
                 : levelFilteredUsers.map((user) => (
                     <Box
                       key={user.userId}
@@ -1058,9 +1102,7 @@ export default function CompetenceOverview() {
                             },
                           }}
                         >
-                          <span style={{ color: getCategoryColor(competenceName, categories) }}>
-                            {competenceName}
-                          </span>
+                          {competenceName}
                         </TableCell>
                         {levelFilteredUsers.map((user) => {
                           const level =
