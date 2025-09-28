@@ -1,5 +1,13 @@
 /* Mobile-specific styles for Competence Matrix */
 
+/* Fix vertical centering issue - override index.css body styles */
+body {
+  display: flex !important;
+  place-items: flex-start !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
+}
+
 /* Mobile breakpoints */
 @media (max-width: 768px) {
   /* App container adjustments - 5px gap */
