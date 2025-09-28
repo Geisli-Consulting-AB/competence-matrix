@@ -38,7 +38,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
 }) => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [newCategoryName, setNewCategoryName] = useState("");
-  const [newCompetenceName, setNewCompetenceName] = useState("");
+  const [newCompetenceNames, setNewCompetenceNames] = useState<Record<string, string>>({});
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
     new Set(),
   );
@@ -147,9 +147,9 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
   };
 
   const handleAddNewCompetence = async (categoryId: string) => {
-    if (!newCompetenceName.trim()) return;
+    const competenceName = (newCompetenceNames[categoryId] || "").trim();
+    if (!competenceName) return;
 
-    const competenceName = newCompetenceName.trim();
     const updatedCategories = categories.map((cat) =>
       cat.id === categoryId
         ? {
@@ -161,7 +161,13 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
         : cat,
     );
     setCategories(updatedCategories);
-    setNewCompetenceName("");
+    
+    // Clear only this category's input
+    setNewCompetenceNames(prev => ({
+      ...prev,
+      [categoryId]: ""
+    }));
+    
     await saveCategoriesToDB(updatedCategories);
   };
 
@@ -326,10 +332,13 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                       <Box sx={{ mb: 2 }}>
                         <TextField
                           label="Add new Competence"
-                          value={newCompetenceName}
-                          onChange={(e) => setNewCompetenceName(e.target.value)}
+                          value={newCompetenceNames[category.id] || ""}
+                          onChange={(e) => setNewCompetenceNames(prev => ({
+                            ...prev,
+                            [category.id]: e.target.value
+                          }))}
                           onBlur={() => {
-                            if (newCompetenceName.trim()) {
+                            if ((newCompetenceNames[category.id] || "").trim()) {
                               handleAddNewCompetence(category.id);
                             }
                           }}
