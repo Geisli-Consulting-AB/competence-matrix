@@ -125,6 +125,7 @@ export async function getAllUsersCompetences(): Promise<{
         competenceSet.add(comp.name.trim());
       }
     });
+    
   });
 
   const allCompetences = Array.from(competenceSet).sort();
@@ -135,13 +136,71 @@ export async function getAllUsersCompetences(): Promise<{
   return { users, allCompetences };
 }
 
+// Get all competences from both users and categories
+export async function getAllCompetencesForAutocomplete(): Promise<string[]> {
+  const { collection, getDocs } = await import("firebase/firestore");
+  
+  const competenceSet = new Set<string>();
+  
+  try {
+    // 1. Get competences from users collection
+    const usersCollection = collection(db, "users");
+    const usersSnapshot = await getDocs(usersCollection);
+    
+    usersSnapshot.forEach((doc) => {
+      const data = doc.data();
+      const competences: CompetenceRow[] = Array.isArray(data.competences)
+        ? data.competences.map((r: any) => ({
+            id: String(r.id || ""),
+            name: String(r.name || ""),
+            level: Number(r.level || 1),
+          }))
+        : [];
+      
+      // Add user competences to set
+      competences.forEach((comp) => {
+        if (comp.name && comp.name.trim()) {
+          competenceSet.add(comp.name.trim());
+        }
+      });
+    });
+    
+  } catch (error) {
+    console.error("Error fetching from users collection:", error);
+  }
+  
+  try {
+    // 2. Get competences from categories collection
+    const categoriesCollection = collection(db, "categories");
+    const categoriesSnapshot = await getDocs(categoriesCollection);
+    
+    categoriesSnapshot.forEach((doc) => {
+      const data = doc.data();
+      if (Array.isArray(data.categories)) {
+        data.categories.forEach((category: any) => {
+          if (Array.isArray(category.competences)) {
+            category.competences.forEach((competenceName: string) => {
+              if (competenceName && competenceName.trim()) {
+                competenceSet.add(competenceName.trim());
+              }
+            });
+          }
+        });
+      }
+    });
+    
+  } catch (error) {
+    console.error("Error fetching from categories collection:", error);
+  }
+  
+  return Array.from(competenceSet).sort();
+}
+
 // Category management functions
 export async function saveUserCategories(
   userId: string,
   categories: Category[],
 ): Promise<void> {
-  console.log("Firebase: Saving categories for user", userId, ":", categories);
-
   // Clean categories data
   const cleanedCategories = categories.map((cat) => ({
     id: cat.id,
@@ -156,22 +215,14 @@ export async function saveUserCategories(
     { categories: cleanedCategories, updatedAt: serverTimestamp() },
     { merge: true },
   );
-  console.log("Firebase: Categories saved successfully");
 }
 
 export function subscribeToUserCategories(
   userId: string,
   onChange: (categories: Category[]) => void,
 ): Unsubscribe {
-  console.log("Firebase: Subscribing to categories for user", userId);
   const categoriesDocRef = doc(db, "categories", userId);
   return onSnapshot(categoriesDocRef, (snap) => {
-    console.log(
-      "Firebase: Received snapshot for user",
-      userId,
-      ":",
-      snap.data(),
-    );
     const data = (snap.data() as any) || {};
     const categories: Category[] = Array.isArray(data.categories)
       ? data.categories.map((cat: any) => ({
@@ -183,7 +234,6 @@ export function subscribeToUserCategories(
           color: String(cat.color || "#FF6B6B"),
         }))
       : [];
-    console.log("Firebase: Parsed categories:", categories);
     onChange(categories);
   });
 }

@@ -34,13 +34,16 @@ service cloud.firestore {
 
       // Allow any geisli.se user to read user documents (for team overview)
       // but only allow users to write to their own documents
-      allow read: if isGeisliUser();
+      // Also allow reading seeded test data (userIds starting with "user_")
+      allow read: if isGeisliUser() || userId.matches('^user_.*');
       allow write: if isOwner(userId);
     }
 
     // Categories collection - each user can only access their own categories
+    // But allow geisli.se users to read all categories for autocomplete suggestions
     match /categories/{userId} {
-      allow read, write: if isOwner(userId);
+      allow read: if isGeisliUser();
+      allow write: if isOwner(userId);
     }
 
     // Deny everything else by default

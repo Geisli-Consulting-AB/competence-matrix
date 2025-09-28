@@ -7,6 +7,7 @@ import {
   subscribeToUserCompetences,
   saveUserCompetences,
   getAllUsersCompetences,
+  getAllCompetencesForAutocomplete,
   subscribeToUserCategories,
   type Category,
 } from "./firebase";
@@ -120,8 +121,12 @@ function App() {
 
     const fetchExistingCompetences = async () => {
       try {
+        // Get competences from both users and categories for autocomplete
+        const allCompetences = await getAllCompetencesForAutocomplete();
+        setExistingCompetences(allCompetences);
+        
+        // Still get user data for the competence matrix
         const data = await getAllUsersCompetences();
-        setExistingCompetences(data.allCompetences);
 
         // Build competence matrix
         const matrix: {
@@ -141,6 +146,7 @@ function App() {
         setCompetenceMatrix(matrix);
       } catch (error) {
         console.error("Failed to fetch existing competences:", error);
+        setExistingCompetences([]);
       }
     };
 

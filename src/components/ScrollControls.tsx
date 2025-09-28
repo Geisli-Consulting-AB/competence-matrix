@@ -24,45 +24,49 @@ export default function ScrollControls({
 
   return (
     <Stack direction="row" spacing={1}>
-      <Tooltip title="Scroll left">
-        <IconButton
-          onClick={onScrollLeft}
-          disabled={!canScrollLeft}
-          size="small"
-          sx={{
-            backgroundColor: theme.palette.grey[800],
-            color: theme.palette.common.white,
-            "&:hover": {
-              backgroundColor: theme.palette.grey[700],
-            },
-            "&:disabled": {
-              backgroundColor: theme.palette.grey[600],
-              color: theme.palette.grey[400],
-            },
-          }}
-        >
-          <ChevronLeftIcon fontSize="small" />
-        </IconButton>
+      <Tooltip title={canScrollLeft ? "Scroll left" : ""}>
+        <span>
+          <IconButton
+            onClick={onScrollLeft}
+            disabled={!canScrollLeft}
+            size="small"
+            sx={{
+              backgroundColor: theme.palette.grey[800],
+              color: theme.palette.common.white,
+              "&:hover": {
+                backgroundColor: theme.palette.grey[700],
+              },
+              "&:disabled": {
+                backgroundColor: theme.palette.grey[600],
+                color: theme.palette.grey[400],
+              },
+            }}
+          >
+            <ChevronLeftIcon fontSize="small" />
+          </IconButton>
+        </span>
       </Tooltip>
-      <Tooltip title="Scroll right">
-        <IconButton
-          onClick={onScrollRight}
-          disabled={!canScrollRight}
-          size="small"
-          sx={{
-            backgroundColor: theme.palette.grey[800],
-            color: theme.palette.common.white,
-            "&:hover": {
-              backgroundColor: theme.palette.grey[700],
-            },
-            "&:disabled": {
-              backgroundColor: theme.palette.grey[600],
-              color: theme.palette.grey[400],
-            },
-          }}
-        >
-          <ChevronRightIcon fontSize="small" />
-        </IconButton>
+      <Tooltip title={canScrollRight ? "Scroll right" : ""}>
+        <span>
+          <IconButton
+            onClick={onScrollRight}
+            disabled={!canScrollRight}
+            size="small"
+            sx={{
+              backgroundColor: theme.palette.grey[800],
+              color: theme.palette.common.white,
+              "&:hover": {
+                backgroundColor: theme.palette.grey[700],
+              },
+              "&:disabled": {
+                backgroundColor: theme.palette.grey[600],
+                color: theme.palette.grey[400],
+              },
+            }}
+          >
+            <ChevronRightIcon fontSize="small" />
+          </IconButton>
+        </span>
       </Tooltip>
     </Stack>
   );
