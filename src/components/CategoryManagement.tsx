@@ -78,27 +78,34 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
     }
   };
 
-  // Array of predefined colors for categories
+  // Array of distinct colors for categories
   const categoryColors = [
-    "#FF6B6B",
-    "#4ECDC4",
-    "#45B7D1",
-    "#96CEB4",
-    "#FFEAA7",
-    "#DDA0DD",
-    "#98D8C8",
-    "#F7DC6F",
-    "#BB8FCE",
-    "#85C1E9",
-    "#F8C471",
-    "#82E0AA",
-    "#F1948A",
-    "#85C1E9",
-    "#D2B4DE",
+    "#FF6B6B", // Red
+    "#00FFFF", // Bright Cyan - Very distinct
+    "#45B7D1", // Blue
+    "#96CEB4", // Light Green
+    "#FFEAA7", // Yellow
+    "#DDA0DD", // Plum
+    "#FF8C42", // Orange
+    "#6C5CE7", // Purple
+    "#00B894", // Green
+    "#E17055", // Coral
+    "#74B9FF", // Light Blue
+    "#FD79A8", // Pink
+    "#FDCB6E", // Gold
+    "#A29BFE", // Lavender
+    "#55A3FF", // Sky Blue
   ];
 
-  const getRandomColor = () => {
-    return categoryColors[Math.floor(Math.random() * categoryColors.length)];
+  const getNextColor = () => {
+    // Get colors already used by existing categories
+    const usedColors = categories.map(cat => cat.color);
+    
+    // Find the first unused color
+    const availableColor = categoryColors.find(color => !usedColors.includes(color));
+    
+    // If all colors are used, fall back to random
+    return availableColor || categoryColors[Math.floor(Math.random() * categoryColors.length)];
   };
 
   const isCompetenceUsedByUsers = (competenceName: string) => {
@@ -113,13 +120,12 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
       id: Date.now().toString(),
       name: newCategoryName.trim(),
       competences: [],
-      color: getRandomColor(),
+      color: getNextColor(),
     };
 
     const updatedCategories = [...categories, newCategory];
     setCategories(updatedCategories);
     setNewCategoryName("");
-    await saveCategoriesToDB(updatedCategories);
   };
 
   const handleDeleteCategory = async (categoryId: string) => {
@@ -145,6 +151,25 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
       return newSet;
     });
   };
+
+  // Function to update a specific category's color
+  const updateCategoryColor = async (categoryName: string, newColor: string) => {
+    const updatedCategories = categories.map(cat => 
+      cat.name === categoryName 
+        ? { ...cat, color: newColor }
+        : cat
+    );
+    setCategories(updatedCategories);
+    await saveCategoriesToDB(updatedCategories);
+  };
+
+  // Update Databases category to bright cyan - call this once
+  React.useEffect(() => {
+    const databasesCategory = categories.find(cat => cat.name === "Databases");
+    if (databasesCategory && databasesCategory.color !== "#00FFFF") {
+      updateCategoryColor("Databases", "#00FFFF");
+    }
+  }, [categories]);
 
   const handleAddNewCompetence = async (categoryId: string) => {
     const competenceName = (newCompetenceNames[categoryId] || "").trim();
