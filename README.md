@@ -13,14 +13,17 @@ A React + TypeScript application for managing and tracking team competencies. Bu
 ## Quick Start
 
 1. **Clone and install dependencies:**
+
    ```bash
    npm install
    ```
 
 2. **Seed the database with sample data:**
+
    ```bash
    npm run seed
    ```
+
    This will populate your Firebase database with 15 sample users and their competencies using your existing `.env` configuration.
 
 3. **Start the development server:**
@@ -47,7 +50,7 @@ users/{userId}
 
 - **Level 1**: Want to learn
 - **Level 2**: Beginner
-- **Level 3**: Proficient  
+- **Level 3**: Proficient
 - **Level 4**: Expert
 
 ## Sample Data
@@ -64,8 +67,9 @@ The seeding script creates 15 diverse user profiles with competencies across var
 - **Project Management**: Agile, Scrum, Leadership
 
 Each user has 8-15 competencies with realistic skill level distributions:
+
 - Want to learn: ~15%
-- Beginner: ~30% 
+- Beginner: ~30%
 - Proficient: ~40%
 - Expert: ~15%
 
@@ -75,9 +79,9 @@ If you are developing a production application, we recommend updating the config
 
 ```js
 export default defineConfig([
-  globalIgnores(['dist']),
+  globalIgnores(["dist"]),
   {
-    files: ['**/*.{ts,tsx}'],
+    files: ["**/*.{ts,tsx}"],
     extends: [
       // Other configs...
 
@@ -92,40 +96,40 @@ export default defineConfig([
     ],
     languageOptions: {
       parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
         tsconfigRootDir: import.meta.dirname,
       },
       // other options...
     },
   },
-])
+]);
 ```
 
 You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
 
 ```js
 // eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+import reactX from "eslint-plugin-react-x";
+import reactDom from "eslint-plugin-react-dom";
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  globalIgnores(["dist"]),
   {
-    files: ['**/*.{ts,tsx}'],
+    files: ["**/*.{ts,tsx}"],
     extends: [
       // Other configs...
       // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
+      reactX.configs["recommended-typescript"],
       // Enable lint rules for React DOM
       reactDom.configs.recommended,
     ],
     languageOptions: {
       parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
         tsconfigRootDir: import.meta.dirname,
       },
       // other options...
     },
   },
-])
+]);
 ```

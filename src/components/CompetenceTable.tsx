@@ -1,53 +1,87 @@
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Radio, IconButton, Autocomplete, Box, Card, CardContent, RadioGroup, FormControlLabel } from '@mui/material'
-import AddIcon from '@mui/icons-material/Add'
-import DeleteIcon from '@mui/icons-material/Delete'
-import type { CompetenceRow } from '../firebase'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
+  Radio,
+  IconButton,
+  Autocomplete,
+  Box,
+  Card,
+  CardContent,
+  RadioGroup,
+  FormControlLabel,
+} from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
+import DeleteIcon from "@mui/icons-material/Delete";
+import type { CompetenceRow } from "../firebase";
 
 export type CompetenceTableProps = {
-  competences: CompetenceRow[]
-  onChange: (rows: CompetenceRow[]) => void
-  onSave: (rows: CompetenceRow[]) => Promise<void>
-  existingCompetences?: string[]
-}
+  competences: CompetenceRow[];
+  onChange: (rows: CompetenceRow[]) => void;
+  onSave: (rows: CompetenceRow[]) => Promise<void>;
+  existingCompetences?: string[];
+};
 
-export default function CompetenceTable({ competences, onChange, onSave, existingCompetences = [] }: CompetenceTableProps) {
+export default function CompetenceTable({
+  competences,
+  onChange,
+  onSave,
+  existingCompetences = [],
+}: CompetenceTableProps) {
   const updateName = async (idx: number, name: string) => {
-    const nextRows = competences.map((row, i) => (i === idx ? { ...row, name } : row))
-    onChange(nextRows)
-    await onSave(nextRows)
-  }
+    const nextRows = competences.map((row, i) =>
+      i === idx ? { ...row, name } : row,
+    );
+    onChange(nextRows);
+    await onSave(nextRows);
+  };
 
   const updateLevel = async (idx: number, level: number) => {
-    const nextRows = competences.map((row, i) => (i === idx ? { ...row, level } : row))
-    onChange(nextRows)
-    await onSave(nextRows)
-  }
+    const nextRows = competences.map((row, i) =>
+      i === idx ? { ...row, level } : row,
+    );
+    onChange(nextRows);
+    await onSave(nextRows);
+  };
 
   const addRow = async () => {
     const nextRows: CompetenceRow[] = [
       ...competences,
-      { id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, name: '', level: 1 },
-    ]
-    onChange(nextRows)
+      {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        name: "",
+        level: 1,
+      },
+    ];
+    onChange(nextRows);
     try {
-      await onSave(nextRows)
+      await onSave(nextRows);
     } catch (error) {
-      console.error('Failed to save competence:', error)
+      console.error("Failed to save competence:", error);
       // Keep the state change even if save fails
     }
-  }
+  };
 
   const levelLabels = {
-    1: 'Want to learn',
-    2: 'Beginner', 
-    3: 'Proficient',
-    4: 'Expert'
-  }
+    1: "Want to learn",
+    2: "Beginner",
+    3: "Proficient",
+    4: "Expert",
+  };
+
+  // Check if there are any competences with empty names
+  const hasEmptyName = competences.some(
+    (competence) => !competence.name.trim(),
+  );
 
   return (
     <Box>
       {/* Desktop Table View */}
-      <TableContainer sx={{ overflowX: 'auto' }} className="mobile-hide-table">
+      <TableContainer sx={{ overflowX: "auto" }} className="mobile-hide-table">
         <Table size="small" sx={{ minWidth: 900 }}>
           <TableHead>
             <TableRow>
@@ -62,13 +96,21 @@ export default function CompetenceTable({ competences, onChange, onSave, existin
           <TableBody>
             {competences.map((c, idx) => (
               <TableRow key={c.id} hover>
-                <TableCell component="th" scope="row" sx={{ minWidth: 300 }}>
+                <TableCell
+                  component="th"
+                  scope="row"
+                  sx={{ minWidth: 300, maxWidth: 400, width: 350 }}
+                >
                   <Autocomplete
                     freeSolo
                     options={existingCompetences}
                     value={c.name}
-                    onChange={async (_, newValue) => updateName(idx, newValue || '')}
-                    onInputChange={async (_, newInputValue) => updateName(idx, newInputValue)}
+                    onChange={async (_, newValue) =>
+                      updateName(idx, newValue || "")
+                    }
+                    onInputChange={async (_, newInputValue) =>
+                      updateName(idx, newInputValue)
+                    }
                     renderInput={(params) => (
                       <TextField
                         {...params}
@@ -86,7 +128,7 @@ export default function CompetenceTable({ competences, onChange, onSave, existin
                       checked={c.level === lvl}
                       onChange={async () => updateLevel(idx, lvl)}
                       value={String(lvl)}
-                      inputProps={{ 'aria-label': String(lvl) }}
+                      inputProps={{ "aria-label": String(lvl) }}
                     />
                   </TableCell>
                 ))}
@@ -95,9 +137,9 @@ export default function CompetenceTable({ competences, onChange, onSave, existin
                     aria-label="delete competence"
                     color="error"
                     onClick={async () => {
-                      const nextRows = competences.filter((_, i) => i !== idx)
-                      onChange(nextRows)
-                      await onSave(nextRows)
+                      const nextRows = competences.filter((_, i) => i !== idx);
+                      onChange(nextRows);
+                      await onSave(nextRows);
                     }}
                   >
                     <DeleteIcon />
@@ -107,7 +149,12 @@ export default function CompetenceTable({ competences, onChange, onSave, existin
             ))}
             <TableRow>
               <TableCell colSpan={6} align="center">
-                <IconButton color="primary" onClick={addRow} aria-label="add competence">
+                <IconButton
+                  color="primary"
+                  onClick={addRow}
+                  aria-label="add competence"
+                  disabled={hasEmptyName}
+                >
                   <AddIcon />
                 </IconButton>
               </TableCell>
@@ -127,8 +174,12 @@ export default function CompetenceTable({ competences, onChange, onSave, existin
                   freeSolo
                   options={existingCompetences}
                   value={c.name}
-                  onChange={async (_, newValue) => updateName(idx, newValue || '')}
-                  onInputChange={async (_, newInputValue) => updateName(idx, newInputValue)}
+                  onChange={async (_, newValue) =>
+                    updateName(idx, newValue || "")
+                  }
+                  onInputChange={async (_, newInputValue) =>
+                    updateName(idx, newInputValue)
+                  }
                   className="mobile-competence-autocomplete"
                   renderInput={(params) => (
                     <TextField
@@ -146,21 +197,23 @@ export default function CompetenceTable({ competences, onChange, onSave, existin
                   size="small"
                   className="mobile-competence-delete"
                   onClick={async () => {
-                    const nextRows = competences.filter((_, i) => i !== idx)
-                    onChange(nextRows)
-                    await onSave(nextRows)
+                    const nextRows = competences.filter((_, i) => i !== idx);
+                    onChange(nextRows);
+                    await onSave(nextRows);
                   }}
                 >
                   <DeleteIcon fontSize="small" />
                 </IconButton>
               </Box>
-              
+
               {/* Second Line: Level Selection */}
               <Box className="mobile-competence-level-row">
                 <RadioGroup
                   row
                   value={String(c.level)}
-                  onChange={async (e) => updateLevel(idx, parseInt(e.target.value))}
+                  onChange={async (e) =>
+                    updateLevel(idx, parseInt(e.target.value))
+                  }
                   className="mobile-level-radio-group"
                 >
                   {[1, 2, 3, 4].map((lvl) => (
@@ -177,20 +230,21 @@ export default function CompetenceTable({ competences, onChange, onSave, existin
             </CardContent>
           </Card>
         ))}
-        
+
         {/* Add Button for Mobile */}
         <Box className="mobile-add-competence">
-          <IconButton 
-            color="primary" 
-            onClick={addRow} 
+          <IconButton
+            color="primary"
+            onClick={addRow}
             aria-label="add competence"
             size="large"
             className="mobile-add-button"
+            disabled={hasEmptyName}
           >
             <AddIcon />
           </IconButton>
         </Box>
       </Box>
     </Box>
-  )
+  );
 }

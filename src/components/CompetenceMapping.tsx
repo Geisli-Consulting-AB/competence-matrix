@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -12,112 +12,119 @@ import {
   Chip,
   LinearProgress,
   Card,
-  CardContent
-} from '@mui/material'
-import { saveUserCategories } from '../firebase'
-import type { User } from 'firebase/auth'
+  CardContent,
+} from "@mui/material";
+import { saveUserCategories } from "../firebase";
+import type { User } from "firebase/auth";
 
 interface UnmappedCompetence {
-  name: string
-  usageCount: number
-  users: string[]
+  name: string;
+  usageCount: number;
+  users: string[];
 }
 
 interface Category {
-  id: string
-  name: string
-  competences: string[]
-  color: string
+  id: string;
+  name: string;
+  competences: string[];
+  color: string;
 }
 
 interface CompetenceMappingProps {
-  existingCompetences: string[]
-  categories: Category[]
-  user: User | null
+  existingCompetences: string[];
+  categories: Category[];
+  user: User | null;
 }
 
-const CompetenceMapping: React.FC<CompetenceMappingProps> = ({ 
-  existingCompetences, 
+const CompetenceMapping: React.FC<CompetenceMappingProps> = ({
+  existingCompetences,
   categories,
-  user
+  user,
 }) => {
-  const [unmappedCompetences, setUnmappedCompetences] = useState<UnmappedCompetence[]>([])
-  const [mappings, setMappings] = useState<Record<string, string>>({})
-  const [loading, setLoading] = useState(false)
+  const [unmappedCompetences, setUnmappedCompetences] = useState<
+    UnmappedCompetence[]
+  >([]);
+  const [mappings, setMappings] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(false);
 
   // Get unmapped competences by filtering out those already in categories
   useEffect(() => {
     const getUnmappedCompetences = () => {
-      setLoading(true)
-      
+      setLoading(true);
+
       // Get all competences that are already mapped to categories
-      const mappedCompetences = new Set<string>()
-      categories.forEach(category => {
-        category.competences.forEach(competence => {
-          mappedCompetences.add(competence)
-        })
-      })
-      
+      const mappedCompetences = new Set<string>();
+      categories.forEach((category) => {
+        category.competences.forEach((competence) => {
+          mappedCompetences.add(competence);
+        });
+      });
+
       // Filter out mapped competences from existing competences
       const unmapped = existingCompetences
-        .filter(comp => !mappedCompetences.has(comp))
+        .filter((comp) => !mappedCompetences.has(comp))
         .map((comp, index) => {
-          const users = [`User ${index + 1}`, `User ${index + 2}`].slice(0, Math.floor(Math.random() * 2) + 1)
+          const users = [`User ${index + 1}`, `User ${index + 2}`].slice(
+            0,
+            Math.floor(Math.random() * 2) + 1,
+          );
           return {
             name: comp,
             usageCount: Math.floor(Math.random() * 10) + 1,
-            users: users.sort() // Sort usernames alphabetically
-          }
-        })
-      
+            users: users.sort(), // Sort usernames alphabetically
+          };
+        });
+
       setTimeout(() => {
-        setUnmappedCompetences(unmapped)
-        setLoading(false)
-      }, 100)
-    }
+        setUnmappedCompetences(unmapped);
+        setLoading(false);
+      }, 100);
+    };
 
     if (existingCompetences.length > 0) {
-      getUnmappedCompetences()
+      getUnmappedCompetences();
     }
-  }, [existingCompetences, categories])
+  }, [existingCompetences, categories]);
 
-  const handleMappingChange = async (competenceName: string, categoryId: string) => {
-    if (!user?.uid) return
+  const handleMappingChange = async (
+    competenceName: string,
+    categoryId: string,
+  ) => {
+    if (!user?.uid) return;
 
     // Update the category to include this competence
-    const updatedCategories = categories.map(category => {
+    const updatedCategories = categories.map((category) => {
       if (category.id === categoryId) {
         // Add competence if not already present
         if (!category.competences.includes(competenceName)) {
           return {
             ...category,
-            competences: [...category.competences, competenceName]
-          }
+            competences: [...category.competences, competenceName],
+          };
         }
       }
-      return category
-    })
+      return category;
+    });
 
     // Save to database
     try {
-      await saveUserCategories(user.uid, updatedCategories)
-      
-      // Remove the competence from unmapped list
-      setUnmappedCompetences(prev => 
-        prev.filter(comp => comp.name !== competenceName)
-      )
-      
-      // Clear the mapping
-      setMappings(prev => {
-        const newMappings = { ...prev }
-        delete newMappings[competenceName]
-        return newMappings
-      })
-    } catch (error) {
-      console.error('Failed to save competence to category:', error)
-    }
-  }
+      await saveUserCategories(user.uid, updatedCategories);
 
+      // Remove the competence from unmapped list
+      setUnmappedCompetences((prev) =>
+        prev.filter((comp) => comp.name !== competenceName),
+      );
+
+      // Clear the mapping
+      setMappings((prev) => {
+        const newMappings = { ...prev };
+        delete newMappings[competenceName];
+        return newMappings;
+      });
+    } catch (error) {
+      console.error("Failed to save competence to category:", error);
+    }
+  };
 
   return (
     <Box className="mobile-mapping-container">
@@ -131,9 +138,10 @@ const CompetenceMapping: React.FC<CompetenceMappingProps> = ({
             <LinearProgress />
           </Box>
         ) : unmappedCompetences.length === 0 ? (
-          <Box sx={{ p: 3, textAlign: 'center' }}>
+          <Box sx={{ p: 3, textAlign: "center" }}>
             <Typography variant="body2" color="text.secondary">
-              No unmapped competences found. All competences are already assigned to categories!
+              No unmapped competences found. All competences are already
+              assigned to categories!
             </Typography>
           </Box>
         ) : (
@@ -156,21 +164,39 @@ const CompetenceMapping: React.FC<CompetenceMappingProps> = ({
                         </Typography>
                       </TableCell>
                       <TableCell>
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
                           {categories.map((category) => (
                             <Chip
                               key={category.id}
                               label={category.name}
                               clickable
-                              variant={mappings[competence.name] === category.id ? "filled" : "outlined"}
-                              onClick={() => handleMappingChange(competence.name, category.id)}
+                              variant={
+                                mappings[competence.name] === category.id
+                                  ? "filled"
+                                  : "outlined"
+                              }
+                              onClick={() =>
+                                handleMappingChange(
+                                  competence.name,
+                                  category.id,
+                                )
+                              }
                               sx={{
                                 borderColor: category.color,
-                                color: mappings[competence.name] === category.id ? 'white' : category.color,
-                                backgroundColor: mappings[competence.name] === category.id ? category.color : 'transparent',
-                                '&:hover': {
-                                  backgroundColor: mappings[competence.name] === category.id ? category.color : `${category.color}20`,
-                                }
+                                color:
+                                  mappings[competence.name] === category.id
+                                    ? "white"
+                                    : category.color,
+                                backgroundColor:
+                                  mappings[competence.name] === category.id
+                                    ? category.color
+                                    : "transparent",
+                                "&:hover": {
+                                  backgroundColor:
+                                    mappings[competence.name] === category.id
+                                      ? category.color
+                                      : `${category.color}20`,
+                                },
                               }}
                             />
                           ))}
@@ -181,16 +207,28 @@ const CompetenceMapping: React.FC<CompetenceMappingProps> = ({
                 </TableBody>
               </Table>
             </TableContainer>
-            
+
             {/* Mobile Card View */}
             <Box className="mobile-show-cards">
               {unmappedCompetences.map((competence) => (
-                <Card key={competence.name} className="mobile-mapping-card" elevation={2}>
+                <Card
+                  key={competence.name}
+                  className="mobile-mapping-card"
+                  elevation={2}
+                >
                   <CardContent>
-                    <Typography variant="body2" fontWeight="medium" className="mobile-mapping-title">
+                    <Typography
+                      variant="body2"
+                      fontWeight="medium"
+                      className="mobile-mapping-title"
+                    >
                       {competence.name}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ mb: 2, display: "block" }}
+                    >
                       Assign to Category:
                     </Typography>
                     <Box className="mobile-mapping-chips">
@@ -199,16 +237,31 @@ const CompetenceMapping: React.FC<CompetenceMappingProps> = ({
                           key={category.id}
                           label={category.name}
                           clickable
-                          variant={mappings[competence.name] === category.id ? "filled" : "outlined"}
-                          onClick={() => handleMappingChange(competence.name, category.id)}
+                          variant={
+                            mappings[competence.name] === category.id
+                              ? "filled"
+                              : "outlined"
+                          }
+                          onClick={() =>
+                            handleMappingChange(competence.name, category.id)
+                          }
                           className="mobile-mapping-chip"
                           sx={{
                             borderColor: category.color,
-                            color: mappings[competence.name] === category.id ? 'white' : category.color,
-                            backgroundColor: mappings[competence.name] === category.id ? category.color : 'transparent',
-                            '&:hover': {
-                              backgroundColor: mappings[competence.name] === category.id ? category.color : `${category.color}20`,
-                            }
+                            color:
+                              mappings[competence.name] === category.id
+                                ? "white"
+                                : category.color,
+                            backgroundColor:
+                              mappings[competence.name] === category.id
+                                ? category.color
+                                : "transparent",
+                            "&:hover": {
+                              backgroundColor:
+                                mappings[competence.name] === category.id
+                                  ? category.color
+                                  : `${category.color}20`,
+                            },
                           }}
                         />
                       ))}
@@ -221,7 +274,7 @@ const CompetenceMapping: React.FC<CompetenceMappingProps> = ({
         )}
       </Paper>
     </Box>
-  )
-}
+  );
+};
 
-export default CompetenceMapping
+export default CompetenceMapping;

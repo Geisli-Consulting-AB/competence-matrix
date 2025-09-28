@@ -1,21 +1,21 @@
-import { Stack, Tooltip, IconButton, useTheme } from '@mui/material'
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
-import ChevronRightIcon from '@mui/icons-material/ChevronRight'
+import { Stack, Tooltip, IconButton, useTheme } from "@mui/material";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 
 interface ScrollControlsProps {
-  canScrollLeft: boolean
-  canScrollRight: boolean
-  onScrollLeft: () => void
-  onScrollRight: () => void
+  canScrollLeft: boolean;
+  canScrollRight: boolean;
+  onScrollLeft: () => void;
+  onScrollRight: () => void;
 }
 
-export default function ScrollControls({ 
-  canScrollLeft, 
-  canScrollRight, 
-  onScrollLeft, 
-  onScrollRight 
+export default function ScrollControls({
+  canScrollLeft,
+  canScrollRight,
+  onScrollLeft,
+  onScrollRight,
 }: ScrollControlsProps) {
-  const theme = useTheme()
+  const theme = useTheme();
 
   // Always show scroll controls for debugging
   // if (!canScrollLeft && !canScrollRight) {
@@ -25,45 +25,45 @@ export default function ScrollControls({
   return (
     <Stack direction="row" spacing={1}>
       <Tooltip title="Scroll left">
-        <IconButton 
+        <IconButton
           onClick={onScrollLeft}
           disabled={!canScrollLeft}
           size="small"
-          sx={{ 
+          sx={{
             backgroundColor: theme.palette.grey[800],
             color: theme.palette.common.white,
-            '&:hover': {
-              backgroundColor: theme.palette.grey[700]
+            "&:hover": {
+              backgroundColor: theme.palette.grey[700],
             },
-            '&:disabled': {
+            "&:disabled": {
               backgroundColor: theme.palette.grey[600],
-              color: theme.palette.grey[400]
-            }
+              color: theme.palette.grey[400],
+            },
           }}
         >
           <ChevronLeftIcon fontSize="small" />
         </IconButton>
       </Tooltip>
       <Tooltip title="Scroll right">
-        <IconButton 
+        <IconButton
           onClick={onScrollRight}
           disabled={!canScrollRight}
           size="small"
-          sx={{ 
+          sx={{
             backgroundColor: theme.palette.grey[800],
             color: theme.palette.common.white,
-            '&:hover': {
-              backgroundColor: theme.palette.grey[700]
+            "&:hover": {
+              backgroundColor: theme.palette.grey[700],
             },
-            '&:disabled': {
+            "&:disabled": {
               backgroundColor: theme.palette.grey[600],
-              color: theme.palette.grey[400]
-            }
+              color: theme.palette.grey[400],
+            },
           }}
         >
           <ChevronRightIcon fontSize="small" />
         </IconButton>
       </Tooltip>
     </Stack>
-  )
+  );
 }

@@ -1,25 +1,24 @@
-import { 
-  Box, 
-  Autocomplete, 
-  TextField, 
-  Chip, 
+import {
+  Box,
+  Autocomplete,
+  TextField,
+  Chip,
   useTheme,
-  useMediaQuery 
-} from '@mui/material'
+  useMediaQuery,
+} from "@mui/material";
 
 interface CompetenceFiltersProps {
   // Filter data
-  users: Array<{ userId: string; ownerName: string }>
-  allCompetences: string[]
-  
+  users: Array<{ userId: string; ownerName: string }>;
+  allCompetences: string[];
+
   // Filter state
-  selectedUsers: string[]
-  selectedCompetences: string[]
-  selectedLevels: number[]
-  
+  selectedUsers: string[];
+  selectedCompetences: string[];
+
   // Filter handlers
-  onUsersChange: (users: string[]) => void
-  onCompetencesChange: (competences: string[]) => void
+  onUsersChange: (users: string[]) => void;
+  onCompetencesChange: (competences: string[]) => void;
 }
 
 export default function CompetenceFilters({
@@ -27,30 +26,32 @@ export default function CompetenceFilters({
   allCompetences,
   selectedUsers,
   selectedCompetences,
-  selectedLevels: _selectedLevels,
   onUsersChange,
-  onCompetencesChange
+  onCompetencesChange,
 }: CompetenceFiltersProps) {
-  const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   return (
-    <Box sx={{ mb: 3, mt: '5px' }} className="mobile-filter-wrapper-upper">
-      <Box sx={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        gap: 1, 
-        width: '100%'
-      }} className="mobile-filter-row">
+    <Box sx={{ mb: 3, mt: "5px" }} className="mobile-filter-wrapper-upper">
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 1,
+          width: "100%",
+        }}
+        className="mobile-filter-row"
+      >
         <Autocomplete
           multiple
-          options={users.map(user => user.ownerName)}
+          options={users.map((user) => user.ownerName)}
           value={selectedUsers}
           onChange={(_, newValue) => onUsersChange(newValue)}
           renderInput={(params) => (
             <TextField
               {...params}
-              label={isMobile ? "Team" : "Filter Team Members"}
+              label="Team"
               size="small"
               sx={{ width: isMobile ? 150 : 250 }}
             />
@@ -64,9 +65,9 @@ export default function CompetenceFilters({
                 sx={{
                   backgroundColor: theme.palette.grey[700],
                   color: theme.palette.common.white,
-                  '& .MuiChip-deleteIcon': {
-                    color: theme.palette.common.white
-                  }
+                  "& .MuiChip-deleteIcon": {
+                    color: theme.palette.common.white,
+                  },
                 }}
               />
             ))
@@ -80,7 +81,7 @@ export default function CompetenceFilters({
           renderInput={(params) => (
             <TextField
               {...params}
-              label={isMobile ? "Competences" : "Filter Competences"}
+              label="Competences"
               size="small"
               sx={{ width: isMobile ? 150 : 250 }}
             />
@@ -94,9 +95,9 @@ export default function CompetenceFilters({
                 sx={{
                   backgroundColor: theme.palette.grey[700],
                   color: theme.palette.common.white,
-                  '& .MuiChip-deleteIcon': {
-                    color: theme.palette.common.white
-                  }
+                  "& .MuiChip-deleteIcon": {
+                    color: theme.palette.common.white,
+                  },
                 }}
               />
             ))
@@ -105,5 +106,5 @@ export default function CompetenceFilters({
         {/* Control buttons removed as per request */}
       </Box>
     </Box>
-  )
+  );
 }

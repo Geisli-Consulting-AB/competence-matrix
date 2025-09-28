@@ -62,12 +62,11 @@ export async function saveUserCompetences(
   ownerName: string,
   rows: CompetenceRow[],
 ): Promise<void> {
-  const cleaned = rows
-    .map((r) => ({
-      id: r.id,
-      name: r.name.trim(),
-      level: Math.min(4, Math.max(1, r.level)),
-    }));
+  const cleaned = rows.map((r) => ({
+    id: r.id,
+    name: r.name.trim(),
+    level: Math.min(4, Math.max(1, r.level)),
+  }));
 
   const userDocRef = doc(db, "users", userId);
   await setDoc(

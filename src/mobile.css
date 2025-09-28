@@ -362,8 +362,16 @@ body {
 /* iOS Safari and Chrome specific fixes for vertical text */
 @media (max-width: 768px) {
   /* Try writing-mode first with maximum iOS compatibility */
-  .MuiTableContainer-root .MuiTable-root .MuiTableHead-root .MuiTableRow-root .vertical-header-cell,
-  .MuiTableContainer-root .MuiTable-root .MuiTableHead-root .MuiTableRow-root .MuiTableCell-root.vertical-header-cell,
+  .MuiTableContainer-root
+    .MuiTable-root
+    .MuiTableHead-root
+    .MuiTableRow-root
+    .vertical-header-cell,
+  .MuiTableContainer-root
+    .MuiTable-root
+    .MuiTableHead-root
+    .MuiTableRow-root
+    .MuiTableCell-root.vertical-header-cell,
   table .MuiTableHead-root .MuiTableRow-root .vertical-header-cell {
     /* Use writing-mode with all possible prefixes and fallbacks */
     writing-mode: vertical-lr !important;
@@ -371,33 +379,33 @@ body {
     -ms-writing-mode: tb-lr !important;
     text-orientation: mixed !important;
     -webkit-text-orientation: mixed !important;
-    
+
     /* Ensure proper table cell behavior */
     display: table-cell !important;
-    
+
     /* Force proper dimensions */
     width: 40px !important;
     min-width: 40px !important;
     max-width: 40px !important;
     height: auto !important;
-    
+
     /* Proper cell spacing */
     padding: 4px 2px !important;
     border-left: 1px solid rgba(255, 255, 255, 0.12) !important;
     border-right: 1px solid rgba(255, 255, 255, 0.12) !important;
-    
+
     /* Text handling */
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
     text-align: left !important;
     vertical-align: top !important;
-    
+
     /* Remove any transforms that might interfere */
     transform: none !important;
     -webkit-transform: none !important;
   }
-  
+
   /* Fallback for iOS devices specifically */
   @supports (-webkit-touch-callout: none) {
     .vertical-header-cell {
@@ -406,13 +414,13 @@ body {
       -webkit-writing-mode: horizontal-tb !important;
       text-orientation: initial !important;
       -webkit-text-orientation: initial !important;
-      
+
       /* Apply transform but keep table cell display */
       transform: rotate(90deg) !important;
       -webkit-transform: rotate(90deg) !important;
       transform-origin: center center !important;
       -webkit-transform-origin: center center !important;
-      
+
       /* Ensure it stays as a table cell */
       display: table-cell !important;
       width: 40px !important;
@@ -421,17 +429,17 @@ body {
       vertical-align: middle !important;
     }
   }
-  
+
   /* Force proper table layout */
   .MuiTableContainer-root .MuiTable-root {
     table-layout: auto !important;
     width: 100% !important;
   }
-  
+
   .MuiTableContainer-root .MuiTable-root .MuiTableHead-root .MuiTableRow-root {
     display: table-row !important;
   }
-  
+
   /* Sticky first column for mobile custom layout */
   .mobile-sticky-first-column {
     position: sticky !important;
@@ -440,7 +448,7 @@ body {
     background-color: #121212 !important;
     border-right: 2px solid rgba(255, 255, 255, 0.2) !important;
   }
-  
+
   .mobile-sticky-row-header {
     position: sticky !important;
     left: 0 !important;

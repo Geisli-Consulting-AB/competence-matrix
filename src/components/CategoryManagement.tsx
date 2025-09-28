@@ -226,11 +226,19 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
           >
             {categories.map((category, index) => (
               <React.Fragment key={category.id}>
-                <ListItem alignItems="flex-start" sx={{ position: "relative", textAlign: "center" }}>
+                <ListItem
+                  alignItems="flex-start"
+                  sx={{ position: "relative", textAlign: "center" }}
+                >
                   <ListItemText
                     primary={
                       <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 1, justifyContent: "center" }}
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                          justifyContent: "center",
+                        }}
                         className="mobile-category-header"
                       >
                         <Typography
@@ -270,10 +278,15 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                               <IconButton
                                 size="small"
                                 aria-label="delete"
-                                onClick={() => handleDeleteCategory(category.id)}
+                                onClick={() =>
+                                  handleDeleteCategory(category.id)
+                                }
                                 disabled={category.competences.length > 0}
                                 sx={{
-                                  color: category.competences.length > 0 ? "grey.500" : category.color,
+                                  color:
+                                    category.competences.length > 0
+                                      ? "grey.500"
+                                      : category.color,
                                   p: 0.5,
                                   "&:hover": {
                                     backgroundColor: "rgba(255, 255, 255, 0.1)",
@@ -295,7 +308,10 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
 
                 {/* Competences management interface */}
                 {expandedCategories.has(category.id) && (
-                  <Box sx={{ pl: 2, pr: 2, pb: 2, width: "40%", mx: "auto" }} className="mobile-category-expanded">
+                  <Box
+                    sx={{ pl: 2, pr: 2, pb: 2, width: "40%", mx: "auto" }}
+                    className="mobile-category-expanded"
+                  >
                     <Paper
                       elevation={2}
                       sx={{
@@ -400,11 +416,14 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                                     }
                                     disabled={isCompetenceUsedByUsers(comp)}
                                     sx={{
-                                      color: isCompetenceUsedByUsers(comp) ? "grey.500" : category.color,
+                                      color: isCompetenceUsedByUsers(comp)
+                                        ? "grey.500"
+                                        : category.color,
                                       ml: 0.5,
                                       p: 0.25,
                                       "&:hover": {
-                                        backgroundColor: "rgba(255, 255, 255, 0.1)",
+                                        backgroundColor:
+                                          "rgba(255, 255, 255, 0.1)",
                                       },
                                       "&.Mui-disabled": {
                                         color: "grey.500",
