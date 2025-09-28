@@ -151,7 +151,7 @@ function App() {
     };
 
     fetchExistingCompetences();
-  }, [user]);
+  }, [user, categories]);
 
   const persistAll = async (rows: CompetenceRow[]) => {
     if (!user) return;

@@ -32,6 +32,17 @@ export default function CompetenceTable({
   onSave,
   existingCompetences = [],
 }: CompetenceTableProps) {
+  // Filter out competences that are already added to avoid duplicates
+  const getFilteredSuggestions = (currentIndex: number) => {
+    const currentCompetenceNames = competences
+      .map((comp, index) => index !== currentIndex ? comp.name.trim() : '')
+      .filter(name => name !== '');
+    
+    return existingCompetences.filter(suggestion => 
+      !currentCompetenceNames.includes(suggestion)
+    );
+  };
+
   const updateName = async (idx: number, name: string) => {
     const nextRows = competences.map((row, i) =>
       i === idx ? { ...row, name } : row,
@@ -103,7 +114,7 @@ export default function CompetenceTable({
                 >
                   <Autocomplete
                     freeSolo
-                    options={existingCompetences}
+                    options={getFilteredSuggestions(idx)}
                     value={c.name}
                     onChange={async (_, newValue) =>
                       updateName(idx, newValue || "")
@@ -172,7 +183,7 @@ export default function CompetenceTable({
               <Box className="mobile-competence-input-row">
                 <Autocomplete
                   freeSolo
-                  options={existingCompetences}
+                  options={getFilteredSuggestions(idx)}
                   value={c.name}
                   onChange={async (_, newValue) =>
                     updateName(idx, newValue || "")
