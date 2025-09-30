@@ -146,12 +146,19 @@ const CompetenceMapping: React.FC<CompetenceMappingProps> = ({
         ) : (
           <>
             {/* Desktop Table View */}
-            <TableContainer className="mobile-hide-table">
-              <Table>
+            <TableContainer
+              className="mobile-hide-table"
+              sx={{ maxHeight: "calc(100vh - 80px)", overflow: "auto" }}
+            >
+              <Table stickyHeader>
                 <TableHead>
                   <TableRow>
-                    <TableCell>Unmapped Competence</TableCell>
-                    <TableCell>Assign to Category</TableCell>
+                    <TableCell sx={{ backgroundColor: (t) => t.palette.background.paper }}>
+                      Unmapped Competence
+                    </TableCell>
+                    <TableCell sx={{ backgroundColor: (t) => t.palette.background.paper }}>
+                      Assign to Category
+                    </TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>

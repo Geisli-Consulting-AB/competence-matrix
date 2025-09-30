@@ -92,16 +92,19 @@ export default function CompetenceTable({
   return (
     <Box>
       {/* Desktop Table View */}
-      <TableContainer sx={{ overflowX: "auto" }} className="mobile-hide-table">
-        <Table size="small" sx={{ minWidth: 900 }}>
+      <TableContainer
+        sx={{ maxHeight: "calc(100vh - 80px)", overflow: "auto" }}
+        className="mobile-hide-table"
+     >
+        <Table size="small" stickyHeader sx={{ minWidth: 900 }}>
           <TableHead>
             <TableRow>
-              <TableCell>Competence</TableCell>
-              <TableCell align="center">Want to learn</TableCell>
-              <TableCell align="center">Beginner</TableCell>
-              <TableCell align="center">Proficient</TableCell>
-              <TableCell align="center">Expert</TableCell>
-              <TableCell align="center"></TableCell>
+              <TableCell sx={{ backgroundColor: (t) => t.palette.background.paper }}>Competence</TableCell>
+              <TableCell align="center" sx={{ backgroundColor: (t) => t.palette.background.paper }}>Want to learn</TableCell>
+              <TableCell align="center" sx={{ backgroundColor: (t) => t.palette.background.paper }}>Beginner</TableCell>
+              <TableCell align="center" sx={{ backgroundColor: (t) => t.palette.background.paper }}>Proficient</TableCell>
+              <TableCell align="center" sx={{ backgroundColor: (t) => t.palette.background.paper }}>Expert</TableCell>
+              <TableCell align="center" sx={{ backgroundColor: (t) => t.palette.background.paper }}></TableCell>
             </TableRow>
           </TableHead>
           <TableBody>

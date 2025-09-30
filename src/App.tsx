@@ -285,9 +285,6 @@ function App() {
               )}
               {currentTab === 2 && (
                 <>
-                  <Typography variant="h6" gutterBottom>
-                    My Competences
-                  </Typography>
                   <CompetenceTable
                     competences={competences}
                     onChange={setCompetences}
