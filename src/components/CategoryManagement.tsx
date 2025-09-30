@@ -17,7 +17,11 @@ import {
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
 } from "@mui/icons-material";
-import { saveUserCategories, subscribeToUserCategories } from "../firebase";
+import { 
+  saveSharedCategory, 
+  deleteSharedCategory, 
+  subscribeToSharedCategories 
+} from "../firebase";
 import type { User } from "firebase/auth";
 
 interface Category {
@@ -43,18 +47,17 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
     new Set(),
   );
 
-  // Subscribe to categories from database
+  // Subscribe to shared categories from database
   useEffect(() => {
     if (!user?.uid) {
       console.log("No user authenticated, skipping category subscription");
       return;
     }
 
-    console.log("Subscribing to categories for user:", user.uid);
-    const unsubscribe = subscribeToUserCategories(
-      user.uid,
-      (firebaseCategories) => {
-        console.log("Received categories from database:", firebaseCategories);
+    console.log("Subscribing to shared categories");
+    const unsubscribe = subscribeToSharedCategories(
+      (firebaseCategories: Category[]) => {
+        console.log("Received shared categories from database:", firebaseCategories);
         setCategories(firebaseCategories);
       },
     );
@@ -62,19 +65,35 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
     return () => unsubscribe();
   }, [user?.uid]);
 
-  // Save categories to database whenever they change
-  const saveCategoriesToDB = async (updatedCategories: Category[]) => {
+  // Save individual category to shared database
+  const saveCategoryToDB = async (category: Category) => {
     if (!user?.uid) {
-      console.log("No user authenticated, cannot save categories");
+      console.log("No user authenticated, cannot save category");
       return;
     }
 
-    console.log("Saving categories to database:", updatedCategories);
+    console.log("Saving category to shared database:", category);
     try {
-      await saveUserCategories(user.uid, updatedCategories);
-      console.log("Categories saved successfully");
+      await saveSharedCategory(category);
+      console.log("Category saved successfully");
     } catch (error) {
-      console.error("Failed to save categories:", error);
+      console.error("Failed to save category:", error);
+    }
+  };
+
+  // Delete category from shared database
+  const deleteCategoryFromDB = async (categoryId: string) => {
+    if (!user?.uid) {
+      console.log("No user authenticated, cannot delete category");
+      return;
+    }
+
+    console.log("Deleting category from shared database:", categoryId);
+    try {
+      await deleteSharedCategory(categoryId);
+      console.log("Category deleted successfully");
+    } catch (error) {
+      console.error("Failed to delete category:", error);
     }
   };
 
@@ -116,22 +135,20 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
       color: getRandomColor(),
     };
 
-    const updatedCategories = [...categories, newCategory];
-    setCategories(updatedCategories);
     setNewCategoryName("");
-    await saveCategoriesToDB(updatedCategories);
+    await saveCategoryToDB(newCategory);
+    // The category will be added to the local state via the subscription
   };
 
   const handleDeleteCategory = async (categoryId: string) => {
-    const updatedCategories = categories.filter((cat) => cat.id !== categoryId);
-    setCategories(updatedCategories);
     // Remove from expanded categories if it was expanded
     setExpandedCategories((prev) => {
       const newSet = new Set(prev);
       newSet.delete(categoryId);
       return newSet;
     });
-    await saveCategoriesToDB(updatedCategories);
+    await deleteCategoryFromDB(categoryId);
+    // The category will be removed from local state via the subscription
   };
 
   const handleToggleExpanded = (categoryId: string) => {
@@ -150,17 +167,16 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
     const competenceName = (newCompetenceNames[categoryId] || "").trim();
     if (!competenceName) return;
 
-    const updatedCategories = categories.map((cat) =>
-      cat.id === categoryId
-        ? {
-            ...cat,
-            competences: cat.competences.includes(competenceName)
-              ? cat.competences
-              : [...cat.competences, competenceName],
-          }
-        : cat,
-    );
-    setCategories(updatedCategories);
+    const category = categories.find(cat => cat.id === categoryId);
+    if (!category) return;
+
+    // Check if competence already exists
+    if (category.competences.includes(competenceName)) return;
+
+    const updatedCategory = {
+      ...category,
+      competences: [...category.competences, competenceName],
+    };
     
     // Clear only this category's input
     setNewCompetenceNames(prev => ({
@@ -168,25 +184,24 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
       [categoryId]: ""
     }));
     
-    await saveCategoriesToDB(updatedCategories);
+    await saveCategoryToDB(updatedCategory);
   };
 
   const handleRemoveCompetence = async (
     categoryId: string,
     competenceToRemove: string,
   ) => {
-    const updatedCategories = categories.map((cat) =>
-      cat.id === categoryId
-        ? {
-            ...cat,
-            competences: cat.competences.filter(
-              (comp) => comp !== competenceToRemove,
-            ),
-          }
-        : cat,
-    );
-    setCategories(updatedCategories);
-    await saveCategoriesToDB(updatedCategories);
+    const category = categories.find(cat => cat.id === categoryId);
+    if (!category) return;
+
+    const updatedCategory = {
+      ...category,
+      competences: category.competences.filter(
+        (comp) => comp !== competenceToRemove,
+      ),
+    };
+    
+    await saveCategoryToDB(updatedCategory);
   };
 
   return (

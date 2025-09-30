@@ -26,7 +26,7 @@ import CategoryFilter from "./CategoryFilter";
 import {
   getAllUsersCompetences,
   auth,
-  subscribeToUserCategories,
+  subscribeToSharedCategories,
 } from "../firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import type { User } from "firebase/auth";
@@ -166,14 +166,14 @@ export default function CompetenceOverview() {
     fetchData();
   }, [user]);
 
-  // Subscribe to categories
+  // Subscribe to shared categories
   useEffect(() => {
     if (!user?.uid) {
       setCategories([]);
       return;
     }
 
-    const unsubscribe = subscribeToUserCategories(user.uid, (cats) => {
+    const unsubscribe = subscribeToSharedCategories((cats: Category[]) => {
       setCategories(cats);
     });
 

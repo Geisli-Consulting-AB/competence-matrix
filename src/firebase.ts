@@ -6,6 +6,11 @@ import {
   onSnapshot,
   setDoc,
   serverTimestamp,
+  collection,
+  query,
+  orderBy,
+  getDocs,
+  deleteDoc,
 } from "firebase/firestore";
 import type { Unsubscribe } from "firebase/firestore";
 
@@ -88,8 +93,6 @@ export async function getAllUsersCompetences(): Promise<{
   users: { userId: string; ownerName: string; competences: CompetenceRow[] }[];
   allCompetences: string[];
 }> {
-  const { collection, getDocs } = await import("firebase/firestore");
-
   const usersCollection = collection(db, "users");
   const snapshot = await getDocs(usersCollection);
 
@@ -136,10 +139,8 @@ export async function getAllUsersCompetences(): Promise<{
   return { users, allCompetences };
 }
 
-// Get all competences from both users and categories
+// Get all competences from users and shared categories
 export async function getAllCompetencesForAutocomplete(): Promise<string[]> {
-  const { collection, getDocs } = await import("firebase/firestore");
-  
   const competenceSet = new Set<string>();
   
   try {
@@ -170,70 +171,71 @@ export async function getAllCompetencesForAutocomplete(): Promise<string[]> {
   }
   
   try {
-    // 2. Get competences from categories collection
-    const categoriesCollection = collection(db, "categories");
-    const categoriesSnapshot = await getDocs(categoriesCollection);
+    // 2. Get competences from shared categories collection
+    const sharedCategoriesCollection = collection(db, "sharedCategories");
+    const sharedCategoriesSnapshot = await getDocs(sharedCategoriesCollection);
     
-    categoriesSnapshot.forEach((doc) => {
+    sharedCategoriesSnapshot.forEach((doc) => {
       const data = doc.data();
-      if (Array.isArray(data.categories)) {
-        data.categories.forEach((category: any) => {
-          if (Array.isArray(category.competences)) {
-            category.competences.forEach((competenceName: string) => {
-              if (competenceName && competenceName.trim()) {
-                competenceSet.add(competenceName.trim());
-              }
-            });
+      if (Array.isArray(data.competences)) {
+        data.competences.forEach((competenceName: string) => {
+          if (competenceName && competenceName.trim()) {
+            competenceSet.add(competenceName.trim());
           }
         });
       }
     });
     
   } catch (error) {
-    console.error("Error fetching from categories collection:", error);
+    console.error("Error fetching from shared categories collection:", error);
   }
   
   return Array.from(competenceSet).sort();
 }
 
-// Category management functions
-export async function saveUserCategories(
-  userId: string,
-  categories: Category[],
-): Promise<void> {
-  // Clean categories data
-  const cleanedCategories = categories.map((cat) => ({
-    id: cat.id,
-    name: cat.name,
-    competences: cat.competences,
-    color: cat.color,
-  }));
+// Shared category management functions
+export async function saveSharedCategory(category: Category): Promise<void> {
+  // Clean category data
+  const cleanedCategory = {
+    id: category.id,
+    name: category.name,
+    competences: category.competences,
+    color: category.color,
+    updatedAt: serverTimestamp(),
+  };
 
-  const categoriesDocRef = doc(db, "categories", userId);
-  await setDoc(
-    categoriesDocRef,
-    { categories: cleanedCategories, updatedAt: serverTimestamp() },
-    { merge: true },
-  );
+  const categoryDocRef = doc(db, "sharedCategories", category.id);
+  await setDoc(categoryDocRef, cleanedCategory);
 }
 
-export function subscribeToUserCategories(
-  userId: string,
+export async function deleteSharedCategory(categoryId: string): Promise<void> {
+  const categoryDocRef = doc(db, "sharedCategories", categoryId);
+  await deleteDoc(categoryDocRef);
+}
+
+export function subscribeToSharedCategories(
   onChange: (categories: Category[]) => void,
 ): Unsubscribe {
-  const categoriesDocRef = doc(db, "categories", userId);
-  return onSnapshot(categoriesDocRef, (snap) => {
-    const data = (snap.data() as any) || {};
-    const categories: Category[] = Array.isArray(data.categories)
-      ? data.categories.map((cat: any) => ({
-          id: String(cat.id || ""),
-          name: String(cat.name || ""),
-          competences: Array.isArray(cat.competences)
-            ? cat.competences.map((c: any) => String(c))
-            : [],
-          color: String(cat.color || "#FF6B6B"),
-        }))
-      : [];
+  const categoriesCollection = collection(db, "sharedCategories");
+  const categoriesQuery = query(categoriesCollection, orderBy("name"));
+  
+  return onSnapshot(categoriesQuery, (snapshot: any) => {
+    const categories: Category[] = [];
+    snapshot.forEach((doc: any) => {
+      const data = doc.data();
+      categories.push({
+        id: String(data.id || doc.id),
+        name: String(data.name || ""),
+        competences: Array.isArray(data.competences)
+          ? data.competences.map((c: any) => String(c))
+          : [],
+        color: String(data.color || "#FF6B6B"),
+      });
+    });
     onChange(categories);
+  }, (error: any) => {
+    console.error("Error in subscribeToSharedCategories:", error);
+    // Return empty array on error to prevent app crashes
+    onChange([]);
   });
 }

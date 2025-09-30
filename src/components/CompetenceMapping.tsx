@@ -14,7 +14,7 @@ import {
   Card,
   CardContent,
 } from "@mui/material";
-import { saveUserCategories } from "../firebase";
+import { saveSharedCategory } from "../firebase";
 import type { User } from "firebase/auth";
 
 interface UnmappedCompetence {
@@ -92,23 +92,22 @@ const CompetenceMapping: React.FC<CompetenceMappingProps> = ({
   ) => {
     if (!user?.uid) return;
 
-    // Update the category to include this competence
-    const updatedCategories = categories.map((category) => {
-      if (category.id === categoryId) {
-        // Add competence if not already present
-        if (!category.competences.includes(competenceName)) {
-          return {
-            ...category,
-            competences: [...category.competences, competenceName],
-          };
-        }
-      }
-      return category;
-    });
+    // Find the category to update
+    const categoryToUpdate = categories.find(cat => cat.id === categoryId);
+    if (!categoryToUpdate) return;
 
-    // Save to database
+    // Check if competence is already in this category
+    if (categoryToUpdate.competences.includes(competenceName)) return;
+
+    // Create updated category with the new competence
+    const updatedCategory = {
+      ...categoryToUpdate,
+      competences: [...categoryToUpdate.competences, competenceName],
+    };
+
+    // Save to shared database
     try {
-      await saveUserCategories(user.uid, updatedCategories);
+      await saveSharedCategory(updatedCategory);
 
       // Remove the competence from unmapped list
       setUnmappedCompetences((prev) =>

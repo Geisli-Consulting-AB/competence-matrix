@@ -39,8 +39,23 @@ service cloud.firestore {
       allow write: if isOwner(userId);
     }
 
-    // Categories collection - each user can only access their own categories
-    // But allow geisli.se users to read all categories for autocomplete suggestions
+    // Shared categories collection - all geisli.se users can read and write
+    match /sharedCategories/{categoryId} {
+      allow read: if isGeisliUser();
+      allow create, update: if isGeisliUser() && validCategory(request.resource.data);
+      allow delete: if isGeisliUser();
+    }
+
+    function validCategory(data) {
+      // Required fields for categories
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.color is string && data.color.size() > 0 &&
+             data.competences is list &&
+             // Optional fields with type checks if present
+             (!data.keys().hasAny(['updatedAt']) || data.updatedAt is timestamp);
+    }
+
+    // Legacy categories collection - keep for backward compatibility but deprecated
     match /categories/{userId} {
       allow read: if isGeisliUser();
       allow write: if isOwner(userId);

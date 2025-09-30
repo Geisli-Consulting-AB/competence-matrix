@@ -8,7 +8,7 @@ import {
   saveUserCompetences,
   getAllUsersCompetences,
   getAllCompetencesForAutocomplete,
-  subscribeToUserCategories,
+  subscribeToSharedCategories,
   type Category,
 } from "./firebase";
 import {
@@ -106,7 +106,7 @@ function App() {
     const unsubCompetences = subscribeToUserCompetences(user.uid, (rows) =>
       setCompetences(rows),
     );
-    const unsubCategories = subscribeToUserCategories(user.uid, (cats) =>
+    const unsubCategories = subscribeToSharedCategories((cats: Category[]) =>
       setCategories(cats),
     );
     return () => {
