@@ -93,6 +93,28 @@ body {
   }
 }
 
+/* Very small devices: tighten header columns further */
+@media (max-width: 360px) {
+  /* Narrow vertical header cells to reduce horizontal scroll on ultra-small screens */
+  .MuiTableContainer-root
+    .MuiTable-root
+    .MuiTableHead-root
+    .MuiTableRow-root
+    .vertical-header-cell,
+  .MuiTableContainer-root
+    .MuiTable-root
+    .MuiTableHead-root
+    .MuiTableRow-root
+    .MuiTableCell-root.vertical-header-cell,
+  table .MuiTableHead-root .MuiTableRow-root .vertical-header-cell {
+    width: 32px !important;
+    min-width: 32px !important;
+    max-width: 32px !important;
+    padding: 1px 0 !important;
+    font-size: 0.65rem !important;
+  }
+}
+
 /* Small mobile devices */
 @media (max-width: 480px) {
   .mobile-title {
@@ -261,6 +283,14 @@ body {
     justify-content: center !important;
     margin-top: 16px !important;
     padding: 8px !important;
+    position: sticky !important; /* keep the add button visible */
+    bottom: 8px !important;
+    z-index: 20 !important;
+    background: linear-gradient(
+      to top,
+      rgba(18, 18, 18, 0.95),
+      rgba(18, 18, 18, 0.6)
+    ) !important;
   }
 
   .mobile-add-button {
@@ -268,6 +298,8 @@ body {
     border: 1px dashed rgba(25, 118, 210, 0.5) !important;
     border-radius: 8px !important;
     padding: 12px !important;
+    min-width: 44px !important;
+    min-height: 44px !important; /* ensure touch target >=44px */
   }
 }
 
@@ -283,6 +315,8 @@ body {
   /* Improve touch targets */
   .MuiIconButton-root {
     padding: 8px !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
   }
 
   /* Better spacing for mobile */
@@ -303,6 +337,13 @@ body {
 
   .MuiOutlinedInput-root {
     font-size: 0.875rem !important;
+  }
+
+  /* Prevent iOS zoom on focus by keeping input font-size >= 16px */
+  .mobile-competence-input .MuiInputBase-input,
+  .mobile-filter-row .MuiInputBase-input,
+  .MuiTextField-root .MuiInputBase-input {
+    font-size: 16px !important;
   }
 
   /* Filter row layout on mobile */
@@ -374,11 +415,11 @@ body {
     .MuiTableCell-root.vertical-header-cell,
   table .MuiTableHead-root .MuiTableRow-root .vertical-header-cell {
     /* Use writing-mode with all possible prefixes and fallbacks */
-    writing-mode: vertical-lr !important;
     -webkit-writing-mode: vertical-lr !important;
     -ms-writing-mode: tb-lr !important;
-    text-orientation: mixed !important;
+    writing-mode: vertical-lr !important;
     -webkit-text-orientation: mixed !important;
+    text-orientation: mixed !important;
 
     /* Ensure proper table cell behavior */
     display: table-cell !important;
@@ -402,24 +443,24 @@ body {
     vertical-align: top !important;
 
     /* Remove any transforms that might interfere */
-    transform: none !important;
     -webkit-transform: none !important;
+    transform: none !important;
   }
 
   /* Fallback for iOS devices specifically */
   @supports (-webkit-touch-callout: none) {
     .vertical-header-cell {
       /* Use CSS transform as fallback but maintain table structure */
-      writing-mode: horizontal-tb !important;
       -webkit-writing-mode: horizontal-tb !important;
-      text-orientation: initial !important;
+      writing-mode: horizontal-tb !important;
       -webkit-text-orientation: initial !important;
+      text-orientation: initial !important;
 
       /* Apply transform but keep table cell display */
-      transform: rotate(90deg) !important;
       -webkit-transform: rotate(90deg) !important;
-      transform-origin: center center !important;
+      transform: rotate(90deg) !important;
       -webkit-transform-origin: center center !important;
+      transform-origin: center center !important;
 
       /* Ensure it stays as a table cell */
       display: table-cell !important;
