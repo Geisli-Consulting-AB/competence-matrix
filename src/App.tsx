@@ -35,6 +35,7 @@ import CompetenceTable from "./components/CompetenceTable";
 import CompetenceOverview from "./components/CompetenceOverview";
 import CategoryManagement from "./components/CategoryManagement";
 import CompetenceMapping from "./components/CompetenceMapping";
+import CVManagement from "./components/cv/CVManagement";
 
 type CompetenceRow = { id: string; name: string; level: number };
 
@@ -256,6 +257,7 @@ function App() {
                 <Tab label={isMobile ? "Overview" : "Team Overview"} />
                 <Tab label={isMobile ? "Manage" : "Manage Competences"} />
                 <Tab label="My Competences" />
+                <Tab label="CV" />
               </Tabs>
               <Button
                 variant="outlined"
@@ -293,6 +295,7 @@ function App() {
                   />
                 </>
               )}
+              {currentTab === 3 && <CVManagement user={user} />}
             </Box>
           </Paper>
         )}
