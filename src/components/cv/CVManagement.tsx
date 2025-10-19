@@ -101,6 +101,8 @@ export interface UserProfile {
   roles?: string[];
   languages?: string[];
   expertise?: string[];
+  // Per-CV inclusion list of competences (by name)
+  competences?: string[];
   projects?: Project[];
   experiences?: Experience[];
   educations?: Education[];
@@ -235,6 +237,8 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
                 roles: data.roles ?? [],
                 languages: data.languages ?? [],
                 expertise: data.expertise ?? [],
+                // If not set for this CV, it means all user competences are implicitly included until modified in the tab
+                competences: data.competences,
                 projects: data.projects ?? [],
                 experiences: data.experiences ?? [],
                 educations: data.educations ?? [],
@@ -284,7 +288,11 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
       </TabPanel>
 
       <TabPanel value={tabValue} index={6}>
-        <CompetencesCompactTab user={user} />
+        <CompetencesCompactTab 
+          user={user}
+          includedCompetences={profile.competences}
+          onChangeIncluded={(list) => handleProfileChange({ competences: list })}
+        />
       </TabPanel>
       
     </Box>

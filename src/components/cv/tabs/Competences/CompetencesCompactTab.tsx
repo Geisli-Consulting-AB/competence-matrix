@@ -2,10 +2,13 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Paper, Typography, Chip, Tooltip, Box, CircularProgress, Divider } from '@mui/material';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import type { User } from 'firebase/auth';
-import { subscribeToUserCompetences, saveUserCompetences, type CompetenceRow } from '../../../../firebase';
+import { subscribeToUserCompetences, type CompetenceRow } from '../../../../firebase';
 
 export interface CompetencesCompactTabProps {
   user: User | null;
+  // Names of competences included in the current CV. If undefined, all user competences are implicitly included until modified.
+  includedCompetences?: string[];
+  onChangeIncluded?: (list: string[]) => void;
 }
 
 const levelLabels: Record<number, string> = {
@@ -16,9 +19,8 @@ const levelLabels: Record<number, string> = {
 
 const order: number[] = [4, 3, 2];
 
-const CompetencesCompactTab: React.FC<CompetencesCompactTabProps> = ({ user }) => {
+const CompetencesCompactTab: React.FC<CompetencesCompactTabProps> = ({ user, includedCompetences, onChangeIncluded }) => {
   const [rows, setRows] = useState<CompetenceRow[] | null>(null);
-  const [savingId, setSavingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -29,13 +31,24 @@ const CompetencesCompactTab: React.FC<CompetencesCompactTabProps> = ({ user }) =
     return () => unsub();
   }, [user]);
 
-  // Group competences by level (omit level 1), sort names within groups
+  // Helper: set of included names. If undefined, treat all user competences (levels 2-4) as included.
+  const includedSet = useMemo(() => {
+    if (Array.isArray(includedCompetences)) {
+      return new Set((includedCompetences || []).map((n) => (n || '').trim()).filter(Boolean));
+    }
+    return null; // null means "include all"
+  }, [includedCompetences]);
+
+  // Group competences by level (omit level 1), sort names within groups, and filter by inclusion
   const grouped = useMemo(() => {
     const base = { 2: [] as CompetenceRow[], 3: [] as CompetenceRow[], 4: [] as CompetenceRow[] };
     const list = Array.isArray(rows) ? rows : [];
     list.forEach((r) => {
+      const name = (r.name || '').trim();
       const lvl = Number(r.level || 1);
-      if (lvl >= 2 && lvl <= 4) {
+      const isEligible = name && lvl >= 2 && lvl <= 4;
+      const isIncluded = includedSet ? includedSet.has(name) : true;
+      if (isEligible && isIncluded) {
         base[lvl as 2 | 3 | 4].push(r);
       }
     });
@@ -43,19 +56,28 @@ const CompetencesCompactTab: React.FC<CompetencesCompactTabProps> = ({ user }) =
       base[k].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     });
     return base;
-  }, [rows]);
+  }, [rows, includedSet]);
 
   const anyToShow = useMemo(() => order.some((lvl) => grouped[lvl as 2 | 3 | 4].length > 0), [grouped]);
 
-  const handleDelete = async (id: string) => {
-    if (!user || !Array.isArray(rows)) return;
-    setSavingId(id);
-    const next = rows.filter((r) => r.id !== id);
-    try {
-      await saveUserCompetences(user.uid, user.displayName || '', next);
-    } finally {
-      setSavingId(null);
+  const handleDelete = (name: string) => {
+    const clean = (name || '').trim();
+    if (!clean || !onChangeIncluded) return;
+
+    let current: string[];
+    if (Array.isArray(includedCompetences)) {
+      current = [...includedCompetences];
+    } else {
+      // If there was no explicit list, initialize from all available eligible names, then remove the one being deleted
+      const list = Array.isArray(rows) ? rows : [];
+      const eligibleAll = list
+        .filter((r) => (r.name || '').trim() && Number(r.level || 1) >= 2 && Number(r.level || 1) <= 4)
+        .map((r) => (r.name || '').trim());
+      // Use a set to ensure uniqueness
+      current = Array.from(new Set(eligibleAll));
     }
+    const next = current.filter((n) => n.trim() !== clean);
+    onChangeIncluded(next);
   };
 
   if (!rows) {
@@ -88,17 +110,15 @@ const CompetencesCompactTab: React.FC<CompetencesCompactTabProps> = ({ user }) =
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                 {items.map((row) => {
                   const label = `${row.name || '(unnamed competence)'}`; // omit level on chip
-                  const isSaving = savingId === row.id;
                   return (
-                    <Tooltip key={row.id} title={isSaving ? 'Deleting…' : 'Delete competence'}>
+                    <Tooltip key={row.id} title={'Exclude from this CV'}>
                       <span>
                         <Chip
                           label={label}
-                          onDelete={() => handleDelete(row.id)}
+                          onDelete={() => handleDelete(row.name || '')}
                           deleteIcon={<DeleteOutlineIcon />}
-                          disabled={isSaving}
                           sx={{ '& .MuiChip-label': { px: 1 } }}
-                          aria-label={`competence ${row.name} delete`}
+                          aria-label={`exclude competence ${row.name} from CV`}
                         />
                       </span>
                     </Tooltip>
