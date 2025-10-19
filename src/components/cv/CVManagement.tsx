@@ -4,6 +4,7 @@ import type { User } from 'firebase/auth';
 import OverviewTab from './tabs/Overview/OverviewTab';
 import PersonalInfoTab from './tabs/PersonalInfo/PersonalInfoTab';
 import ExperienceEditor from './tabs/Experience/ExperienceEditor';
+import EducationEditor from './tabs/Education/EducationEditor';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -59,6 +60,14 @@ export interface Experience {
   competences?: string[]; // list of competences
 }
 
+export interface Education {
+  id: string;
+  startYear?: string;
+  endYear?: string;
+  school?: string; // School/University
+  title?: string; // Degree or program title
+}
+
 export interface CVItem {
   id: string;
   name: string;
@@ -75,6 +84,7 @@ export interface UserProfile {
   expertise?: string[];
   projects?: Project[];
   experiences?: Experience[];
+  educations?: Education[];
   cvs?: CVItem[];
 }
 
@@ -91,6 +101,7 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
     expertise: [],
     projects: [],
     experiences: [],
+    educations: [],
     cvs: []
   });
 
@@ -158,6 +169,7 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
             <Tab label="Overview" {...a11yProps(0)} />
             <Tab label="Personal Info" {...a11yProps(1)} disabled={!selectedCvId} />
             <Tab label="Experience" {...a11yProps(2)} disabled={!selectedCvId} />
+            <Tab label="Education" {...a11yProps(3)} disabled={!selectedCvId} />
           </Tabs>
           {selectedCvId && (
             <Typography
@@ -198,6 +210,7 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
               expertise: (data as any).expertise ?? [],
               projects: (data as any).projects ?? [],
               experiences: (data as any).experiences ?? [],
+              educations: (data as any).educations ?? [],
               cvs: prev.cvs ?? [],
             }));
           }}
@@ -217,6 +230,13 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
           experiences={profile.experiences || []}
           onChange={(experiences) => handleProfileChange({ experiences })}
           existingCompetences={existingCompetences}
+        />
+      </TabPanel>
+
+      <TabPanel value={tabValue} index={3}>
+        <EducationEditor
+          educations={profile.educations || []}
+          onChange={(educations) => handleProfileChange({ educations })}
         />
       </TabPanel>
       
