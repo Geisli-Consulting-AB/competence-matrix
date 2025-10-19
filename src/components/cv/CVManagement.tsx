@@ -6,6 +6,7 @@ import PersonalInfoTab from './tabs/PersonalInfo/PersonalInfoTab';
 import ExperienceEditor from './tabs/Experience/ExperienceEditor';
 import EducationEditor from './tabs/Education/EducationEditor';
 import CoursesCertificationsEditor from './tabs/Courses/CoursesCertificationsEditor';
+import EngagementPublicationsEditor from './tabs/EngagementPublications/EngagementPublicationsEditor';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -76,6 +77,15 @@ export interface CourseCert {
   title?: string;
 }
 
+export interface EngagementPublication {
+  id: string;
+  year?: string;
+  title?: string;
+  locationOrPublication?: string;
+  description?: string;
+  url?: string;
+}
+
 export interface CVItem {
   id: string;
   name: string;
@@ -94,6 +104,7 @@ export interface UserProfile {
   experiences?: Experience[];
   educations?: Education[];
   coursesCertifications?: CourseCert[];
+  engagementsPublications?: EngagementPublication[];
   cvs?: CVItem[];
 }
 
@@ -112,6 +123,7 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
     experiences: [],
     educations: [],
     coursesCertifications: [],
+    engagementsPublications: [],
     cvs: []
   });
 
@@ -182,6 +194,7 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
             <Tab label="Experience" {...a11yProps(2)} disabled={!selectedCvId} />
             <Tab label="Education" {...a11yProps(3)} disabled={!selectedCvId} />
             <Tab label="Courses & Certifications" {...a11yProps(4)} disabled={!selectedCvId} />
+            <Tab label="Engagement & Publications" {...a11yProps(5)} disabled={!selectedCvId} />
           </Tabs>
           {selectedCvId && (
             <Typography
@@ -224,6 +237,7 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
                 experiences: data.experiences ?? [],
                 educations: data.educations ?? [],
                 coursesCertifications: data.coursesCertifications ?? [],
+                engagementsPublications: data.engagementsPublications ?? [],
                 cvs: prev.cvs ?? [],
               }));
           }}
@@ -257,6 +271,13 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
         <CoursesCertificationsEditor
           items={profile.coursesCertifications || []}
           onChange={(items) => handleProfileChange({ coursesCertifications: items })}
+        />
+      </TabPanel>
+
+      <TabPanel value={tabValue} index={5}>
+        <EngagementPublicationsEditor
+          items={profile.engagementsPublications || []}
+          onChange={(items) => handleProfileChange({ engagementsPublications: items })}
         />
       </TabPanel>
       
