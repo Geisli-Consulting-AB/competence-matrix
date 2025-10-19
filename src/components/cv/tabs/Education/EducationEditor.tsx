@@ -83,8 +83,8 @@ const EducationEditor: React.FC<EducationEditorProps> = ({ educations = [], onCh
     e.dataTransfer.effectAllowed = 'move';
     try {
       e.dataTransfer.setData('text/plain', String(index));
-    } catch (err) {
-      console.warn('Drag start setData failed', err);
+    } catch {
+      /* ignore */
     }
   };
 
@@ -100,8 +100,8 @@ const EducationEditor: React.FC<EducationEditorProps> = ({ educations = [], onCh
     try {
       const data = e.dataTransfer.getData('text/plain');
       if (data !== '') from = Number(data);
-    } catch (err) {
-      console.warn('Drag drop getData failed', err);
+    } catch {
+      /* ignore */
     }
     const to = index;
     setDragOverIndex(null);

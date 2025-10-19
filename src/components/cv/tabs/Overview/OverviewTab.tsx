@@ -96,6 +96,11 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ cvs = [], onChange, selectedI
           );
         })
       )}
+      <Box sx={{ mt: 1 }}>
+        <Typography variant="caption" color="text.secondary">
+          CVs are stored in Firebase Firestore under users/{'{'}uid{'}'}/cvs and updates are saved automatically.
+        </Typography>
+      </Box>
     </Paper>
   );
 };

@@ -8,6 +8,7 @@ import EducationEditor from './tabs/Education/EducationEditor';
 import CoursesCertificationsEditor from './tabs/Courses/CoursesCertificationsEditor';
 import EngagementPublicationsEditor from './tabs/EngagementPublications/EngagementPublicationsEditor';
 import CompetencesCompactTab from './tabs/Competences/CompetencesCompactTab';
+import { subscribeToUserCVs, saveUserCV, deleteUserCV } from '../../firebase';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -142,6 +143,21 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
     }
   }, [user]);
 
+  // Subscribe to user's CVs in Firestore to populate Overview list
+  useEffect(() => {
+    if (!user) {
+      setProfile(prev => ({ ...prev, cvs: [] }));
+      return;
+    }
+    const unsub = subscribeToUserCVs(user.uid, (rows) => {
+      setProfile(prev => ({
+        ...prev,
+        cvs: rows.map(r => ({ id: r.id, name: r.name, data: r.data as Partial<Omit<UserProfile, 'cvs'>> | undefined }))
+      }));
+    });
+    return () => unsub();
+  }, [user]);
+
   // Clear selection if the selected CV no longer exists
   useEffect(() => {
     if (!selectedCvId) return;
@@ -163,6 +179,7 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
   };
 
   const handleProfileChange = (updates: Partial<UserProfile>) => {
+    let toSave: { id: string; name: string; data: unknown } | null = null;
     setProfile(prev => {
       const next = { ...prev, ...updates };
       // If a CV is selected, persist updates into that CV's data snapshot
@@ -174,11 +191,17 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
           // Exclude cvs field from being embedded
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { cvs: _ignored, ...updatesWithoutCvs } = updates;
-          next.cvs[idx] = { ...cv, data: { ...currentData, ...updatesWithoutCvs } };
+          const updatedCv = { ...cv, data: { ...currentData, ...updatesWithoutCvs } };
+          next.cvs[idx] = updatedCv;
+          toSave = { id: updatedCv.id, name: updatedCv.name, data: updatedCv.data };
         }
       }
       return next;
     });
+    // Save the selected CV snapshot to Firestore on every change
+    if (toSave && user) {
+      saveUserCV(user.uid, toSave, false);
+    }
   };
 
   return (
@@ -222,7 +245,22 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
       <TabPanel value={tabValue} index={0}>
         <OverviewTab 
           cvs={profile.cvs || []}
-          onChange={(cvs) => handleProfileChange({ cvs })}
+          onChange={(cvs) => {
+            // Persist to Firestore: upsert all, delete removed
+            const prevList = profile.cvs || [];
+            setProfile(prev => ({ ...prev, cvs }));
+            if (user) {
+              const nextIds = new Set((cvs || []).map(c => c.id));
+              // deletions
+              prevList.forEach(c => { if (!nextIds.has(c.id)) deleteUserCV(user.uid, c.id); });
+              // upserts
+              (cvs || []).forEach(c => {
+                const existing = prevList.find(p => p.id === c.id);
+                const isNew = !existing;
+                saveUserCV(user.uid, { id: c.id, name: c.name || '', data: existing?.data || {} }, isNew);
+              });
+            }
+          }}
           selectedId={selectedCvId}
           onSelect={(id) => {
             setSelectedCvId(id);

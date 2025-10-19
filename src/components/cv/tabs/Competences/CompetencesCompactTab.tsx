@@ -132,7 +132,7 @@ const CompetencesCompactTab: React.FC<CompetencesCompactTabProps> = ({ user, inc
 
       <Box sx={{ mt: 1 }}>
         <Typography variant="caption" color="text.secondary">
-          To add more competences, go to the My Competences tab. Removing here only excludes the competence from this CV.
+          To add more competences, go to My Competences tab.
         </Typography>
       </Box>
     </Paper>

@@ -76,11 +76,7 @@ function App() {
 
     // Handle redirect result on app initialization
     getRedirectResult(auth)
-      .then((result) => {
-        if (result) {
-          console.log("Redirect login successful:", result.user);
-        }
-      })
+      .then(() => null)
       .catch((error) => {
         console.error("Redirect result error:", error);
       });

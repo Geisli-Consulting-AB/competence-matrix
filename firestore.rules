@@ -32,6 +32,11 @@ service cloud.firestore {
         allow delete: if isOwner(userId);
       }
 
+      // CVs subcollection
+      match /cvs/{cvId} {
+        allow read, write: if isOwner(userId);
+      }
+
       // Allow any geisli.se user to read user documents (for team overview)
       // but only allow users to write to their own documents
       // Also allow reading seeded test data (userIds starting with "user_")

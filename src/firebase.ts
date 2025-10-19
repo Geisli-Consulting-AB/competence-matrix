@@ -242,3 +242,58 @@ export function subscribeToSharedCategories(
     onChange([]);
   });
 }
+
+
+
+
+
+// ===== CV management (users/{userId}/cvs subcollection) =====
+export type CVDoc = {
+  id: string;
+  name: string;
+  data?: unknown;
+};
+
+// Realtime subscribe to a user's CVs
+export function subscribeToUserCVs(
+  userId: string,
+  onChange: (rows: CVDoc[]) => void,
+): Unsubscribe {
+  const colRef = collection(db, "users", userId, "cvs");
+  const qRef = query(colRef, orderBy("updatedAt", "desc"));
+  return onSnapshot(qRef, (snap) => {
+    const rows: CVDoc[] = snap.docs.map((d) => {
+      const data = d.data() as { name?: unknown; data?: unknown };
+      return {
+        id: d.id,
+        name: String(data?.name ?? ""),
+        data: (data?.data as unknown) ?? undefined,
+      };
+    });
+    onChange(rows);
+  });
+}
+
+// Create or update a CV document immediately
+export async function saveUserCV(
+  userId: string,
+  cv: { id: string; name?: string; data?: unknown },
+  isNew?: boolean,
+): Promise<void> {
+  const ref = doc(db, "users", userId, "cvs", cv.id);
+  const payload: Record<string, unknown> = {
+    name: cv.name ?? "",
+    data: cv.data ?? {},
+    updatedAt: serverTimestamp(),
+  };
+  if (isNew) {
+    payload.createdAt = serverTimestamp();
+  }
+  await setDoc(ref, payload, { merge: true });
+}
+
+// Delete a CV document
+export async function deleteUserCV(userId: string, cvId: string): Promise<void> {
+  const ref = doc(db, "users", userId, "cvs", cvId);
+  await deleteDoc(ref);
+}

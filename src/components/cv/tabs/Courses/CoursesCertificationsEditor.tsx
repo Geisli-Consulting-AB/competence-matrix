@@ -86,8 +86,8 @@ const CoursesCertificationsEditor: React.FC<CoursesCertificationsEditorProps> = 
     e.dataTransfer.effectAllowed = 'move';
     try {
       e.dataTransfer.setData('text/plain', String(index));
-    } catch (err) {
-      console.warn('Drag start setData failed', err);
+    } catch {
+      /* ignore */
     }
   };
 
@@ -103,8 +103,8 @@ const CoursesCertificationsEditor: React.FC<CoursesCertificationsEditorProps> = 
     try {
       const data = e.dataTransfer.getData('text/plain');
       if (data !== '') from = Number(data);
-    } catch (err) {
-      console.warn('Drag drop getData failed', err);
+    } catch {
+      /* ignore */
     }
     const to = index;
     setDragOverIndex(null);
