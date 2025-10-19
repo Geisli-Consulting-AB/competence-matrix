@@ -50,6 +50,7 @@ export interface UserProfile {
   email?: string;
   description?: string;
   roles?: string[];
+  languages?: string[];
   expertise?: string[];
   projects?: Project[];
 }
@@ -62,6 +63,7 @@ const CVManagement: React.FC<CVManagementProps> = ({ user }) => {
     photoUrl: user?.photoURL || undefined,
     description: '',
     roles: [],
+    languages: [],
     expertise: [],
     projects: []
   });

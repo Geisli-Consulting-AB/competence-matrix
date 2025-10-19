@@ -12,6 +12,7 @@ import type { User } from 'firebase/auth';
 import SelectedProjectsEditor from './SelectedProjectsEditor';
 import RolesEditor from './RolesEditor';
 import ExpertiseEditor from './ExpertiseEditor';
+import LanguagesEditor from './LanguagesEditor';
 
 export interface PersonalInfoTabProps {
   user: User | null;
@@ -21,6 +22,7 @@ export interface PersonalInfoTabProps {
     email?: string;
     description?: string;
     roles?: string[];
+    languages?: string[];
     expertise?: string[];
     projects?: Array<{
       customer: string;
@@ -144,6 +146,10 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({ profile, onProfileCha
       <RolesEditor
         roles={profile.roles || []}
         onChange={(roles) => onProfileChange({ roles })}
+      />
+      <LanguagesEditor
+        languages={profile.languages || []}
+        onChange={(languages) => onProfileChange({ languages })}
       />
       <ExpertiseEditor
         expertise={profile.expertise || []}
