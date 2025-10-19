@@ -18,7 +18,7 @@ export interface OverviewTabProps {
 function newCV(): CVOverviewItem {
   return {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    name: 'Untitled CV'
+    name: ''
   };
 }
 
