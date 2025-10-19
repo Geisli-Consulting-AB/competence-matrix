@@ -16,7 +16,7 @@ export interface SelectedProjectsEditorProps {
 }
 
 const SelectedProjectsEditor: React.FC<SelectedProjectsEditorProps> = ({ projects, onChange }) => {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
 
   const toggleExpanded = () => setExpanded((e) => !e);
 

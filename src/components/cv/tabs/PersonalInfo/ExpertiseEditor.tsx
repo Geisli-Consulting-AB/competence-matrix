@@ -11,7 +11,7 @@ export interface ExpertiseEditorProps {
 }
 
 const ExpertiseEditor: React.FC<ExpertiseEditorProps> = ({ expertise, onChange }) => {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
 
   const toggleExpanded = () => setExpanded((e) => !e);
 

@@ -3,6 +3,7 @@ import { Box, Tabs, Tab } from '@mui/material';
 import type { User } from 'firebase/auth';
 import OverviewTab from './tabs/Overview/OverviewTab';
 import PersonalInfoTab from './tabs/PersonalInfo/PersonalInfoTab';
+import ExperienceEditor from './tabs/Experience/ExperienceEditor';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -35,6 +36,7 @@ function a11yProps(index: number) {
 
 interface CVManagementProps {
   user: User | null;
+  existingCompetences?: string[];
 }
 
 export interface Project {
@@ -42,6 +44,19 @@ export interface Project {
   customer: string;
   title: string;
   description: string;
+}
+
+export interface Experience {
+  id: string;
+  startMonth?: string;
+  startYear?: string;
+  endMonth?: string;
+  endYear?: string;
+  ongoing?: boolean;
+  employer: string;
+  title: string;
+  description: string;
+  competences?: string[]; // list of competences
 }
 
 export interface UserProfile {
@@ -53,9 +68,10 @@ export interface UserProfile {
   languages?: string[];
   expertise?: string[];
   projects?: Project[];
+  experiences?: Experience[];
 }
 
-const CVManagement: React.FC<CVManagementProps> = ({ user }) => {
+const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }) => {
   const [tabValue, setTabValue] = useState(0);
   const [profile, setProfile] = useState<UserProfile>({ 
     displayName: user?.displayName || '',
@@ -65,7 +81,8 @@ const CVManagement: React.FC<CVManagementProps> = ({ user }) => {
     roles: [],
     languages: [],
     expertise: [],
-    projects: []
+    projects: [],
+    experiences: []
   });
 
   // Update profile when user changes
@@ -103,6 +120,7 @@ const CVManagement: React.FC<CVManagementProps> = ({ user }) => {
         >
           <Tab label="Overview" {...a11yProps(0)} />
           <Tab label="Personal Info" {...a11yProps(1)} />
+          <Tab label="Experience" {...a11yProps(2)} />
         </Tabs>
       </Box>
       
@@ -115,6 +133,14 @@ const CVManagement: React.FC<CVManagementProps> = ({ user }) => {
           user={user}
           profile={profile}
           onProfileChange={handleProfileChange}
+        />
+      </TabPanel>
+
+      <TabPanel value={tabValue} index={2}>
+        <ExperienceEditor
+          experiences={profile.experiences || []}
+          onChange={(experiences) => handleProfileChange({ experiences })}
+          existingCompetences={existingCompetences}
         />
       </TabPanel>
       

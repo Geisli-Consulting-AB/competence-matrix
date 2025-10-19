@@ -11,7 +11,7 @@ export interface LanguagesEditorProps {
 }
 
 const LanguagesEditor: React.FC<LanguagesEditorProps> = ({ languages, onChange }) => {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
 
   const toggleExpanded = () => setExpanded((e) => !e);
 

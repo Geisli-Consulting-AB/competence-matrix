@@ -11,7 +11,7 @@ export interface RolesEditorProps {
 }
 
 const RolesEditor: React.FC<RolesEditorProps> = ({ roles, onChange }) => {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
 
   const toggleExpanded = () => setExpanded((e) => !e);
 

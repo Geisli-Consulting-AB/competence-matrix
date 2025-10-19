@@ -295,7 +295,7 @@ function App() {
                   />
                 </>
               )}
-              {currentTab === 3 && <CVManagement user={user} />}
+              {currentTab === 3 && <CVManagement user={user} existingCompetences={existingCompetences} />}
             </Box>
           </Paper>
         )}
