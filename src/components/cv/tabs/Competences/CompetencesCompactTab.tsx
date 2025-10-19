@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Paper, Typography, Chip, Tooltip, Box, CircularProgress } from '@mui/material';
+import { Paper, Typography, Chip, Tooltip, Box, CircularProgress, Divider } from '@mui/material';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import type { User } from 'firebase/auth';
 import { subscribeToUserCompetences, saveUserCompetences, type CompetenceRow } from '../../../../firebase';
@@ -7,6 +7,14 @@ import { subscribeToUserCompetences, saveUserCompetences, type CompetenceRow } f
 export interface CompetencesCompactTabProps {
   user: User | null;
 }
+
+const levelLabels: Record<number, string> = {
+  2: 'Beginner',
+  3: 'Proficient',
+  4: 'Expert',
+};
+
+const order: number[] = [4, 3, 2];
 
 const CompetencesCompactTab: React.FC<CompetencesCompactTabProps> = ({ user }) => {
   const [rows, setRows] = useState<CompetenceRow[] | null>(null);
@@ -21,11 +29,23 @@ const CompetencesCompactTab: React.FC<CompetencesCompactTabProps> = ({ user }) =
     return () => unsub();
   }, [user]);
 
-  const sorted = useMemo(() => {
-    const list = Array.isArray(rows) ? rows.slice() : [];
-    list.sort((a, b) => a.name.localeCompare(b.name));
-    return list;
+  // Group competences by level (omit level 1), sort names within groups
+  const grouped = useMemo(() => {
+    const base = { 2: [] as CompetenceRow[], 3: [] as CompetenceRow[], 4: [] as CompetenceRow[] };
+    const list = Array.isArray(rows) ? rows : [];
+    list.forEach((r) => {
+      const lvl = Number(r.level || 1);
+      if (lvl >= 2 && lvl <= 4) {
+        base[lvl as 2 | 3 | 4].push(r);
+      }
+    });
+    ([2, 3, 4] as const).forEach((k) => {
+      base[k].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    });
+    return base;
   }, [rows]);
+
+  const anyToShow = useMemo(() => order.some((lvl) => grouped[lvl as 2 | 3 | 4].length > 0), [grouped]);
 
   const handleDelete = async (id: string) => {
     if (!user || !Array.isArray(rows)) return;
@@ -53,31 +73,41 @@ const CompetencesCompactTab: React.FC<CompetencesCompactTabProps> = ({ user }) =
         Competences
       </Typography>
 
-      {sorted.length === 0 ? (
+      {!anyToShow ? (
         <Typography color="text.secondary">No competences found. Add competences in the main Competences tab first.</Typography>
       ) : (
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-          {sorted.map((row) => {
-            const label = `${row.name || '(unnamed competence)'}${row.level ? ` (L${row.level})` : ''}`;
-            const isSaving = savingId === row.id;
-            return (
-              <Tooltip key={row.id} title={isSaving ? 'Deleting…' : 'Delete competence'}>
-                <span>
-                  <Chip
-                    label={label}
-                    onDelete={() => handleDelete(row.id)}
-                    deleteIcon={<DeleteOutlineIcon />}
-                    disabled={isSaving}
-                    sx={{
-                      '& .MuiChip-label': { px: 1 },
-                    }}
-                    aria-label={`competence ${row.name} delete`}
-                  />
-                </span>
-              </Tooltip>
-            );
-          })}
-        </Box>
+        order.map((lvl, idx) => {
+          const items = grouped[lvl as 2 | 3 | 4];
+          if (!items || items.length === 0) return null;
+          return (
+            <Box key={lvl} sx={{ mb: 2 }}>
+              {idx > 0 && <Divider sx={{ mb: 2 }} />}
+              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+                {levelLabels[lvl]}
+              </Typography>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                {items.map((row) => {
+                  const label = `${row.name || '(unnamed competence)'}`; // omit level on chip
+                  const isSaving = savingId === row.id;
+                  return (
+                    <Tooltip key={row.id} title={isSaving ? 'Deleting…' : 'Delete competence'}>
+                      <span>
+                        <Chip
+                          label={label}
+                          onDelete={() => handleDelete(row.id)}
+                          deleteIcon={<DeleteOutlineIcon />}
+                          disabled={isSaving}
+                          sx={{ '& .MuiChip-label': { px: 1 } }}
+                          aria-label={`competence ${row.name} delete`}
+                        />
+                      </span>
+                    </Tooltip>
+                  );
+                })}
+              </Box>
+            </Box>
+          );
+        })
       )}
 
       <Box sx={{ mt: 1 }}>
