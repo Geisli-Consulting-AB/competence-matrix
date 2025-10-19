@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Tabs, Tab } from '@mui/material';
+import { Box, Tabs, Tab, Typography } from '@mui/material';
 import type { User } from 'firebase/auth';
 import OverviewTab from './tabs/Overview/OverviewTab';
 import PersonalInfoTab from './tabs/PersonalInfo/PersonalInfoTab';
@@ -59,6 +59,12 @@ export interface Experience {
   competences?: string[]; // list of competences
 }
 
+export interface CVItem {
+  id: string;
+  name: string;
+  data?: Partial<Omit<UserProfile, 'cvs'>>;
+}
+
 export interface UserProfile {
   displayName: string;
   photoUrl?: string;
@@ -69,10 +75,12 @@ export interface UserProfile {
   expertise?: string[];
   projects?: Project[];
   experiences?: Experience[];
+  cvs?: CVItem[];
 }
 
 const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }) => {
   const [tabValue, setTabValue] = useState(0);
+  const [selectedCvId, setSelectedCvId] = useState<string | null>(null);
   const [profile, setProfile] = useState<UserProfile>({ 
     displayName: user?.displayName || '',
     email: user?.email || '',
@@ -82,7 +90,8 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
     languages: [],
     expertise: [],
     projects: [],
-    experiences: []
+    experiences: [],
+    cvs: []
   });
 
   // Update profile when user changes
@@ -97,35 +106,102 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
     }
   }, [user]);
 
+  // Clear selection if the selected CV no longer exists
+  useEffect(() => {
+    if (!selectedCvId) return;
+    const exists = (profile.cvs || []).some(cv => cv.id === selectedCvId);
+    if (!exists) {
+      setSelectedCvId(null);
+    }
+  }, [profile.cvs, selectedCvId]);
+
+  // If no CV selected, ensure we are on Overview tab
+  useEffect(() => {
+    if (!selectedCvId && tabValue !== 0) {
+      setTabValue(0);
+    }
+  }, [selectedCvId, tabValue]);
+
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
 
   const handleProfileChange = (updates: Partial<UserProfile>) => {
-    setProfile(prev => ({
-      ...prev,
-      ...updates
-    }));
+    setProfile(prev => {
+      const next = { ...prev, ...updates };
+      // If a CV is selected, persist updates into that CV's data snapshot
+      if (selectedCvId && Array.isArray(next.cvs)) {
+        const idx = next.cvs.findIndex(cv => cv.id === selectedCvId);
+        if (idx >= 0) {
+          const cv = next.cvs[idx];
+          const currentData = cv.data || {};
+          // Exclude cvs field from being embedded
+          const { cvs: _omitCvs, ...updatesWithoutCvs } = updates as any;
+          next.cvs[idx] = { ...cv, data: { ...currentData, ...updatesWithoutCvs } };
+        }
+      }
+      return next;
+    });
   };
 
   return (
     <Box sx={{ width: '100%' }}>
-      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-        <Tabs 
-          value={tabValue} 
-          onChange={handleTabChange}
-          aria-label="CV management tabs"
-          variant="scrollable"
-          scrollButtons="auto"
-        >
-          <Tab label="Overview" {...a11yProps(0)} />
-          <Tab label="Personal Info" {...a11yProps(1)} />
-          <Tab label="Experience" {...a11yProps(2)} />
-        </Tabs>
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', px: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Tabs 
+            value={tabValue} 
+            onChange={handleTabChange}
+            aria-label="CV management tabs"
+            variant="scrollable"
+            scrollButtons="auto"
+          >
+            <Tab label="Overview" {...a11yProps(0)} />
+            <Tab label="Personal Info" {...a11yProps(1)} disabled={!selectedCvId} />
+            <Tab label="Experience" {...a11yProps(2)} disabled={!selectedCvId} />
+          </Tabs>
+          {selectedCvId && (
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{
+                ml: 2,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                maxWidth: { xs: 160, sm: 240, md: 320 },
+              }}
+              title={(profile.cvs || []).find(cv => cv.id === selectedCvId)?.name || ''}
+            >
+              {(profile.cvs || []).find(cv => cv.id === selectedCvId)?.name || ''}
+            </Typography>
+          )}
+        </Box>
       </Box>
       
       <TabPanel value={tabValue} index={0}>
-        <OverviewTab />
+        <OverviewTab 
+          cvs={profile.cvs || []}
+          onChange={(cvs) => handleProfileChange({ cvs })}
+          selectedId={selectedCvId}
+          onSelect={(id) => {
+            setSelectedCvId(id);
+            const cv = (profile.cvs || []).find(c => c.id === id);
+            const data = cv?.data || {};
+            // Load CV data into working profile with a clean base so stale fields don't carry over
+            setProfile(prev => ({
+              displayName: (data as any).displayName ?? '',
+              email: (data as any).email ?? '',
+              photoUrl: (data as any).photoUrl ?? undefined,
+              description: (data as any).description ?? '',
+              roles: (data as any).roles ?? [],
+              languages: (data as any).languages ?? [],
+              expertise: (data as any).expertise ?? [],
+              projects: (data as any).projects ?? [],
+              experiences: (data as any).experiences ?? [],
+              cvs: prev.cvs ?? [],
+            }));
+          }}
+        />
       </TabPanel>
 
       <TabPanel value={tabValue} index={1}>
