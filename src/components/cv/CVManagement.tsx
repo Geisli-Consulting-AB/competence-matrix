@@ -7,6 +7,7 @@ import ExperienceEditor from './tabs/Experience/ExperienceEditor';
 import EducationEditor from './tabs/Education/EducationEditor';
 import CoursesCertificationsEditor from './tabs/Courses/CoursesCertificationsEditor';
 import EngagementPublicationsEditor from './tabs/EngagementPublications/EngagementPublicationsEditor';
+import CompetencesCompactTab from './tabs/Competences/CompetencesCompactTab';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -195,6 +196,7 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
             <Tab label="Education" {...a11yProps(3)} disabled={!selectedCvId} />
             <Tab label="Courses & Certifications" {...a11yProps(4)} disabled={!selectedCvId} />
             <Tab label="Engagement & Publications" {...a11yProps(5)} disabled={!selectedCvId} />
+            <Tab label="Competences" {...a11yProps(6)} disabled={!selectedCvId} />
           </Tabs>
           {selectedCvId && (
             <Typography
@@ -279,6 +281,10 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
           items={profile.engagementsPublications || []}
           onChange={(items) => handleProfileChange({ engagementsPublications: items })}
         />
+      </TabPanel>
+
+      <TabPanel value={tabValue} index={6}>
+        <CompetencesCompactTab user={user} />
       </TabPanel>
       
     </Box>
