@@ -8,7 +8,9 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "seed": "node scripts/seedWithRules.js"
+    "seed": "node scripts/seedWithRules.js",
+    "deploy:rules": "firebase deploy --only firestore:rules",
+    "deploy:rules:ci": "firebase deploy --only firestore:rules --non-interactive"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
