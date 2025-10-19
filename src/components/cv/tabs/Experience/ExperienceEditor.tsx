@@ -214,7 +214,7 @@ const ExperienceEditor: React.FC<ExperienceEditorProps> = ({ experiences = [], o
 
           {/* Collapsible content */}
           <Collapse in={!!expandedById[exp.id]} timeout="auto" unmountOnExit>
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 1, alignItems: 'center', flexWrap: 'wrap', ml: 4 }}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 1, alignItems: 'center', flexWrap: 'wrap', ml: 0 }}>
               <TextField
                 select
                 fullWidth
@@ -244,7 +244,7 @@ const ExperienceEditor: React.FC<ExperienceEditorProps> = ({ experiences = [], o
               />
             </Stack>
 
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 1, alignItems: 'center', flexWrap: 'wrap', ml: 4 }}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 1, alignItems: 'center', flexWrap: 'wrap', ml: 0 }}>
               <TextField
                 select
                 fullWidth
@@ -286,7 +286,7 @@ const ExperienceEditor: React.FC<ExperienceEditorProps> = ({ experiences = [], o
               />
             </Stack>
 
-            <Box sx={{ mt: 1, ml: 4 }}>
+            <Box sx={{ mt: 1, ml: 0 }}>
               <TextField
                 fullWidth
                 label="Employer"
@@ -299,7 +299,7 @@ const ExperienceEditor: React.FC<ExperienceEditorProps> = ({ experiences = [], o
               />
             </Box>
 
-            <Box sx={{ mt: 1, ml: 4 }}>
+            <Box sx={{ mt: 1, ml: 0 }}>
               <TextField
                 fullWidth
                 label="Title"
@@ -312,7 +312,7 @@ const ExperienceEditor: React.FC<ExperienceEditorProps> = ({ experiences = [], o
               />
             </Box>
 
-            <Box sx={{ mt: 1, ml: 4 }}>
+            <Box sx={{ mt: 1, ml: 0 }}>
               <TextField
                 fullWidth
                 label="Description"
@@ -327,13 +327,13 @@ const ExperienceEditor: React.FC<ExperienceEditorProps> = ({ experiences = [], o
               />
             </Box>
 
-            <Box sx={{ mt: 1, ml: 4 }}>
+            <Box sx={{ mt: 1, ml: 0 }}>
               <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
                 <Typography variant="subtitle1">Competences</Typography>
                 <Button variant="outlined" startIcon={<AddIcon />} onClick={() => {
                   const current = Array.isArray(exp.competences) ? exp.competences : [];
-                  const updatedList = ['', ...current];
-                  updateExperience(index, 'competences', updatedList as any);
+                  const updatedList: string[] = ['', ...current];
+                  updateExperience(index, 'competences', updatedList);
                 }}>
                   Add Competence
                 </Button>
@@ -350,21 +350,21 @@ const ExperienceEditor: React.FC<ExperienceEditorProps> = ({ experiences = [], o
                       )}
                       value={c || ''}
                       onChange={(_, newValue) => {
-                        const list = [...(Array.isArray(exp.competences) ? exp.competences! : [])];
+                        const list: string[] = [...(Array.isArray(exp.competences) ? exp.competences! : [])];
                         list[cIdx] = (newValue as string) || '';
-                        updateExperience(index, 'competences', list as any);
+                        updateExperience(index, 'competences', list);
                       }}
                       onInputChange={(_, newInputValue) => {
-                        const list = [...(Array.isArray(exp.competences) ? exp.competences! : [])];
+                        const list: string[] = [...(Array.isArray(exp.competences) ? exp.competences! : [])];
                         list[cIdx] = newInputValue || '';
-                        updateExperience(index, 'competences', list as any);
+                        updateExperience(index, 'competences', list);
                       }}
                       fullWidth
                     />
                     <IconButton aria-label="remove competence" onClick={() => {
-                      const list = [...(Array.isArray(exp.competences) ? exp.competences! : [])];
+                      const list: string[] = [...(Array.isArray(exp.competences) ? exp.competences! : [])];
                       list.splice(cIdx, 1);
-                      updateExperience(index, 'competences', list as any);
+                      updateExperience(index, 'competences', list);
                     }}>
                       <DeleteOutlineIcon />
                     </IconButton>

@@ -5,6 +5,7 @@ import OverviewTab from './tabs/Overview/OverviewTab';
 import PersonalInfoTab from './tabs/PersonalInfo/PersonalInfoTab';
 import ExperienceEditor from './tabs/Experience/ExperienceEditor';
 import EducationEditor from './tabs/Education/EducationEditor';
+import CoursesCertificationsEditor from './tabs/Courses/CoursesCertificationsEditor';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -68,6 +69,13 @@ export interface Education {
   title?: string; // Degree or program title
 }
 
+export interface CourseCert {
+  id: string;
+  year?: string;
+  organization?: string;
+  title?: string;
+}
+
 export interface CVItem {
   id: string;
   name: string;
@@ -85,6 +93,7 @@ export interface UserProfile {
   projects?: Project[];
   experiences?: Experience[];
   educations?: Education[];
+  coursesCertifications?: CourseCert[];
   cvs?: CVItem[];
 }
 
@@ -102,6 +111,7 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
     projects: [],
     experiences: [],
     educations: [],
+    coursesCertifications: [],
     cvs: []
   });
 
@@ -147,7 +157,8 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
           const cv = next.cvs[idx];
           const currentData = cv.data || {};
           // Exclude cvs field from being embedded
-          const { cvs: _omitCvs, ...updatesWithoutCvs } = updates as any;
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { cvs: _ignored, ...updatesWithoutCvs } = updates;
           next.cvs[idx] = { ...cv, data: { ...currentData, ...updatesWithoutCvs } };
         }
       }
@@ -170,6 +181,7 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
             <Tab label="Personal Info" {...a11yProps(1)} disabled={!selectedCvId} />
             <Tab label="Experience" {...a11yProps(2)} disabled={!selectedCvId} />
             <Tab label="Education" {...a11yProps(3)} disabled={!selectedCvId} />
+            <Tab label="Courses & Certifications" {...a11yProps(4)} disabled={!selectedCvId} />
           </Tabs>
           {selectedCvId && (
             <Typography
@@ -198,19 +210,20 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
           onSelect={(id) => {
             setSelectedCvId(id);
             const cv = (profile.cvs || []).find(c => c.id === id);
-            const data = cv?.data || {};
+            const data = cv?.data ?? {};
             // Load CV data into working profile with a clean base so stale fields don't carry over
             setProfile(prev => ({
-              displayName: (data as any).displayName ?? '',
-              email: (data as any).email ?? '',
-              photoUrl: (data as any).photoUrl ?? undefined,
-              description: (data as any).description ?? '',
-              roles: (data as any).roles ?? [],
-              languages: (data as any).languages ?? [],
-              expertise: (data as any).expertise ?? [],
-              projects: (data as any).projects ?? [],
-              experiences: (data as any).experiences ?? [],
-              educations: (data as any).educations ?? [],
+              displayName: data.displayName ?? '',
+              email: data.email ?? '',
+              photoUrl: data.photoUrl ?? undefined,
+              description: data.description ?? '',
+              roles: data.roles ?? [],
+              languages: data.languages ?? [],
+              expertise: data.expertise ?? [],
+              projects: data.projects ?? [],
+              experiences: data.experiences ?? [],
+              educations: data.educations ?? [],
+              coursesCertifications: data.coursesCertifications ?? [],
               cvs: prev.cvs ?? [],
             }));
           }}
@@ -237,6 +250,13 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
         <EducationEditor
           educations={profile.educations || []}
           onChange={(educations) => handleProfileChange({ educations })}
+        />
+      </TabPanel>
+
+      <TabPanel value={tabValue} index={4}>
+        <CoursesCertificationsEditor
+          items={profile.coursesCertifications || []}
+          onChange={(items) => handleProfileChange({ coursesCertifications: items })}
         />
       </TabPanel>
       

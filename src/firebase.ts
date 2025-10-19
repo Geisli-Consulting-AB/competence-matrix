@@ -55,13 +55,14 @@ export function subscribeToUserCompetences(
   onChange: (rows: CompetenceRow[]) => void,
 ): Unsubscribe {
   const userDocRef = doc(db, "users", userId);
+  type RawCompetence = { id?: unknown; name?: unknown; level?: unknown };
   return onSnapshot(userDocRef, (snap) => {
-    const data = (snap.data() as any) || {};
+    const data = (snap.data() || {}) as { competences?: RawCompetence[] };
     const rows: CompetenceRow[] = Array.isArray(data.competences)
-      ? data.competences.map((r: any) => ({
-          id: String(r.id || ""),
-          name: String(r.name || ""),
-          level: Number(r.level || 1),
+      ? data.competences.map((r: RawCompetence) => ({
+          id: String(r.id ?? ""),
+          name: String(r.name ?? ""),
+          level: Number(r.level ?? 1),
         }))
       : [];
     onChange(rows);
@@ -103,13 +104,14 @@ export async function getAllUsersCompetences(): Promise<{
   }[] = [];
   const competenceSet = new Set<string>();
 
+  type RawCompetence = { id?: unknown; name?: unknown; level?: unknown };
   snapshot.forEach((doc) => {
-    const data = doc.data();
+    const data = doc.data() as { ownerName?: string; competences?: RawCompetence[] };
     const competences: CompetenceRow[] = Array.isArray(data.competences)
-      ? data.competences.map((r: any) => ({
-          id: String(r.id || ""),
-          name: String(r.name || ""),
-          level: Number(r.level || 1),
+      ? data.competences.map((r: RawCompetence) => ({
+          id: String(r.id ?? ""),
+          name: String(r.name ?? ""),
+          level: Number(r.level ?? 1),
         }))
       : [];
 
@@ -148,13 +150,14 @@ export async function getAllCompetencesForAutocomplete(): Promise<string[]> {
     const usersCollection = collection(db, "users");
     const usersSnapshot = await getDocs(usersCollection);
     
+    type RawCompetence = { id?: unknown; name?: unknown; level?: unknown };
     usersSnapshot.forEach((doc) => {
-      const data = doc.data();
+      const data = doc.data() as { competences?: RawCompetence[] };
       const competences: CompetenceRow[] = Array.isArray(data.competences)
-        ? data.competences.map((r: any) => ({
-            id: String(r.id || ""),
-            name: String(r.name || ""),
-            level: Number(r.level || 1),
+        ? data.competences.map((r: RawCompetence) => ({
+            id: String(r.id ?? ""),
+            name: String(r.name ?? ""),
+            level: Number(r.level ?? 1),
           }))
         : [];
       
@@ -219,21 +222,21 @@ export function subscribeToSharedCategories(
   const categoriesCollection = collection(db, "sharedCategories");
   const categoriesQuery = query(categoriesCollection, orderBy("name"));
   
-  return onSnapshot(categoriesQuery, (snapshot: any) => {
+  return onSnapshot(categoriesQuery, (snapshot) => {
     const categories: Category[] = [];
-    snapshot.forEach((doc: any) => {
-      const data = doc.data();
+    snapshot.forEach((doc) => {
+      const data = doc.data() as { id?: unknown; name?: unknown; competences?: unknown[]; color?: unknown };
       categories.push({
-        id: String(data.id || doc.id),
-        name: String(data.name || ""),
+        id: String((data.id ?? doc.id) as string),
+        name: String(data.name ?? ""),
         competences: Array.isArray(data.competences)
-          ? data.competences.map((c: any) => String(c))
+          ? data.competences.map((c) => String(c))
           : [],
-        color: String(data.color || "#FF6B6B"),
+        color: String(data.color ?? "#FF6B6B"),
       });
     });
     onChange(categories);
-  }, (error: any) => {
+  }, (error) => {
     console.error("Error in subscribeToSharedCategories:", error);
     // Return empty array on error to prevent app crashes
     onChange([]);

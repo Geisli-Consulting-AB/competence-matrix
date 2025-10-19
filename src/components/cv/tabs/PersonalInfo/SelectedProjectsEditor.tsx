@@ -5,6 +5,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 
 export type ProjectItem = {
+  id: string;
   customer: string;
   title: string;
   description: string;
@@ -27,14 +28,15 @@ const SelectedProjectsEditor: React.FC<SelectedProjectsEditorProps> = ({ project
   ) => {
     const updated = [...projects];
     if (!updated[index]) {
-      updated[index] = { customer: '', title: '', description: '' };
+      updated[index] = { id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        customer: '', title: '', description: '' };
     }
     updated[index] = { ...updated[index], [field]: value } as ProjectItem;
     onChange(updated);
   };
 
   const addNewProject = () => {
-    onChange([{ customer: '', title: '', description: '' }, ...(projects || [])]);
+    onChange([{ id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, customer: '', title: '', description: '' }, ...(projects || [])]);
   };
 
   return (

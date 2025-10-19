@@ -13,24 +13,12 @@ import SelectedProjectsEditor from './SelectedProjectsEditor';
 import RolesEditor from './RolesEditor';
 import ExpertiseEditor from './ExpertiseEditor';
 import LanguagesEditor from './LanguagesEditor';
+import type { UserProfile } from '../../CVManagement';
 
 export interface PersonalInfoTabProps {
   user: User | null;
-  profile: {
-    displayName: string;
-    photoUrl?: string;
-    email?: string;
-    description?: string;
-    roles?: string[];
-    languages?: string[];
-    expertise?: string[];
-    projects?: Array<{
-      customer: string;
-      title: string;
-      description: string;
-    }>;
-  };
-  onProfileChange: (updates: any) => void;
+  profile: UserProfile;
+  onProfileChange: (updates: Partial<UserProfile>) => void;
 }
 
 const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({ profile, onProfileChange }) => {

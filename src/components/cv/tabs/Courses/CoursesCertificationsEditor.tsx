@@ -15,58 +15,61 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import type { Education } from '../../CVManagement';
 
-export interface EducationEditorProps {
-  educations: Education[];
-  onChange: (educations: Education[]) => void;
+export interface CourseCert {
+  id: string;
+  year?: string;
+  organization?: string;
+  title?: string;
 }
 
-function newEducation(): Education {
+export interface CoursesCertificationsEditorProps {
+  items: CourseCert[];
+  onChange: (items: CourseCert[]) => void;
+}
+
+function newItem(): CourseCert {
   return {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    startYear: '',
-    endYear: '',
-    school: '',
+    year: '',
+    organization: '',
     title: '',
   };
 }
 
-const EducationEditor: React.FC<EducationEditorProps> = ({ educations = [], onChange }) => {
+const CoursesCertificationsEditor: React.FC<CoursesCertificationsEditorProps> = ({ items = [], onChange }) => {
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [expandedById, setExpandedById] = useState<Record<string, boolean>>({});
 
-  // Ensure expanded state exists for all items; default collapsed
   useEffect(() => {
     setExpandedById(prev => {
       const next: Record<string, boolean> = { ...prev };
-      (educations || []).forEach(ed => {
-        if (ed?.id && next[ed.id] === undefined) next[ed.id] = false;
+      (items || []).forEach(it => {
+        if (it?.id && next[it.id] === undefined) next[it.id] = false;
       });
-      // Clean removed ids
       Object.keys(next).forEach(id => {
-        if (!(educations || []).some(e => e.id === id)) delete next[id];
+        if (!(items || []).some(e => e.id === id)) delete next[id];
       });
       return next;
     });
-  }, [educations]);
+  }, [items]);
 
-  const addEducation = () => {
-    const ne = newEducation();
-    onChange([ne, ...(educations || [])]);
-    setExpandedById(prev => ({ ...prev, [ne.id]: true }));
+  const addItem = () => {
+    const ni = newItem();
+    onChange([ni, ...(items || [])]);
+    setExpandedById(prev => ({ ...prev, [ni.id]: true }));
   };
 
-  const updateEducation = <K extends keyof Education>(index: number, field: K, value: Education[K]) => {
-    const updated = [...(educations || [])];
-    const current = updated[index] || newEducation();
-    updated[index] = { ...current, [field]: value } as Education;
+  const updateItem = <K extends keyof CourseCert>(index: number, field: K, value: CourseCert[K]) => {
+    const updated = [...(items || [])];
+    const current = updated[index] || newItem();
+    updated[index] = { ...current, [field]: value } as CourseCert;
     onChange(updated);
   };
 
-  const removeEducation = (index: number) => {
-    const updated = [...(educations || [])];
+  const removeItem = (index: number) => {
+    const updated = [...(items || [])];
     const [removed] = updated.splice(index, 1);
     onChange(updated);
     if (removed?.id) {
@@ -107,7 +110,7 @@ const EducationEditor: React.FC<EducationEditorProps> = ({ educations = [], onCh
     setDragOverIndex(null);
     setDraggingIndex(null);
     if (from < 0 || from === to) return;
-    const updated = [...(educations || [])];
+    const updated = [...(items || [])];
     const [moved] = updated.splice(from, 1);
     updated.splice(to, 0, moved);
     onChange(updated);
@@ -123,29 +126,29 @@ const EducationEditor: React.FC<EducationEditorProps> = ({ educations = [], onCh
     setExpandedById(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const headerTitle = (ed: Education) => {
-    const school = ed.school?.trim() || 'School/University';
-    const title = ed.title?.trim() || 'Title';
-    return `${school} — ${title}`;
+  const headerTitle = (it: CourseCert) => {
+    const organization = it.organization?.trim() || 'Organization';
+    const title = it.title?.trim() || 'Title';
+    return `${organization} — ${title}`;
   };
 
   return (
     <Paper elevation={3} sx={{ p: 3, mb: 3, maxWidth: 600, mx: 'auto' }}>
       <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Typography variant="h5">Education</Typography>
+        <Typography variant="h5">Courses & Certifications</Typography>
         <Button
           variant="outlined"
           startIcon={<AddIcon />}
-          onClick={addEducation}
+          onClick={addItem}
           sx={{ ml: 2 }}
         >
-          Add Education
+          Add Item
         </Button>
       </Box>
 
-      {(educations || []).map((ed, index) => (
+      {(items || []).map((it, index) => (
         <Paper
-          key={ed.id || index}
+          key={it.id || index}
           elevation={1}
           sx={{
             p: 2,
@@ -160,7 +163,6 @@ const EducationEditor: React.FC<EducationEditorProps> = ({ educations = [], onCh
           onDrop={handleDrop(index)}
           onDragEnd={handleDragEnd}
         >
-          {/* Header row with drag handle, title, delete and expand/collapse */}
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Tooltip title="Drag to reorder" placement="top" arrow>
               <Box
@@ -180,47 +182,34 @@ const EducationEditor: React.FC<EducationEditorProps> = ({ educations = [], onCh
             </Tooltip>
 
             <Typography variant="subtitle1" sx={{ flexGrow: 1, ml: 1, fontWeight: 500 }}>
-              {headerTitle(ed)}
+              {headerTitle(it)}
             </Typography>
 
-            <IconButton aria-label="remove education" onClick={() => removeEducation(index)} sx={{ ml: 1 }}>
+            <IconButton aria-label="remove item" onClick={() => removeItem(index)} sx={{ ml: 1 }}>
               <DeleteOutlineIcon />
             </IconButton>
             <IconButton
-              aria-label={expandedById[ed.id] ? 'Collapse education' : 'Expand education'}
-              aria-expanded={!!expandedById[ed.id]}
-              onClick={() => toggleExpanded(ed.id)}
+              aria-label={expandedById[it.id] ? 'Collapse item' : 'Expand item'}
+              aria-expanded={!!expandedById[it.id]}
+              onClick={() => toggleExpanded(it.id)}
               sx={{ ml: 1 }}
               size="small"
             >
-              {expandedById[ed.id] ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+              {expandedById[it.id] ? <ExpandLessIcon /> : <ExpandMoreIcon />}
             </IconButton>
           </Box>
 
-          {/* Collapsible content */}
-          <Collapse in={!!expandedById[ed.id]} timeout="auto" unmountOnExit>
+          <Collapse in={!!expandedById[it.id]} timeout="auto" unmountOnExit>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 1, alignItems: 'center', flexWrap: 'wrap', ml: 0 }}>
               <TextField
                 fullWidth
-                label="Start Year"
+                label="Year"
                 type="number"
                 size="small"
-                value={ed.startYear || ''}
-                onChange={(e) => updateEducation(index, 'startYear', e.target.value)}
-                onBlur={(e) => updateEducation(index, 'startYear', e.target.value)}
-                placeholder="e.g., 2018"
-                inputProps={{ min: 1900, max: 2100 }}
-                sx={{ width: { xs: '100%', sm: 140 } }}
-              />
-              <TextField
-                fullWidth
-                label="End Year"
-                type="number"
-                size="small"
-                value={ed.endYear || ''}
-                onChange={(e) => updateEducation(index, 'endYear', e.target.value)}
-                onBlur={(e) => updateEducation(index, 'endYear', e.target.value)}
-                placeholder="e.g., 2022"
+                value={it.year || ''}
+                onChange={(e) => updateItem(index, 'year', e.target.value)}
+                onBlur={(e) => updateItem(index, 'year', e.target.value)}
+                placeholder="e.g., 2023"
                 inputProps={{ min: 1900, max: 2100 }}
                 sx={{ width: { xs: '100%', sm: 140 } }}
               />
@@ -229,11 +218,11 @@ const EducationEditor: React.FC<EducationEditorProps> = ({ educations = [], onCh
             <Box sx={{ mt: 1, ml: 0 }}>
               <TextField
                 fullWidth
-                label="School / University"
+                label="Organization"
                 size="small"
-                value={ed.school || ''}
-                onChange={(e) => updateEducation(index, 'school', e.target.value)}
-                onBlur={(e) => updateEducation(index, 'school', e.target.value)}
+                value={it.organization || ''}
+                onChange={(e) => updateItem(index, 'organization', e.target.value)}
+                onBlur={(e) => updateItem(index, 'organization', e.target.value)}
                 margin="normal"
                 variant="outlined"
               />
@@ -244,9 +233,9 @@ const EducationEditor: React.FC<EducationEditorProps> = ({ educations = [], onCh
                 fullWidth
                 label="Title"
                 size="small"
-                value={ed.title || ''}
-                onChange={(e) => updateEducation(index, 'title', e.target.value)}
-                onBlur={(e) => updateEducation(index, 'title', e.target.value)}
+                value={it.title || ''}
+                onChange={(e) => updateItem(index, 'title', e.target.value)}
+                onBlur={(e) => updateItem(index, 'title', e.target.value)}
                 margin="normal"
                 variant="outlined"
               />
@@ -258,4 +247,4 @@ const EducationEditor: React.FC<EducationEditorProps> = ({ educations = [], onCh
   );
 };
 
-export default EducationEditor;
+export default CoursesCertificationsEditor;
