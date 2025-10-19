@@ -213,19 +213,19 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
             const data = cv?.data ?? {};
             // Load CV data into working profile with a clean base so stale fields don't carry over
             setProfile(prev => ({
-              displayName: data.displayName ?? '',
-              email: data.email ?? '',
-              photoUrl: data.photoUrl ?? undefined,
-              description: data.description ?? '',
-              roles: data.roles ?? [],
-              languages: data.languages ?? [],
-              expertise: data.expertise ?? [],
-              projects: data.projects ?? [],
-              experiences: data.experiences ?? [],
-              educations: data.educations ?? [],
-              coursesCertifications: data.coursesCertifications ?? [],
-              cvs: prev.cvs ?? [],
-            }));
+                displayName: (data.displayName ?? (user?.displayName ?? '')),
+                email: (data.email ?? (user?.email ?? '')),
+                photoUrl: data.photoUrl ?? undefined,
+                description: data.description ?? '',
+                roles: data.roles ?? [],
+                languages: data.languages ?? [],
+                expertise: data.expertise ?? [],
+                projects: data.projects ?? [],
+                experiences: data.experiences ?? [],
+                educations: data.educations ?? [],
+                coursesCertifications: data.coursesCertifications ?? [],
+                cvs: prev.cvs ?? [],
+              }));
           }}
         />
       </TabPanel>
