@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Paper, Typography, List, ListItem, ListItemText, IconButton, Tooltip, Box, CircularProgress } from '@mui/material';
+import { Paper, Typography, Chip, Tooltip, Box, CircularProgress } from '@mui/material';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import type { User } from 'firebase/auth';
 import { subscribeToUserCompetences, saveUserCompetences, type CompetenceRow } from '../../../../firebase';
@@ -56,24 +56,28 @@ const CompetencesCompactTab: React.FC<CompetencesCompactTabProps> = ({ user }) =
       {sorted.length === 0 ? (
         <Typography color="text.secondary">No competences found. Add competences in the main Competences tab first.</Typography>
       ) : (
-        <List dense>
-          {sorted.map((row) => (
-            <ListItem key={row.id} secondaryAction={
-              <Tooltip title="Delete competence">
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+          {sorted.map((row) => {
+            const label = `${row.name || '(unnamed competence)'}${row.level ? ` (L${row.level})` : ''}`;
+            const isSaving = savingId === row.id;
+            return (
+              <Tooltip key={row.id} title={isSaving ? 'Deleting…' : 'Delete competence'}>
                 <span>
-                  <IconButton edge="end" aria-label={`delete ${row.name}`} onClick={() => handleDelete(row.id)} disabled={savingId === row.id}>
-                    <DeleteOutlineIcon />
-                  </IconButton>
+                  <Chip
+                    label={label}
+                    onDelete={() => handleDelete(row.id)}
+                    deleteIcon={<DeleteOutlineIcon />}
+                    disabled={isSaving}
+                    sx={{
+                      '& .MuiChip-label': { px: 1 },
+                    }}
+                    aria-label={`competence ${row.name} delete`}
+                  />
                 </span>
               </Tooltip>
-            }>
-              <ListItemText
-                primary={row.name || '(unnamed competence)'}
-                secondary={row.level ? `Level ${row.level}` : undefined}
-              />
-            </ListItem>
-          ))}
-        </List>
+            );
+          })}
+        </Box>
       )}
 
       <Box sx={{ mt: 1 }}>
