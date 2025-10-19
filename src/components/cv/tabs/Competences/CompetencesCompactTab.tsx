@@ -132,7 +132,7 @@ const CompetencesCompactTab: React.FC<CompetencesCompactTabProps> = ({ user, inc
 
       <Box sx={{ mt: 1 }}>
         <Typography variant="caption" color="text.secondary">
-          This list mirrors your saved competences. Deleting here removes the competence from your account.
+          To add more competences, go to the My Competences tab. Removing here only excludes the competence from this CV.
         </Typography>
       </Box>
     </Paper>
