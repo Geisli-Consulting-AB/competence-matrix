@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Box, Tabs, Tab, Typography } from '@mui/material';
 import type { User } from 'firebase/auth';
 import OverviewTab from './tabs/Overview/OverviewTab';
@@ -174,15 +174,6 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
     }
   }, [selectedCvId, tabValue]);
 
-  // Auto-select the first CV when entering the page (or when list loads) if none is selected
-  useEffect(() => {
-    if (!selectedCvId) {
-      const firstId = (profile.cvs && profile.cvs[0]?.id) || null;
-      if (firstId) {
-        selectCvById(firstId);
-      }
-    }
-  }, [profile.cvs, selectedCvId]);
 
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -215,7 +206,7 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
   };
 
   // Helper to select a CV and load its data into the working profile
-  const selectCvById = (id: string | null) => {
+  const selectCvById = useCallback((id: string | null) => {
     if (!id) return;
     setSelectedCvId(id);
     const cv = (profile.cvs || []).find(c => c.id === id);
@@ -237,7 +228,17 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
       engagementsPublications: data.engagementsPublications ?? [],
       cvs: prev.cvs ?? [],
     }));
-  };
+  }, [profile.cvs, user]);
+
+  // Auto-select the first CV when entering the page (or when list loads) if none is selected
+  useEffect(() => {
+    if (!selectedCvId) {
+      const firstId = (profile.cvs && profile.cvs[0]?.id) || null;
+      if (firstId) {
+        selectCvById(firstId);
+      }
+    }
+  }, [profile.cvs, selectedCvId, selectCvById]);
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -300,6 +301,7 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
           onSelect={(id) => {
             selectCvById(id);
           }}
+          ownerName={profile.displayName}
         />
       </TabPanel>
 

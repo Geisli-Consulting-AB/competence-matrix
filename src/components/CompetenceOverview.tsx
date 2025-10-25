@@ -231,8 +231,9 @@ export default function CompetenceOverview() {
   const groupedCompetences = groupCompetencesByCategory(levelFilteredCompetences, categories);
 
   // Initialize all categories as expanded when they first appear
+  const categoryNames = Object.keys(groupedCompetences);
+  const categoryNamesKey = categoryNames.join(',');
   useEffect(() => {
-    const categoryNames = Object.keys(groupedCompetences);
     setExpandedCategories(prev => {
       const newSet = new Set(prev);
       let hasChanges = false;
@@ -244,7 +245,7 @@ export default function CompetenceOverview() {
       });
       return hasChanges ? newSet : prev;
     });
-  }, [Object.keys(groupedCompetences).join(',')]);
+  }, [categoryNamesKey, categoryNames]);
 
   // Toggle category expansion
   const toggleCategoryExpansion = (categoryName: string) => {
