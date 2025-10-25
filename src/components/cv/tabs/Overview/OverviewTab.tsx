@@ -96,13 +96,6 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ cvs = [], onChange, selectedI
           );
         })
       )}
-      {(cvs || []).length > 0 && !selectedId && (
-        <Box sx={{ mt: 1 }}>
-          <Typography variant="body2" color="text.secondary">
-            Select a CV to see and manage it.
-          </Typography>
-        </Box>
-      )}
     </Paper>
   );
 };

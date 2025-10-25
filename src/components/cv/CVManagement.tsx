@@ -174,6 +174,16 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
     }
   }, [selectedCvId, tabValue]);
 
+  // Auto-select the first CV when entering the page (or when list loads) if none is selected
+  useEffect(() => {
+    if (!selectedCvId) {
+      const firstId = (profile.cvs && profile.cvs[0]?.id) || null;
+      if (firstId) {
+        selectCvById(firstId);
+      }
+    }
+  }, [profile.cvs, selectedCvId]);
+
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
@@ -202,6 +212,31 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
     if (toSave && user) {
       saveUserCV(user.uid, toSave, false);
     }
+  };
+
+  // Helper to select a CV and load its data into the working profile
+  const selectCvById = (id: string | null) => {
+    if (!id) return;
+    setSelectedCvId(id);
+    const cv = (profile.cvs || []).find(c => c.id === id);
+    const data = cv?.data ?? {};
+    setProfile(prev => ({
+      displayName: (data.displayName ?? (user?.displayName ?? '')),
+      email: (data.email ?? (user?.email ?? '')),
+      photoUrl: data.photoUrl ?? undefined,
+      description: data.description ?? '',
+      roles: data.roles ?? [],
+      languages: data.languages ?? [],
+      expertise: data.expertise ?? [],
+      // If not set for this CV, it means all user competences are implicitly included until modified in the tab
+      competences: data.competences,
+      projects: data.projects ?? [],
+      experiences: data.experiences ?? [],
+      educations: data.educations ?? [],
+      coursesCertifications: data.coursesCertifications ?? [],
+      engagementsPublications: data.engagementsPublications ?? [],
+      cvs: prev.cvs ?? [],
+    }));
   };
 
   return (
@@ -263,27 +298,7 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
           }}
           selectedId={selectedCvId}
           onSelect={(id) => {
-            setSelectedCvId(id);
-            const cv = (profile.cvs || []).find(c => c.id === id);
-            const data = cv?.data ?? {};
-            // Load CV data into working profile with a clean base so stale fields don't carry over
-            setProfile(prev => ({
-                displayName: (data.displayName ?? (user?.displayName ?? '')),
-                email: (data.email ?? (user?.email ?? '')),
-                photoUrl: data.photoUrl ?? undefined,
-                description: data.description ?? '',
-                roles: data.roles ?? [],
-                languages: data.languages ?? [],
-                expertise: data.expertise ?? [],
-                // If not set for this CV, it means all user competences are implicitly included until modified in the tab
-                competences: data.competences,
-                projects: data.projects ?? [],
-                experiences: data.experiences ?? [],
-                educations: data.educations ?? [],
-                coursesCertifications: data.coursesCertifications ?? [],
-                engagementsPublications: data.engagementsPublications ?? [],
-                cvs: prev.cvs ?? [],
-              }));
+            selectCvById(id);
           }}
         />
       </TabPanel>

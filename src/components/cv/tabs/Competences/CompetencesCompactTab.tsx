@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Paper, Typography, Chip, Tooltip, Box, CircularProgress, Divider } from '@mui/material';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import { Paper, Typography, Box, CircularProgress, Divider, ToggleButton } from '@mui/material';
 import type { User } from 'firebase/auth';
 import { subscribeToUserCompetences, type CompetenceRow } from '../../../../firebase';
 
@@ -39,7 +38,7 @@ const CompetencesCompactTab: React.FC<CompetencesCompactTabProps> = ({ user, inc
     return null; // null means "include all"
   }, [includedCompetences]);
 
-  // Group competences by level (omit level 1), sort names within groups, and filter by inclusion
+  // Group competences by level (omit level 1), sort names within groups. Always show all eligible.
   const grouped = useMemo(() => {
     const base = { 2: [] as CompetenceRow[], 3: [] as CompetenceRow[], 4: [] as CompetenceRow[] };
     const list = Array.isArray(rows) ? rows : [];
@@ -47,8 +46,7 @@ const CompetencesCompactTab: React.FC<CompetencesCompactTabProps> = ({ user, inc
       const name = (r.name || '').trim();
       const lvl = Number(r.level || 1);
       const isEligible = name && lvl >= 2 && lvl <= 4;
-      const isIncluded = includedSet ? includedSet.has(name) : true;
-      if (isEligible && isIncluded) {
+      if (isEligible) {
         base[lvl as 2 | 3 | 4].push(r);
       }
     });
@@ -56,29 +54,35 @@ const CompetencesCompactTab: React.FC<CompetencesCompactTabProps> = ({ user, inc
       base[k].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     });
     return base;
-  }, [rows, includedSet]);
+  }, [rows]);
 
   const anyToShow = useMemo(() => order.some((lvl) => grouped[lvl as 2 | 3 | 4].length > 0), [grouped]);
 
-  const handleDelete = (name: string) => {
+
+  const handleToggle = (name: string) => {
     const clean = (name || '').trim();
     if (!clean || !onChangeIncluded) return;
 
-    let current: string[];
+    // Build the current working set: if no explicit list, start from all eligible names
+    let current: Set<string>;
     if (Array.isArray(includedCompetences)) {
-      current = [...includedCompetences];
+      current = new Set(includedCompetences.map((n) => (n || '').trim()).filter(Boolean));
     } else {
-      // If there was no explicit list, initialize from all available eligible names, then remove the one being deleted
       const list = Array.isArray(rows) ? rows : [];
       const eligibleAll = list
         .filter((r) => (r.name || '').trim() && Number(r.level || 1) >= 2 && Number(r.level || 1) <= 4)
         .map((r) => (r.name || '').trim());
-      // Use a set to ensure uniqueness
-      current = Array.from(new Set(eligibleAll));
+      current = new Set(eligibleAll);
     }
-    const next = current.filter((n) => n.trim() !== clean);
-    onChangeIncluded(next);
+
+    if (current.has(clean)) {
+      current.delete(clean); // toggle off
+    } else {
+      current.add(clean); // toggle on
+    }
+    onChangeIncluded(Array.from(current));
   };
+
 
   if (!rows) {
     return (
@@ -91,9 +95,11 @@ const CompetencesCompactTab: React.FC<CompetencesCompactTabProps> = ({ user, inc
 
   return (
     <Paper elevation={3} sx={{ p: 3, mb: 3, maxWidth: 600, mx: 'auto' }}>
-      <Typography variant="h5" gutterBottom>
-        Competences
-      </Typography>
+      <Box sx={{ mb: 2 }}>
+        <Typography variant="h5" sx={{ mb: 0 }}>
+          Competences
+        </Typography>
+      </Box>
 
       {!anyToShow ? (
         <Typography color="text.secondary">No competences found. Add competences in the main Competences tab first.</Typography>
@@ -109,19 +115,22 @@ const CompetencesCompactTab: React.FC<CompetencesCompactTabProps> = ({ user, inc
               </Typography>
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                 {items.map((row) => {
-                  const label = `${row.name || '(unnamed competence)'}`; // omit level on chip
+                  const name = (row.name || '').trim();
+                  const label = name || '(unnamed competence)';
+                  const selected = includedSet ? includedSet.has(name) : true;
                   return (
-                    <Tooltip key={row.id} title={'Exclude from this CV'}>
-                      <span>
-                        <Chip
-                          label={label}
-                          onDelete={() => handleDelete(row.name || '')}
-                          deleteIcon={<DeleteOutlineIcon />}
-                          sx={{ '& .MuiChip-label': { px: 1 } }}
-                          aria-label={`exclude competence ${row.name} from CV`}
-                        />
-                      </span>
-                    </Tooltip>
+                    <ToggleButton
+                      key={row.id}
+                      value={name}
+                      selected={selected}
+                      onChange={() => handleToggle(name)}
+                      size="small"
+                      sx={{ textTransform: 'none', '&.Mui-selected': { bgcolor: 'primary.main', color: 'primary.contrastText' } }}
+                      aria-pressed={selected}
+                      aria-label={`toggle competence ${name || 'unnamed'}`}
+                    >
+                      {label}
+                    </ToggleButton>
                   );
                 })}
               </Box>

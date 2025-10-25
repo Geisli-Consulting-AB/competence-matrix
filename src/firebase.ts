@@ -11,6 +11,7 @@ import {
   orderBy,
   getDocs,
   deleteDoc,
+  documentId,
 } from "firebase/firestore";
 import type { Unsubscribe } from "firebase/firestore";
 
@@ -260,7 +261,9 @@ export function subscribeToUserCVs(
   onChange: (rows: CVDoc[]) => void,
 ): Unsubscribe {
   const colRef = collection(db, "users", userId, "cvs");
-  const qRef = query(colRef, orderBy("updatedAt", "desc"));
+  // Order CVs by creation time, then by document ID for a stable tiebreaker.
+  // Using document ID prevents reordering when the CV name changes.
+  const qRef = query(colRef, orderBy("createdAt", "asc"), orderBy(documentId(), "asc"));
   return onSnapshot(qRef, (snap) => {
     const rows: CVDoc[] = snap.docs.map((d) => {
       const data = d.data() as { name?: unknown; data?: unknown };
