@@ -3,6 +3,7 @@ import { Box, Button, Paper, TextField, Typography, IconButton, Stack, Tooltip }
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import { generateCvPdf, downloadBlob, filenameFromUserName } from '../../../../pdf';
 
 export interface CVOverviewItem {
   id: string;
@@ -15,6 +16,8 @@ export interface OverviewTabProps {
   selectedId?: string | null;
   onSelect?: (id: string) => void;
   ownerName?: string;
+  ownerDescription?: string;
+  ownerPhotoUrl?: string;
 }
 
 function newCV(): CVOverviewItem {
@@ -24,37 +27,8 @@ function newCV(): CVOverviewItem {
   };
 }
 
-// Minimal blank PDF (one empty page) as base64. Dependency-free.
-const EMPTY_PDF_BASE64 =
-  'JVBERi0xLjQKJeLjz9MKMSAwIG9iago8PAovVHlwZSAvQ2F0YWxvZwovUGFnZXMgMiAwIFIKPj4KZW5kb2JqCjIgMCBvYmoKPDwKL1R5cGUgL1BhZ2VzCi9Db3VudCAxCi9LaWRzIFszIDAgUl0KPj4KZW5kb2JqCjMgMCBvYmoKPDwKL1R5cGUgL1BhZ2UKL1BhcmVudCAyIDAgUgovTWVkaWFCb3ggWzAgMCA1OTUgODQyXQo+PgplbmRvYmoKeHJlZgowIDQKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDQxIDAwMDAwIG4gCjAwMDAwMDAwOTYgMDAwMDAgbiAKMDAwMDAwMDE1MSAwMDAwMCBuIAp0cmFpbGVyCjw8Ci9TaXplIDQKL1Jvb3QgMSAwIFIKPj4Kc3RhcnR4cmVmCjIwNQolJUVPRgo=';
 
-function createEmptyPdfBlob(): Blob {
-  const byteChars = atob(EMPTY_PDF_BASE64);
-  const bytes = new Uint8Array(byteChars.length);
-  for (let i = 0; i < byteChars.length; i++) bytes[i] = byteChars.charCodeAt(i);
-  return new Blob([bytes], { type: 'application/pdf' });
-}
-
-function downloadBlob(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
-
-function filenameFromUserName(name?: string) {
-  const clean = (name || '').trim();
-  if (!clean) return 'CV.pdf';
-  // Allow letters, numbers, space, dot, underscore, and hyphen. Collapse multiple spaces.
-  const safe = clean.replace(/[^A-Za-z0-9 ._-]+/g, '').replace(/\s+/g, ' ').trim();
-  return `${safe} - CV.pdf`;
-}
-
-const OverviewTab: React.FC<OverviewTabProps> = ({ cvs = [], onChange, selectedId, onSelect, ownerName }) => {
+const OverviewTab: React.FC<OverviewTabProps> = ({ cvs = [], onChange, selectedId, onSelect, ownerName, ownerDescription, ownerPhotoUrl }) => {
   const addCV = () => {
     const created = newCV();
     onChange([created, ...(cvs || [])]);
@@ -112,8 +86,10 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ cvs = [], onChange, selectedI
                         aria-label="create pdf"
                         onClick={(e) => {
                           e.stopPropagation();
-                          const blob = createEmptyPdfBlob();
-                          downloadBlob(blob, filenameFromUserName(ownerName));
+                          (async () => {
+                            const blob = await generateCvPdf(ownerName, ownerDescription, ownerPhotoUrl);
+                            downloadBlob(blob, filenameFromUserName(ownerName));
+                          })();
                         }}
                         size="small"
                       >

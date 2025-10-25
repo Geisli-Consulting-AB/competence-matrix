@@ -302,6 +302,8 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
             selectCvById(id);
           }}
           ownerName={profile.displayName}
+          ownerDescription={profile.description}
+          ownerPhotoUrl={profile.photoUrl}
         />
       </TabPanel>
 
