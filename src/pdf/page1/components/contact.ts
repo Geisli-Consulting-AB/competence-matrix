@@ -1,6 +1,8 @@
 import jsPDF from 'jspdf';
 import type { Metrics } from '../../shared';
 import { loadImage, useFont } from '../../shared';
+import { getPdfStrings } from '../../../i18n';
+import type { PdfLang } from '../../../i18n';
 import envelopePng from '../../../assets/envelope.png';
 import telephonePng from '../../../assets/telephone.png';
 import placePng from '../../../assets/place.png';
@@ -31,15 +33,18 @@ async function drawIconTextLine(
 }
 
 // Add contact block beneath the avatar; returns next baseline Y after the section
-export async function addContact(doc: jsPDF, m: Metrics, startY: number, strings: { contactTitle: string }): Promise<number> {
+export async function addContact(doc: jsPDF, m: Metrics, startY: number, lang: PdfLang = 'en'): Promise<number> {
   const x = m.leftPadding;
   let y = Math.max(startY, 140);
+
+  // Get translations
+  const t = getPdfStrings(lang);
 
   // Heading
   doc.setTextColor(255, 255, 255);
   useFont(doc, 'bold');
   doc.setFontSize(14);
-  doc.text(strings.contactTitle, x, y);
+  doc.text(t.contactTitle, x, y);
   y += 6;
 
   // Underline

@@ -4,16 +4,24 @@ import { useFont } from '../../shared';
 import { getPdfStrings } from '../../../i18n';
 import type { PdfLang } from '../../../i18n';
 
-// Add roles block beneath the given startY; stops if reaching the bottom margin
-export async function addRoles(
+// Add expertise block beneath the given startY; stops if reaching the bottom margin
+export async function addExpertise(
   doc: jsPDF,
   m: Metrics,
   startY: number,
-  roles: string[],
+  expertise: string[],
   lang: PdfLang = 'en',
 ): Promise<number> {
   const x = m.leftPadding;
-  let y = Math.max(startY, 140);
+  let y = startY;
+
+  // Only proceed if there are expertise items to display
+  if (!Array.isArray(expertise) || expertise.length === 0) {
+    return startY;
+  }
+
+  // Add some space from the previous section
+  y += 8;
 
   // Get translations
   const t = getPdfStrings(lang);
@@ -22,7 +30,7 @@ export async function addRoles(
   doc.setTextColor(255, 255, 255);
   useFont(doc, 'bold');
   doc.setFontSize(14);
-  doc.text(t.rolesTitle, x, y);
+  doc.text(t.expertiseTitle || 'Expertise', x, y);
   y += 6;
 
   // Underline
@@ -41,8 +49,8 @@ export async function addRoles(
   const circleX = x + circleRadius;
   const circleYOffset = 4; // Vertical adjustment to align circle with text
   
-  for (const role of roles) {
-    const t = (role || '').trim();
+  for (const item of expertise) {
+    const t = (item || '').trim();
     if (!t) continue;
     
     // Draw circle
@@ -53,11 +61,12 @@ export async function addRoles(
     doc.text(t, x + 10, y);
     y += 16;
     
+    // Prevent overflow
     if (y > m.pageH - m.bottomMargin) {
       y = m.pageH - m.bottomMargin;
-      break; // prevent overflow for now
+      break;
     }
   }
-  
+
   return y;
 }

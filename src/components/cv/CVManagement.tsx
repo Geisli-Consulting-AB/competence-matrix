@@ -305,6 +305,8 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
           ownerDescription={profile.description}
           ownerPhotoUrl={profile.photoUrl}
           ownerRoles={profile.roles}
+          ownerLanguages={profile.languages}
+          ownerExpertise={profile.expertise}
         />
       </TabPanel>
 

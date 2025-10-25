@@ -58,18 +58,23 @@ function addBodyNextPages(doc: jsPDF, text: string, m: Metrics, lineH = 16) {
   }
 }
 
+export interface RightColumnOptions {
+  cvTitle: string;
+  [key: string]: string; // Allow for additional string properties
+}
+
 // Build the right column of page 1 (title + description with wrapping and overflow handling)
 export function buildRightColumn(
   doc: jsPDF,
   m: Metrics,
   name: string | undefined,
   description: string | undefined,
-  strings: { cvTitle: string },
+  options: RightColumnOptions
 ) {
   setTextStyle(doc);
   const { x, width } = rightColumn(m);
 
-  const title = (name?.trim() || '').slice(0, 200) || strings.cvTitle;
+  const title = (name?.trim() || '').slice(0, 200) || options.cvTitle;
   const body = (description || '').toString();
 
   const titleTopY = 80;

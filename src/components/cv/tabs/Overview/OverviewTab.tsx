@@ -19,6 +19,8 @@ export interface OverviewTabProps {
   ownerDescription?: string;
   ownerPhotoUrl?: string;
   ownerRoles?: string[];
+  ownerLanguages?: string[];
+  ownerExpertise?: string[];
 }
 
 function newCV(): CVOverviewItem {
@@ -29,7 +31,7 @@ function newCV(): CVOverviewItem {
 }
 
 
-const OverviewTab: React.FC<OverviewTabProps> = ({ cvs = [], onChange, selectedId, onSelect, ownerName, ownerDescription, ownerPhotoUrl, ownerRoles }) => {
+const OverviewTab: React.FC<OverviewTabProps> = ({ cvs = [], onChange, selectedId, onSelect, ownerName, ownerDescription, ownerPhotoUrl, ownerRoles, ownerLanguages, ownerExpertise }) => {
   const [cvLang, setCvLang] = React.useState<Record<string, 'en' | 'sv'>>({});
   const addCV = () => {
     const created = newCV();
@@ -107,9 +109,23 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ cvs = [], onChange, selectedI
                           (async () => {
                             try {
                               console.group('[PDF] UI click');
-                              console.debug('[PDF] Starting generation from UI with props', { ownerName, hasDescription: !!ownerDescription, hasPhoto: !!ownerPhotoUrl, rolesCount: ownerRoles?.length ?? 0 });
+                              console.debug('[PDF] Starting generation from UI with props', { 
+                                ownerName, 
+                                hasDescription: !!ownerDescription, 
+                                hasPhoto: !!ownerPhotoUrl, 
+                                rolesCount: ownerRoles?.length ?? 0,
+                                expertiseCount: ownerExpertise?.length ?? 0 
+                              });
                               const lang = (cvLang && cvLang[cv.id]) ? cvLang[cv.id] : 'en';
-                              const blob = await generateCvPdf(ownerName, ownerDescription, ownerPhotoUrl, ownerRoles, lang);
+                              const blob = await generateCvPdf(
+                                ownerName, 
+                                ownerDescription, 
+                                ownerPhotoUrl, 
+                                ownerRoles, 
+                                ownerLanguages, 
+                                ownerExpertise, 
+                                lang
+                              );
                               downloadBlob(blob, filenameFromUserName(ownerName));
                               console.debug('[PDF] Download triggered successfully');
                             } catch (err) {

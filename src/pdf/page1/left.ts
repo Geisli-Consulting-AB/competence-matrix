@@ -2,6 +2,8 @@ import jsPDF from 'jspdf';
 import type { Metrics } from '../shared';
 import { addContact } from './components/contact';
 import { addRoles } from './components/roles';
+import { addLanguages } from './components/languages';
+import { addExpertise } from './components/expertise';
 import { addAvatar } from './components/avatar';
 
 // Left column background: #101b29
@@ -10,23 +12,52 @@ export function drawSidebar(doc: jsPDF, m: Metrics) {
   doc.rect(0, 0, m.leftColW, m.pageH, 'F');
 }
 
+import type { PdfLang } from '../../i18n';
+
+export interface LeftColumnOptions {
+  contactTitle: string;
+  rolesTitle: string;
+  languagesTitle: string;
+  expertiseTitle: string;
+  lang: PdfLang;
+  [key: string]: string | PdfLang; // Allow for additional string properties
+}
+
 // Build the left column of page 1
 export async function buildLeftColumn(
   doc: jsPDF,
   m: Metrics,
   photoDataUrl: string | undefined,
   roles: string[] | undefined,
-  strings: { contactTitle: string; rolesTitle: string },
+  languages: string[] | undefined,
+  expertise: string[] | undefined,
+  options: LeftColumnOptions
 ) {
   drawSidebar(doc, m);
   const startY = await addAvatar(doc, m, photoDataUrl);
-  const afterContactY = await addContact(doc, m, startY, { contactTitle: strings.contactTitle });
+  const afterContactY = await addContact(doc, m, startY, options.lang);
+  
+  let currentY = afterContactY;
+  
+  // Add roles section if there are any roles
   if (Array.isArray(roles) && roles.length > 0) {
-    await addRoles(doc, m, afterContactY, roles, { rolesTitle: strings.rolesTitle });
+    currentY = await addRoles(doc, m, currentY, roles, options.lang);
+  }
+  
+  // Add expertise section if there are any expertise items
+  if (Array.isArray(expertise) && expertise.length > 0) {
+    currentY = await addExpertise(doc, m, currentY, expertise, options.lang);
+  }
+  
+  // Add languages section if there are any languages
+  if (Array.isArray(languages) && languages.length > 0) {
+    currentY = await addLanguages(doc, m, currentY, languages, options.lang);
   }
 }
 
 // Re-export section builders for discoverability
 export { addContact } from './components/contact';
 export { addRoles } from './components/roles';
+export { addLanguages } from './components/languages';
+export { addExpertise } from './components/expertise';
 export { addAvatar } from './components/avatar';
