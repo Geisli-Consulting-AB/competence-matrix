@@ -6,12 +6,41 @@ export function newDoc() {
   return new jsPDF({ unit: 'pt', format: 'a4' });
 }
 
+// ---- Inter font support ----
+let interReady = false;
+const INTER_FAMILY = 'Inter';
+
+// Inter font embedding: To avoid any runtime network requests and 404s, we currently do not
+// fetch or embed external font files. PDFs will use built-in Helvetica by default.
+// If you want Inter embedded offline, place Inter-Regular.ttf and Inter-Bold.ttf under src/assets
+// and wire them here using Vite `?url` imports, then add them to jsPDF via addFileToVFS/addFont.
+
+/** Ensure Inter Regular/Bold fonts are registered on the given jsPDF document.
+ *  Currently a no-op to avoid external fetches. Falls back to Helvetica. */
+export async function ensureInterFonts(_doc: jsPDF): Promise<void> {
+  interReady = false; // keep using Helvetica via useFont
+}
+
+/** Set the text font to Inter when available, otherwise Helvetica. */
+export function useFont(doc: jsPDF, style: 'normal' | 'bold' = 'normal') {
+  if (interReady) {
+    doc.setFont(INTER_FAMILY, style);
+  } else {
+    doc.setFont('helvetica', style);
+  }
+}
+
 // Image utilities (browser-only)
 export async function loadImage(dataUrlOrUrl: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = (e) => reject(e);
+    img.onload = () => {
+      resolve(img);
+    };
+    img.onerror = (e) => {
+      console.error('[PDF] loadImage: failed to load image', { src: dataUrlOrUrl, error: e });
+      reject(e);
+    };
     img.src = dataUrlOrUrl;
   });
 }

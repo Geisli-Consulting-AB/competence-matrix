@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Button, Paper, TextField, Typography, IconButton, Stack, Tooltip } from '@mui/material';
+import { Box, Button, Paper, TextField, Typography, IconButton, Stack, Tooltip, ToggleButtonGroup, ToggleButton } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
@@ -18,6 +18,7 @@ export interface OverviewTabProps {
   ownerName?: string;
   ownerDescription?: string;
   ownerPhotoUrl?: string;
+  ownerRoles?: string[];
 }
 
 function newCV(): CVOverviewItem {
@@ -28,7 +29,8 @@ function newCV(): CVOverviewItem {
 }
 
 
-const OverviewTab: React.FC<OverviewTabProps> = ({ cvs = [], onChange, selectedId, onSelect, ownerName, ownerDescription, ownerPhotoUrl }) => {
+const OverviewTab: React.FC<OverviewTabProps> = ({ cvs = [], onChange, selectedId, onSelect, ownerName, ownerDescription, ownerPhotoUrl, ownerRoles }) => {
+  const [cvLang, setCvLang] = React.useState<Record<string, 'en' | 'sv'>>({});
   const addCV = () => {
     const created = newCV();
     onChange([created, ...(cvs || [])]);
@@ -52,7 +54,9 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ cvs = [], onChange, selectedI
     <Paper elevation={3} sx={{ p: 3, mb: 3, maxWidth: 600, mx: 'auto' }}>
       <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Typography variant="h5">CVs</Typography>
-        <Button variant="outlined" startIcon={<AddIcon />} onClick={addCV}>Add CV</Button>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Button variant="outlined" startIcon={<AddIcon />} onClick={addCV}>Add CV</Button>
+        </Box>
       </Box>
 
       {(cvs || []).length === 0 ? (
@@ -81,14 +85,39 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ cvs = [], onChange, selectedI
                     {cv.name?.trim() || 'Untitled CV'}
                   </Typography>
                   <Stack direction="row" spacing={0.5} alignItems="center">
+                    <ToggleButtonGroup
+                      exclusive
+                      size="small"
+                      value={cvLang[cv.id] || 'en'}
+                      onChange={(e, value) => {
+                        e.stopPropagation();
+                        if (!value) return; // ignore unselect
+                        setCvLang(prev => ({ ...prev, [cv.id]: value }));
+                      }}
+                      aria-label="PDF language toggle"
+                    >
+                      <ToggleButton value="en" aria-label="English" sx={{ px: 1, textTransform: 'none' }}>EN</ToggleButton>
+                      <ToggleButton value="sv" aria-label="Svenska" sx={{ px: 1, textTransform: 'none' }}>SV</ToggleButton>
+                    </ToggleButtonGroup>
                     <Tooltip title="Create PDF">
                       <IconButton
                         aria-label="create pdf"
                         onClick={(e) => {
                           e.stopPropagation();
                           (async () => {
-                            const blob = await generateCvPdf(ownerName, ownerDescription, ownerPhotoUrl);
-                            downloadBlob(blob, filenameFromUserName(ownerName));
+                            try {
+                              console.group('[PDF] UI click');
+                              console.debug('[PDF] Starting generation from UI with props', { ownerName, hasDescription: !!ownerDescription, hasPhoto: !!ownerPhotoUrl, rolesCount: ownerRoles?.length ?? 0 });
+                              const lang = (cvLang && cvLang[cv.id]) ? cvLang[cv.id] : 'en';
+                              const blob = await generateCvPdf(ownerName, ownerDescription, ownerPhotoUrl, ownerRoles, lang);
+                              downloadBlob(blob, filenameFromUserName(ownerName));
+                              console.debug('[PDF] Download triggered successfully');
+                            } catch (err) {
+                              console.error('[PDF] UI: Failed to generate or download PDF', err);
+                              alert('Failed to create PDF. See console for details.');
+                            } finally {
+                              console.groupEnd();
+                            }
                           })();
                         }}
                         size="small"

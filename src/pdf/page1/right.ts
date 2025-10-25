@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import type { Metrics } from '../shared';
+import { useFont } from '../shared';
 
 function rightColumn(m: Metrics) {
   const x = m.leftColW + m.leftPadding;
@@ -9,7 +10,7 @@ function rightColumn(m: Metrics) {
 
 function setTextStyle(doc: jsPDF) {
   doc.setTextColor(0, 0, 0);
-  doc.setFont('helvetica', 'normal');
+  useFont(doc, 'normal');
 }
 
 function addTitle(doc: jsPDF, text: string, x: number, y: number, maxWidth: number) {
@@ -58,11 +59,17 @@ function addBodyNextPages(doc: jsPDF, text: string, m: Metrics, lineH = 16) {
 }
 
 // Build the right column of page 1 (title + description with wrapping and overflow handling)
-export function buildRightColumn(doc: jsPDF, m: Metrics, name?: string, description?: string) {
+export function buildRightColumn(
+  doc: jsPDF,
+  m: Metrics,
+  name: string | undefined,
+  description: string | undefined,
+  strings: { cvTitle: string },
+) {
   setTextStyle(doc);
   const { x, width } = rightColumn(m);
 
-  const title = (name?.trim() || '').slice(0, 200) || 'Curriculum Vitae';
+  const title = (name?.trim() || '').slice(0, 200) || strings.cvTitle;
   const body = (description || '').toString();
 
   const titleTopY = 80;
