@@ -1,9 +1,18 @@
 import { newDoc, getMetrics, toBlob, downloadBlob, filenameFromUserName, ensureInterFonts } from './shared';
 import { buildLeftColumn } from './page1/left';
 import { buildRightColumn } from './page1/right';
+import { buildExperiencePage } from './page2';
 import { getPdfStrings, type PdfLang } from '../i18n';
 
-/** Create a CV PDF (first page 40/60 split, title + description, optional photo in left column). */
+export interface Experience {
+  title: string;
+  employer: string;
+  description: string;
+  startYear?: string;
+  endYear?: string;
+}
+
+/** Create a CV PDF with multiple pages including experience section. */
 export async function generateCvPdf(
   name?: string,
   description?: string,
@@ -14,6 +23,7 @@ export async function generateCvPdf(
   selectedProjects?: Array<{ customer: string; title: string; description: string }>,
   lang: PdfLang = 'en',
   title?: string,
+  experiences: Experience[] = [],
 ): Promise<Blob> {
   try {
     const doc = newDoc();
@@ -40,6 +50,11 @@ export async function generateCvPdf(
       summary: strings.summary // Add translated summary heading
     }, lang);
 
+    // Add experience page if there are experiences
+    if (experiences && experiences.length > 0) {
+      await buildExperiencePage(doc, lang, experiences);
+    }
+
     const blob = toBlob(doc);
     return blob;
   } catch (err) {
@@ -57,7 +72,8 @@ export async function createAndDownloadCvPdf(
   expertise?: string[],
   selectedProjects?: Array<{ customer: string; title: string; description: string }>,
   lang: PdfLang = 'en',
-  title?: string
+  title?: string,
+  experiences: Experience[] = []
 ) {
   const blob = await generateCvPdf(
     ownerName, 
@@ -68,7 +84,8 @@ export async function createAndDownloadCvPdf(
     expertise,
     selectedProjects,
     lang,
-    title
+    title,
+    experiences
   );
   const filename = filenameFromUserName(ownerName);
   downloadBlob(blob, filename);

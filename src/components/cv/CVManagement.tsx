@@ -407,6 +407,18 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
           ownerLanguages={profile.languages}
           ownerExpertise={profile.expertise}
           ownerSelectedProjects={profile.projects || []}
+          ownerExperiences={profile.experiences?.map(exp => ({
+            id: exp.id,
+            title: exp.title,
+            employer: exp.employer,
+            description: exp.description,
+            startYear: exp.startYear,
+            startMonth: exp.startMonth,
+            endYear: exp.endYear,
+            endMonth: exp.endMonth,
+            ongoing: exp.ongoing,
+            competences: exp.competences
+          })) || []}
         />
       </TabPanel>
 

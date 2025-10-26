@@ -14,6 +14,7 @@ const resources = {
       selectedProjectsTitle: 'Selected Projects',
       professionalSummary: 'Professional Summary',
       summary: 'Summary',
+      experience: 'Experience',
     },
   },
   sv: {
@@ -26,6 +27,7 @@ const resources = {
       selectedProjectsTitle: 'Utvalda projekt',
       professionalSummary: 'Sammanfattning',
       summary: 'Sammanfattning',
+      experience: 'Erfarenheter',
     },
   },
 } as const;

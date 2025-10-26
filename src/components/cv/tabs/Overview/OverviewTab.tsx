@@ -31,6 +31,14 @@ export interface OverviewTabProps {
   ownerLanguages?: string[];
   ownerExpertise?: string[];
   ownerSelectedProjects?: ProjectItem[];
+  ownerExperiences?: Array<{
+    id: string;
+    title: string;
+    employer: string;
+    description: string;
+    startYear?: string;
+    endYear?: string;
+  }>;
 }
 
 function newCV(): CVOverviewItem {
@@ -54,7 +62,8 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
   ownerRoles, 
   ownerLanguages, 
   ownerExpertise,
-  ownerSelectedProjects = []
+  ownerSelectedProjects = [],
+  ownerExperiences = []
 }) => {
   // Initialize cvLang state from the CV items
   const [cvLang, setCvLang] = React.useState<Record<string, PdfLang>>(
@@ -187,7 +196,8 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                                 ownerExpertise,
                                 selectedProjects,
                                 lang,
-                                ownerTitle // Pass the title to the PDF generator
+                                ownerTitle, // Pass the title to the PDF generator
+                                ownerExperiences // Pass the experiences to the PDF generator
                               );
                               downloadBlob(blob, filenameFromUserName(ownerName));
                               console.debug('[PDF] Download triggered successfully');
