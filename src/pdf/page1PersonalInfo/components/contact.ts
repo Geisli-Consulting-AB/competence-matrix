@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import type { Metrics } from '../../shared';
-import { loadImage, useFont } from '../../shared';
+import { loadImage, setFontStyle } from '../../shared';
 import { getPdfStrings } from '../../../i18n';
 import type { PdfLang } from '../../../i18n';
 import { SPACING } from '../constants';
@@ -58,7 +58,7 @@ export async function addContact(doc: jsPDF, m: Metrics, startY: number, lang: P
 
   // Heading
   doc.setTextColor(255, 255, 255);
-  useFont(doc, 'bold');
+  setFontStyle(doc, 'bold');
   doc.setFontSize(14);
   doc.text(t.contactTitle, x, y);
   y += SPACING.HEADING_UNDERLINE;
@@ -71,7 +71,7 @@ export async function addContact(doc: jsPDF, m: Metrics, startY: number, lang: P
   y += SPACING.SECTION_HEADER;
 
   // Body
-  useFont(doc, 'normal');
+  setFontStyle(doc, 'normal');
   doc.setFontSize(12);
 
   const iconSize = 12;

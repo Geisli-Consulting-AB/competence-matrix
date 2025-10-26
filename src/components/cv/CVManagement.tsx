@@ -166,12 +166,7 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
         email: user.email || '',
         photoUrl: user.photoURL || undefined
       }));
-    }
-  }, [user]);
-
-  // Subscribe to user's CVs in Firestore to populate Overview list
-  useEffect(() => {
-    if (!user) {
+    } else {
       setProfile(prev => ({
         ...prev,
         displayName: '',
@@ -188,20 +183,6 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
         coursesCertifications: [],
         engagementsPublications: [],
         cvs: []
-      }));
-      return;
-    }
-  });
-
-
-  // Update profile when user changes
-  useEffect(() => {
-    if (user) {
-      setProfile(prev => ({
-        ...prev,
-        displayName: user.displayName || '',
-        email: user.email || '',
-        photoUrl: user.photoURL || undefined
       }));
     }
   }, [user]);
@@ -256,14 +237,12 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
 
   const handleProfileChange = (updates: Partial<UserProfile>) => {
     if (!user) {
-      console.warn('Cannot save changes: No user is logged in');
+      // No user is logged in
       return;
     }
     
-    console.log('handleProfileChange called with updates:', updates);
-    
-    // First, update the local state
-    setProfile(prev => {
+    // Update the local state
+    setProfile((prev: UserProfile) => {
       const next = { ...prev, ...updates };
       
       // If a CV is selected, update its data
@@ -271,24 +250,16 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
         const cvIndex = next.cvs.findIndex(cv => cv.id === selectedCvId);
         if (cvIndex >= 0) {
           const cv = next.cvs[cvIndex];
-          const currentData = cv.data || {};
-          
-          // Exclude cvs field from being embedded
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const { cvs: _ignored, ...updatesWithoutCvs } = updates;
-          
-          // Create updated CV with merged data
-          const updatedCv = { 
-            ...cv, 
-            data: { 
-              ...currentData, 
-              ...updatesWithoutCvs 
-            } 
+          const updatedCv = {
+            ...cv,
+            data: {
+              ...(cv.data || {}),
+              ...updates,
+            },
           };
           
-          // Update the CV in the array
-          next.cvs = [...next.cvs];
-          next.cvs[cvIndex] = updatedCv;
+          const updatedCvs = [...next.cvs];
+          updatedCvs[cvIndex] = updatedCv;
           
           // Prepare data to save to Firestore
           const toSave = { 
@@ -297,18 +268,13 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
             data: updatedCv.data 
           };
           
-          console.log('Preparing to save to Firestore:', toSave);
-          
           // Save to Firestore
-          saveUserCV(user.uid, toSave, false)
-            .then(() => console.log('CV saved successfully to Firestore'))
-            .catch(error => console.error('Error saving CV to Firestore:', error));
-            
-        } else {
-          console.warn('CV not found with id:', selectedCvId);
+          saveUserCV(user.uid, toSave, false).catch(error => 
+            console.error('Error saving CV to Firestore:', error)
+          );
+          
+          return { ...next, cvs: updatedCvs };
         }
-      } else {
-        console.warn('No selected CV or cvs array is not available');
       }
       
       return next;
@@ -390,7 +356,6 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
                     ...(c.language ? { language: c.language } : {})
                   }
                 };
-                console.log('Saving CV data:', cvData);
                 saveUserCV(user.uid, cvData, isNew);
               });
             }

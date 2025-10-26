@@ -171,22 +171,12 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                           e.stopPropagation();
                           (async () => {
                             try {
-                              console.group('[PDF] UI click');
-                              console.debug('[PDF] Starting generation from UI with props', { 
-                                ownerName, 
-                                hasDescription: !!ownerDescription, 
-                                hasPhoto: !!ownerPhotoUrl, 
-                                rolesCount: ownerRoles?.length ?? 0,
-                                expertiseCount: ownerExpertise?.length ?? 0 
-                              });
                               const lang = cv.language || cvLang[cv.id] || 'en';
-                              // Map the selected projects to the format expected by the PDF generator
                               const selectedProjects = ownerSelectedProjects.map(project => ({
                                 customer: project.customer || '',
                                 title: project.title || '',
                                 description: project.description || ''
                               }));
-                              
                               const blob = await generateCvPdf(
                                 ownerName, 
                                 ownerDescription, 
@@ -196,16 +186,13 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                                 ownerExpertise,
                                 selectedProjects,
                                 lang,
-                                ownerTitle, // Pass the title to the PDF generator
-                                ownerExperiences // Pass the experiences to the PDF generator
+                                ownerTitle,
+                                ownerExperiences
                               );
                               downloadBlob(blob, filenameFromUserName(ownerName));
-                              console.debug('[PDF] Download triggered successfully');
                             } catch (err) {
                               console.error('[PDF] UI: Failed to generate or download PDF', err);
                               alert('Failed to create PDF. See console for details.');
-                            } finally {
-                              console.groupEnd();
                             }
                           })();
                         }}

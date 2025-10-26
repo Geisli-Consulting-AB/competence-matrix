@@ -1,7 +1,7 @@
 import { newDoc, getMetrics, toBlob, downloadBlob, filenameFromUserName, ensureInterFonts } from './shared';
-import { buildLeftColumn } from './page1/left';
-import { buildRightColumn } from './page1/right';
-import { buildExperiencePage } from './page2';
+import { buildPersonalInfo } from './page1PersonalInfo/page1';
+import { buildExperiencePage } from './page2Experience/page2';
+import { buildEducationAndMorePage } from './page3EducationAndMore/page3';
 import { getPdfStrings, type PdfLang } from '../i18n';
 
 export interface Experience {
@@ -25,41 +25,57 @@ export async function generateCvPdf(
   title?: string,
   experiences: Experience[] = [],
 ): Promise<Blob> {
-  try {
-    const doc = newDoc();
-    const m = getMetrics();
+  const doc = newDoc();
+  const m = getMetrics();
 
-    await ensureInterFonts(doc);
+  await ensureInterFonts();
 
-    // Get translations for the specified language
-    const strings = getPdfStrings(lang);
+  // Get translations for the specified language
+  const strings = getPdfStrings(lang);
 
-    // Build left column with all required titles
-    await buildLeftColumn(doc, m, photoDataUrl, roles, languages, expertise, {
+  // Build the first page with both columns
+  await buildPersonalInfo(doc, m, {
+    // Left column options
+    photoDataUrl,
+    roles,
+    languages,
+    expertise,
+    leftColumn: {
       contactTitle: strings.contactTitle,
       rolesTitle: strings.rolesTitle,
       languagesTitle: strings.languagesTitle,
       expertiseTitle: strings.expertiseTitle,
       lang
-    });
-
-    // Build right column with all required options
-    await buildRightColumn(doc, m, name, description, selectedProjects, { 
-      cvTitle: title || strings.cvTitle, // Use the provided title or fall back to default
+    },
+    
+    // Right column options
+    name,
+    description,
+    selectedProjects,
+    rightColumn: {
+      cvTitle: title || strings.cvTitle,
       selectedProjectsTitle: strings.selectedProjectsTitle,
-      summary: strings.summary // Add translated summary heading
-    }, lang);
+      summary: strings.summary
+    },
+    
+    // General options
+    lang
+  });
 
-    // Add experience page if there are experiences
-    if (experiences && experiences.length > 0) {
-      await buildExperiencePage(doc, lang, experiences);
-    }
-
-    const blob = toBlob(doc);
-    return blob;
-  } catch (err) {
-    throw err;
+  // Add experience page if there are experiences
+  if (experiences && experiences.length > 0) {
+    await buildExperiencePage(doc, lang, experiences);
+    
+    // Add a new page for education and more
+    doc.addPage();
+    await buildEducationAndMorePage(doc, m, { lang });
+  } else {
+    // If no experiences, still add education page as second page
+    doc.addPage();
+    await buildEducationAndMorePage(doc, m, { lang });
   }
+
+  return toBlob(doc);
 }
 
 /** Generate and download the CV PDF in one call. */

@@ -15,6 +15,9 @@ const resources = {
       professionalSummary: 'Professional Summary',
       summary: 'Summary',
       experience: 'Experience',
+      education: 'Education',
+      coursesAndCertifications: 'Courses & Certifications',
+      engagementAndPublications: 'Engagement & Publications',
     },
   },
   sv: {
@@ -28,12 +31,16 @@ const resources = {
       professionalSummary: 'Sammanfattning',
       summary: 'Sammanfattning',
       experience: 'Erfarenheter',
+      education: 'Utbildning',
+      coursesAndCertifications: 'Kurser & Certifieringar',
+      engagementAndPublications: 'Engagemang & Publikationer',
     },
   },
 } as const;
 
 // Infer the type from the resources object
 export type TranslationResources = typeof resources;
+export type TranslationStrings = TranslationResources['en']['translation'];
 export type PdfLang = keyof TranslationResources;
 
 // Initialize i18n

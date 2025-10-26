@@ -3,6 +3,8 @@ import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import {
   getFirestore,
   doc,
+  Timestamp,
+  FieldValue,
   onSnapshot,
   setDoc,
   serverTimestamp,
@@ -254,8 +256,8 @@ export interface CVDoc {
   name: string;
   language?: 'en' | 'sv';
   data?: unknown; // CV data structure defined in the CV editor
-  createdAt?: any; // Firestore timestamp
-  updatedAt?: any; // Firestore timestamp
+  createdAt?: Timestamp | FieldValue; // Can be either Timestamp (when reading) or FieldValue (when writing)
+  updatedAt?: Timestamp | FieldValue; // Can be either Timestamp (when reading) or FieldValue (when writing)
 }
 
 // Realtime subscribe to a user's CVs
@@ -287,23 +289,22 @@ export async function saveUserCV(
   cv: { id: string; name?: string; language?: 'en' | 'sv'; data?: unknown },
   isNew?: boolean,
 ): Promise<void> {
-  console.log('saveUserCV - Input:', { userId, cv, isNew });
   const ref = doc(db, "users", userId, "cvs", cv.id);
   const payload: Partial<CVDoc> = {
     name: cv.name || 'Untitled CV',
-    ...(cv.language !== undefined && { language: cv.language }),
-    ...(cv.data !== undefined && { data: cv.data }),
+    language: cv.language || 'en',
+    data: cv.data || {},
     updatedAt: serverTimestamp(),
   };
+
   if (isNew) {
     payload.createdAt = serverTimestamp();
   }
-  console.log('saveUserCV - Payload to save:', payload);
+  
   try {
     await setDoc(ref, payload, { merge: true });
-    console.log('saveUserCV - Successfully saved to Firestore');
   } catch (error) {
-    console.error('saveUserCV - Error saving to Firestore:', error);
+    console.error('Error saving CV to Firestore:', error);
     throw error;
   }
 }

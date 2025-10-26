@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
-import type { Metrics } from '../shared';
 import { getMetrics } from '../shared';
 import type { PdfLang } from '../../i18n';
+import { VERTICAL } from '../constants';
 
 export async function buildExperiencePage(
   doc: jsPDF,
@@ -27,14 +27,7 @@ export async function buildExperiencePage(
   const rightColX = m.leftPadding + leftColWidth + 20; // X position for right column with more spacing
   const rightColWidth = m.pageW - rightColX - m.rightPadding; // Width for right column
   
-  // Vertical spacing constants (in points)
-  const VERTICAL = {
-    SMALL: 5,
-    MEDIUM: 10,
-    LARGE: 15,
-    XLARGE: 20,
-    XXLARGE: 25
-  };
+  // Use shared vertical spacing constants
   
   doc.addPage();
   
@@ -93,14 +86,19 @@ export async function buildExperiencePage(
       doc.text(descriptionLines, rightColX, descY);
       y += descriptionLines.length * (11 + VERTICAL.SMALL) ;
       
-      // Competences
-      y += VERTICAL.MEDIUM; // Space before competences
-      const competencesText = exp.competences.join(' • ');
-      const competencesLines = doc.splitTextToSize(competencesText, rightColWidth);
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'italic');
-      doc.text(competencesLines, rightColX, y + VERTICAL.SMALL);
-      y += competencesLines.length * (10 + VERTICAL.SMALL) + VERTICAL.XXLARGE;
+      // Competences (only if competences exist)
+      if (exp.competences && exp.competences.length > 0) {
+        y += VERTICAL.MEDIUM; // Space before competences
+        const competencesText = exp.competences.join(' • ');
+        const competencesLines = doc.splitTextToSize(competencesText, rightColWidth);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'italic');
+        doc.text(competencesLines, rightColX, y + VERTICAL.SMALL);
+        y += competencesLines.length * (10 + VERTICAL.SMALL) + VERTICAL.XXLARGE;
+      } else {
+        // Add some spacing even without competences
+        y += VERTICAL.MEDIUM + VERTICAL.XXLARGE;
+      }
       
       // Add spacing between experiences, but not after the last one
       if (index < experiences.length - 1) {

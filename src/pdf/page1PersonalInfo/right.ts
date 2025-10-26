@@ -1,9 +1,9 @@
 import jsPDF from 'jspdf';
 import type { Metrics } from '../shared';
-import { useFont } from '../shared';
+import { setFontStyle } from '../shared';
 import { addSelectedProjects } from './components/selectedProjects';
 import type { ProjectItem } from './components/selectedProjects';
-import type { PdfLang } from '../../../i18n';
+import type { PdfLang } from '../../i18n';
 
 function rightColumn(m: Metrics) {
   const x = m.leftColW + m.leftPadding;
@@ -13,7 +13,7 @@ function rightColumn(m: Metrics) {
 
 function setTextStyle(doc: jsPDF) {
   doc.setTextColor(0, 0, 0);
-  useFont(doc, 'normal');
+  setFontStyle(doc, 'normal');
 }
 
 function addTitle(doc: jsPDF, text: string, x: number, y: number, maxWidth: number) {

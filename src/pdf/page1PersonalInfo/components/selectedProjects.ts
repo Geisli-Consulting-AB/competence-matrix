@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import type { Metrics } from '../../shared';
-import { useFont } from '../../shared';
+import { setFontStyle } from '../../shared';
 import { SPACING } from '../constants';
 import { getPdfStrings } from '../../../i18n';
 import type { PdfLang } from '../../../i18n';
@@ -28,7 +28,7 @@ export function addSelectedProjects(
   
   // Section title
   doc.setTextColor(0, 0, 0);
-  useFont(doc, 'bold');
+  setFontStyle(doc, 'bold');
   doc.setFontSize(16);
   const t = getPdfStrings(lang);
   doc.text(t.selectedProjectsTitle, m.leftColW + m.leftPadding, y);
@@ -41,7 +41,7 @@ export function addSelectedProjects(
   y += SPACING.SECTION_HEADER;
 
   // Projects list
-  useFont(doc, 'normal');
+  setFontStyle(doc, 'normal');
   
   for (const project of projects) {
     if (!project) continue;
@@ -54,12 +54,12 @@ export function addSelectedProjects(
     
     // Project title
     doc.setFontSize(12);
-    useFont(doc, 'bold');
+    setFontStyle(doc, 'bold');
     doc.text(project.title || '', m.leftColW + m.leftPadding, y, { maxWidth });
     y += SPACING.LIST_ITEM -10; 
     
     // Project description
-    useFont(doc, 'normal');
+    setFontStyle(doc, 'normal');
     doc.setFontSize(10);
     const lines = doc.splitTextToSize(project.description || '', maxWidth);
     doc.text(lines, m.leftColW + m.leftPadding, y, { maxWidth });

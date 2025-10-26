@@ -1,23 +1,23 @@
 import jsPDF from 'jspdf';
 import type { Metrics } from '../../shared';
-import { useFont } from '../../shared';
+import { setFontStyle } from '../../shared';
 import { getPdfStrings } from '../../../i18n';
 import type { PdfLang } from '../../../i18n';
 import { SPACING } from '../constants';
 
-// Add expertise block beneath the given startY; stops if reaching the bottom margin
-export async function addExpertise(
+// Add languages block beneath the given startY; stops if reaching the bottom margin
+export async function addLanguages(
   doc: jsPDF,
   m: Metrics,
   startY: number,
-  expertise: string[],
+  languages: string[],
   lang: PdfLang = 'en',
 ): Promise<number> {
   const x = m.leftPadding;
   let y = startY;
 
-  // Only proceed if there are expertise items to display
-  if (!Array.isArray(expertise) || expertise.length === 0) {
+  // Only proceed if there are languages to display
+  if (!Array.isArray(languages) || languages.length === 0) {
     return startY;
   }
 
@@ -29,9 +29,9 @@ export async function addExpertise(
 
   // Heading
   doc.setTextColor(255, 255, 255);
-  useFont(doc, 'bold');
+  setFontStyle(doc, 'bold');
   doc.setFontSize(14);
-  doc.text(t.expertiseTitle || 'Expertise', x, y);
+  doc.text(t.languagesTitle, x, y);
   y += SPACING.HEADING_UNDERLINE;
 
   // Underline
@@ -42,14 +42,14 @@ export async function addExpertise(
   y += SPACING.SECTION_HEADER;
 
   // Body
-  useFont(doc, 'normal');
+  setFontStyle(doc, 'normal');
   doc.setFontSize(12);
   
   // Circle properties
   const circleX = x + SPACING.BULLET_RADIUS;
   
-  for (const item of expertise) {
-    const t = (item || '').trim();
+  for (const language of languages) {
+    const t = (language || '').trim();
     if (!t) continue;
     
     // Draw circle

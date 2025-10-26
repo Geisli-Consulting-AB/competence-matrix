@@ -37,25 +37,23 @@ export async function buildLeftColumn(
   drawSidebar(doc, m);
   const startY = await addAvatar(doc, m, photoDataUrl);
   const afterAvatarY = startY + SPACING.SECTION_BOTTOM_MARGIN;
-  const afterContactY = await addContact(doc, m, afterAvatarY, options.lang);
-  
-  let currentY = afterContactY;
+  let y = await addContact(doc, m, afterAvatarY, options.lang);
   
   // Add roles section if there are any roles
   if (Array.isArray(roles) && roles.length > 0) {
-    currentY = await addRoles(doc, m, currentY, roles, options.lang);
-    currentY += SPACING.SECTION_BOTTOM_MARGIN;
+    y = await addRoles(doc, m, y, roles, options.lang);
+    y += SPACING.SECTION_BOTTOM_MARGIN;
   }
   
   // Add expertise section if there are any expertise items
   if (Array.isArray(expertise) && expertise.length > 0) {
-    currentY = await addExpertise(doc, m, currentY, expertise, options.lang);
-    currentY += SPACING.SECTION_BOTTOM_MARGIN;
+    y = await addExpertise(doc, m, y, expertise, options.lang);
+    y += SPACING.SECTION_BOTTOM_MARGIN;
   }
   
   // Add languages section if there are any languages
   if (Array.isArray(languages) && languages.length > 0) {
-    currentY = await addLanguages(doc, m, currentY, languages, options.lang);
+    await addLanguages(doc, m, y, languages, options.lang);
     // No need to add bottom margin after the last section
   }
 }

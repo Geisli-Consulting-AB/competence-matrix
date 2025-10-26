@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import type { Metrics } from '../../shared';
-import { useFont } from '../../shared';
+import { setFontStyle } from '../../shared';
 import { getPdfStrings } from '../../../i18n';
 import type { PdfLang } from '../../../i18n';
 import { SPACING } from '../constants';
@@ -21,7 +21,7 @@ export async function addRoles(
 
   // Heading
   doc.setTextColor(255, 255, 255);
-  useFont(doc, 'bold');
+  setFontStyle(doc, 'bold');
   doc.setFontSize(14);
   doc.text(t.rolesTitle, x, y);
   y += SPACING.HEADING_UNDERLINE;
@@ -34,7 +34,7 @@ export async function addRoles(
   y += SPACING.SECTION_HEADER;
 
   // Body
-  useFont(doc, 'normal');
+  setFontStyle(doc, 'normal');
   doc.setFontSize(12);
   
   // Circle properties

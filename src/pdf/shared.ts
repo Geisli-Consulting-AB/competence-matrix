@@ -17,12 +17,12 @@ const INTER_FAMILY = 'Inter';
 
 /** Ensure Inter Regular/Bold fonts are registered on the given jsPDF document.
  *  Currently a no-op to avoid external fetches. Falls back to Helvetica. */
-export async function ensureInterFonts(_doc: jsPDF): Promise<void> {
+export async function ensureInterFonts(): Promise<void> {
   interReady = false; // keep using Helvetica via useFont
 }
 
 /** Set the text font to Inter when available, otherwise Helvetica. */
-export function useFont(doc: jsPDF, style: 'normal' | 'bold' = 'normal') {
+export function setFontStyle(doc: jsPDF, style: 'normal' | 'bold' = 'normal') {
   if (interReady) {
     doc.setFont(INTER_FAMILY, style);
   } else {
@@ -49,7 +49,7 @@ export async function loadImage(dataUrlOrUrl: string): Promise<HTMLImageElement>
   }
 
   // Handle regular URLs
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => resolve(img);
