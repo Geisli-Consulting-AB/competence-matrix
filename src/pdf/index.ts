@@ -15,24 +15,16 @@ export async function generateCvPdf(
   lang: PdfLang = 'en',
   title?: string,
 ): Promise<Blob> {
-  console.group('[PDF] generateCvPdf');
-  console.debug('[PDF] Inputs:', { hasName: !!name, name, hasDescription: !!description, hasPhoto: !!photoDataUrl, rolesCount: roles?.length ?? 0, expertiseCount: expertise?.length ?? 0, lang });
-  const t0Label = '[PDF] total';
-  console.time(t0Label);
-  
   try {
     const doc = newDoc();
     const m = getMetrics();
 
-    console.time('[PDF] ensureInterFonts');
     await ensureInterFonts(doc);
-    console.timeEnd('[PDF] ensureInterFonts');
 
     // Get translations for the specified language
     const strings = getPdfStrings(lang);
 
     // Build left column with all required titles
-    console.time('[PDF] buildLeftColumn');
     await buildLeftColumn(doc, m, photoDataUrl, roles, languages, expertise, {
       contactTitle: strings.contactTitle,
       rolesTitle: strings.rolesTitle,
@@ -40,26 +32,18 @@ export async function generateCvPdf(
       expertiseTitle: strings.expertiseTitle,
       lang
     });
-    console.timeEnd('[PDF] buildLeftColumn');
 
     // Build right column with all required options
-    console.time('[PDF] buildRightColumn');
     await buildRightColumn(doc, m, name, description, selectedProjects, { 
       cvTitle: title || strings.cvTitle, // Use the provided title or fall back to default
-      selectedProjectsTitle: strings.selectedProjectsTitle
+      selectedProjectsTitle: strings.selectedProjectsTitle,
+      summary: strings.summary // Add translated summary heading
     }, lang);
-    console.timeEnd('[PDF] buildRightColumn');
 
     const blob = toBlob(doc);
-    console.timeEnd(t0Label);
-    console.debug('[PDF] Blob size (approx bytes):', (blob as any).size ?? 'n/a');
     return blob;
   } catch (err) {
-    console.timeEnd(t0Label);
-    console.error('[PDF] Failed to generate PDF', err);
     throw err;
-  } finally {
-    console.groupEnd();
   }
 }
 

@@ -12,6 +12,8 @@ const resources = {
       expertiseTitle: 'Expertise',
       cvTitle: 'Curriculum Vitae',
       selectedProjectsTitle: 'Selected Projects',
+      professionalSummary: 'Professional Summary',
+      summary: 'Summary',
     },
   },
   sv: {
@@ -22,6 +24,8 @@ const resources = {
       expertiseTitle: 'Expertkunskaper',
       cvTitle: 'Curriculum Vitae',
       selectedProjectsTitle: 'Utvalda projekt',
+      professionalSummary: 'Sammanfattning',
+      summary: 'Sammanfattning',
     },
   },
 } as const;

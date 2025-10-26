@@ -91,16 +91,17 @@ export async function buildRightColumn(
     doc.setTextColor(100, 100, 100); // Dark gray color for the title
     y = y - 10; // Adjust spacing
     doc.text(options.cvTitle, x, y, { maxWidth: width });
-    y += 30; // Add some space after the title
+    y += 80; // Add some space after the title
   } else {
-    y += 10; // Add some space if no title
+    y += 20; // Increased space if no title
   }
 
   // Add Summary heading with a line
   doc.setFontSize(14);
   doc.setTextColor(0, 0, 0); // Black color for the heading
   doc.setFont('helvetica', 'bold');
-  doc.text('Summary', x, y);
+  const summaryText = options.summary || 'Summary';
+  doc.text(summaryText, x, y);
   
   // Add a line under the heading
   y += 5;
