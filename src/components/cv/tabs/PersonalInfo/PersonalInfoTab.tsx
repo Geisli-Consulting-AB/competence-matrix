@@ -122,6 +122,15 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({ profile, onProfileCha
       />
       <TextField
         fullWidth
+        label="Title"
+        value={profile.title || ''}
+        onChange={(e) => onProfileChange({ title: e.target.value })}
+        margin="normal"
+        variant="outlined"
+        placeholder="e.g., Senior Software Engineer"
+      />
+      <TextField
+        fullWidth
         label="Professional Summary"
         value={profile.description || ''}
         onChange={(e) => onProfileChange({ description: e.target.value })}

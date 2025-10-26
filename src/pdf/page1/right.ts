@@ -80,18 +80,45 @@ export async function buildRightColumn(
   setTextStyle(doc);
   const { x, width } = rightColumn(m);
 
-  const title = (name?.trim() || '').slice(0, 200) || options.cvTitle;
-
+  // Add user name as the main title
   const titleTopY = 80;
-  let y = addTitle(doc, title, x, titleTopY, width);
+  const nameTitle = (name?.trim() || '').slice(0, 200) || options.cvTitle;
+  let y = addTitle(doc, nameTitle, x, titleTopY, width);
+
+  // Add title (role/position) below the name if it exists
+  if (options.cvTitle && options.cvTitle !== nameTitle) {
+    doc.setFontSize(16);
+    doc.setTextColor(100, 100, 100); // Dark gray color for the title
+    y = y - 10; // Adjust spacing
+    doc.text(options.cvTitle, x, y, { maxWidth: width });
+    y += 30; // Add some space after the title
+  } else {
+    y += 10; // Add some space if no title
+  }
+
+  // Add Summary heading with a line
+  doc.setFontSize(14);
+  doc.setTextColor(0, 0, 0); // Black color for the heading
+  doc.setFont('helvetica', 'bold');
+  doc.text('Summary', x, y);
+  
+  // Add a line under the heading
+  y += 5;
+  doc.setDrawColor(200, 200, 200); // Light gray line
+  doc.line(x, y, x + width, y);
+  y += 15; // Add space after the line
 
   // Add description if provided
   if (description) {
-    const { x, width } = rightColumn(m);
+    const { x: descX, width: descWidth } = rightColumn(m);
     const bottomY = m.pageH - m.bottomMargin;
     
-    const lines = wrap(doc, description, width);
-    const { overflow } = addBodyFirstPage(doc, lines, x, y, bottomY);
+    // Reset font for description text
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    
+    const lines = wrap(doc, description, descWidth);
+    const { overflow } = addBodyFirstPage(doc, lines, descX, y, bottomY);
     
     // Handle overflow on subsequent pages if needed
     if (overflow) {

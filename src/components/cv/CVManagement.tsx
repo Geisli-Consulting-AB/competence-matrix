@@ -91,6 +91,7 @@ export interface EngagementPublication {
 export interface CVItem {
   id: string;
   name: string;
+  language?: 'en' | 'sv';
   data?: Partial<Omit<UserProfile, 'cvs'>>;
 }
 
@@ -98,6 +99,7 @@ export interface UserProfile {
   displayName: string;
   photoUrl?: string;
   email?: string;
+  title?: string;
   description?: string;
   roles?: string[];
   languages?: string[];
@@ -118,6 +120,7 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
   const [profile, setProfile] = useState<UserProfile>({ 
     displayName: user?.displayName || '',
     email: user?.email || '',
+    title: '',
     photoUrl: user?.photoURL || undefined,
     description: '',
     roles: [],
@@ -130,6 +133,66 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
     engagementsPublications: [],
     cvs: []
   });
+
+  // Helper to select a CV and load its data into the working profile
+  const selectCvById = useCallback((id: string | null) => {
+    if (!id) return;
+    setSelectedCvId(id);
+    const cv = (profile.cvs || []).find(c => c.id === id);
+    const data = cv?.data ?? {};
+    setProfile(prev => ({
+      ...prev,
+      displayName: (data.displayName ?? (user?.displayName ?? '')),
+      email: (data.email ?? (user?.email ?? '')),
+      title: data.title ?? '',
+      description: data.description ?? '',
+      roles: data.roles ?? [],
+      languages: data.languages ?? [],
+      expertise: data.expertise ?? [],
+      projects: data.projects ?? [],
+      experiences: data.experiences ?? [],
+      educations: data.educations ?? [],
+      coursesCertifications: data.coursesCertifications ?? [],
+      engagementsPublications: data.engagementsPublications ?? []
+    }));
+  }, [profile.cvs, user]);
+
+  // Update profile when user changes
+  useEffect(() => {
+    if (user) {
+      setProfile(prev => ({
+        ...prev,
+        displayName: user.displayName || '',
+        email: user.email || '',
+        photoUrl: user.photoURL || undefined
+      }));
+    }
+  }, [user]);
+
+  // Subscribe to user's CVs in Firestore to populate Overview list
+  useEffect(() => {
+    if (!user) {
+      setProfile(prev => ({
+        ...prev,
+        displayName: '',
+        email: '',
+        title: '',
+        photoUrl: undefined,
+        description: '',
+        roles: [],
+        languages: [],
+        expertise: [],
+        projects: [],
+        experiences: [],
+        educations: [],
+        coursesCertifications: [],
+        engagementsPublications: [],
+        cvs: []
+      }));
+      return;
+    }
+  });
+
 
   // Update profile when user changes
   useEffect(() => {
@@ -150,10 +213,22 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
       return;
     }
     const unsub = subscribeToUserCVs(user.uid, (rows) => {
-      setProfile(prev => ({
-        ...prev,
-        cvs: rows.map(r => ({ id: r.id, name: r.name, data: r.data as Partial<Omit<UserProfile, 'cvs'>> | undefined }))
-      }));
+      setProfile(prev => {
+        const updatedCVs = rows.map(r => ({
+          id: r.id, 
+          name: r.name, 
+          language: r.language || 'en', // Ensure we have a default language
+          data: {
+            ...(r.data as Partial<Omit<UserProfile, 'cvs'>> || {}),
+            // Ensure language is also in data for backward compatibility
+            language: r.language || 'en'
+          }
+        }));
+        return {
+          ...prev,
+          cvs: updatedCVs
+        };
+      });
     });
     return () => unsub();
   }, [user]);
@@ -180,55 +255,66 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
   };
 
   const handleProfileChange = (updates: Partial<UserProfile>) => {
-    let toSave: { id: string; name: string; data: unknown } | null = null;
+    if (!user) {
+      console.warn('Cannot save changes: No user is logged in');
+      return;
+    }
+    
+    console.log('handleProfileChange called with updates:', updates);
+    
+    // First, update the local state
     setProfile(prev => {
       const next = { ...prev, ...updates };
-      // If a CV is selected, persist updates into that CV's data snapshot
+      
+      // If a CV is selected, update its data
       if (selectedCvId && Array.isArray(next.cvs)) {
-        const idx = next.cvs.findIndex(cv => cv.id === selectedCvId);
-        if (idx >= 0) {
-          const cv = next.cvs[idx];
+        const cvIndex = next.cvs.findIndex(cv => cv.id === selectedCvId);
+        if (cvIndex >= 0) {
+          const cv = next.cvs[cvIndex];
           const currentData = cv.data || {};
+          
           // Exclude cvs field from being embedded
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { cvs: _ignored, ...updatesWithoutCvs } = updates;
-          const updatedCv = { ...cv, data: { ...currentData, ...updatesWithoutCvs } };
-          next.cvs[idx] = updatedCv;
-          toSave = { id: updatedCv.id, name: updatedCv.name, data: updatedCv.data };
+          
+          // Create updated CV with merged data
+          const updatedCv = { 
+            ...cv, 
+            data: { 
+              ...currentData, 
+              ...updatesWithoutCvs 
+            } 
+          };
+          
+          // Update the CV in the array
+          next.cvs = [...next.cvs];
+          next.cvs[cvIndex] = updatedCv;
+          
+          // Prepare data to save to Firestore
+          const toSave = { 
+            id: updatedCv.id, 
+            name: updatedCv.name, 
+            data: updatedCv.data 
+          };
+          
+          console.log('Preparing to save to Firestore:', toSave);
+          
+          // Save to Firestore
+          saveUserCV(user.uid, toSave, false)
+            .then(() => console.log('CV saved successfully to Firestore'))
+            .catch(error => console.error('Error saving CV to Firestore:', error));
+            
+        } else {
+          console.warn('CV not found with id:', selectedCvId);
         }
+      } else {
+        console.warn('No selected CV or cvs array is not available');
       }
+      
       return next;
     });
-    // Save the selected CV snapshot to Firestore on every change
-    if (toSave && user) {
-      saveUserCV(user.uid, toSave, false);
-    }
   };
 
-  // Helper to select a CV and load its data into the working profile
-  const selectCvById = useCallback((id: string | null) => {
-    if (!id) return;
-    setSelectedCvId(id);
-    const cv = (profile.cvs || []).find(c => c.id === id);
-    const data = cv?.data ?? {};
-    setProfile(prev => ({
-      displayName: (data.displayName ?? (user?.displayName ?? '')),
-      email: (data.email ?? (user?.email ?? '')),
-      photoUrl: data.photoUrl ?? undefined,
-      description: data.description ?? '',
-      roles: data.roles ?? [],
-      languages: data.languages ?? [],
-      expertise: data.expertise ?? [],
-      // If not set for this CV, it means all user competences are implicitly included until modified in the tab
-      competences: data.competences,
-      projects: data.projects ?? [],
-      experiences: data.experiences ?? [],
-      educations: data.educations ?? [],
-      coursesCertifications: data.coursesCertifications ?? [],
-      engagementsPublications: data.engagementsPublications ?? [],
-      cvs: prev.cvs ?? [],
-    }));
-  }, [profile.cvs, user]);
 
   // Auto-select the first CV when entering the page (or when list loads) if none is selected
   useEffect(() => {
@@ -293,7 +379,19 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
               (cvs || []).forEach(c => {
                 const existing = prevList.find(p => p.id === c.id);
                 const isNew = !existing;
-                saveUserCV(user.uid, { id: c.id, name: c.name || '', data: existing?.data || {} }, isNew);
+                // Ensure we're passing all CV data including language
+                const cvData = {
+                  id: c.id, 
+                  name: c.name || '',
+                  language: c.language || 'en',
+                  data: {
+                    ...(existing?.data || {}),
+                    // Make sure we don't accidentally override the language in data
+                    ...(c.language ? { language: c.language } : {})
+                  }
+                };
+                console.log('Saving CV data:', cvData);
+                saveUserCV(user.uid, cvData, isNew);
               });
             }
           }}
@@ -302,6 +400,7 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
             selectCvById(id);
           }}
           ownerName={profile.displayName}
+          ownerTitle={profile.title}
           ownerDescription={profile.description}
           ownerPhotoUrl={profile.photoUrl}
           ownerRoles={profile.roles}

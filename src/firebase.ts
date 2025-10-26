@@ -249,11 +249,14 @@ export function subscribeToSharedCategories(
 
 
 // ===== CV management (users/{userId}/cvs subcollection) =====
-export type CVDoc = {
+export interface CVDoc {
   id: string;
   name: string;
-  data?: unknown;
-};
+  language?: 'en' | 'sv';
+  data?: unknown; // CV data structure defined in the CV editor
+  createdAt?: any; // Firestore timestamp
+  updatedAt?: any; // Firestore timestamp
+}
 
 // Realtime subscribe to a user's CVs
 export function subscribeToUserCVs(
@@ -266,10 +269,11 @@ export function subscribeToUserCVs(
   const qRef = query(colRef, orderBy("createdAt", "asc"), orderBy(documentId(), "asc"));
   return onSnapshot(qRef, (snap) => {
     const rows: CVDoc[] = snap.docs.map((d) => {
-      const data = d.data() as { name?: unknown; data?: unknown };
+      const data = d.data() as { name?: unknown; data?: unknown; language?: unknown };
       return {
         id: d.id,
         name: String(data?.name ?? ""),
+        language: data?.language as 'en' | 'sv' | undefined,
         data: (data?.data as unknown) ?? undefined,
       };
     });
@@ -280,19 +284,28 @@ export function subscribeToUserCVs(
 // Create or update a CV document immediately
 export async function saveUserCV(
   userId: string,
-  cv: { id: string; name?: string; data?: unknown },
+  cv: { id: string; name?: string; language?: 'en' | 'sv'; data?: unknown },
   isNew?: boolean,
 ): Promise<void> {
+  console.log('saveUserCV - Input:', { userId, cv, isNew });
   const ref = doc(db, "users", userId, "cvs", cv.id);
-  const payload: Record<string, unknown> = {
-    name: cv.name ?? "",
-    data: cv.data ?? {},
+  const payload: Partial<CVDoc> = {
+    name: cv.name || 'Untitled CV',
+    ...(cv.language !== undefined && { language: cv.language }),
+    ...(cv.data !== undefined && { data: cv.data }),
     updatedAt: serverTimestamp(),
   };
   if (isNew) {
     payload.createdAt = serverTimestamp();
   }
-  await setDoc(ref, payload, { merge: true });
+  console.log('saveUserCV - Payload to save:', payload);
+  try {
+    await setDoc(ref, payload, { merge: true });
+    console.log('saveUserCV - Successfully saved to Firestore');
+  } catch (error) {
+    console.error('saveUserCV - Error saving to Firestore:', error);
+    throw error;
+  }
 }
 
 // Delete a CV document

@@ -3,11 +3,12 @@ import { Box, Button, Paper, TextField, Typography, IconButton, Stack, Tooltip, 
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
-import { generateCvPdf, downloadBlob, filenameFromUserName } from '../../../../pdf';
+import { generateCvPdf, downloadBlob, filenameFromUserName, type PdfLang } from '../../../../pdf';
 
 export interface CVOverviewItem {
   id: string;
   name: string;
+  language?: PdfLang;
 }
 
 export interface ProjectItem {
@@ -23,6 +24,7 @@ export interface OverviewTabProps {
   selectedId?: string | null;
   onSelect?: (id: string) => void;
   ownerName?: string;
+  ownerTitle?: string;
   ownerDescription?: string;
   ownerPhotoUrl?: string;
   ownerRoles?: string[];
@@ -34,7 +36,8 @@ export interface OverviewTabProps {
 function newCV(): CVOverviewItem {
   return {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    name: ''
+    name: '',
+    language: 'en' // Default to English
   };
 }
 
@@ -45,6 +48,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
   selectedId, 
   onSelect, 
   ownerName, 
+  ownerTitle,
   ownerDescription, 
   ownerPhotoUrl, 
   ownerRoles, 
@@ -52,17 +56,43 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
   ownerExpertise,
   ownerSelectedProjects = []
 }) => {
-  const [cvLang, setCvLang] = React.useState<Record<string, 'en' | 'sv'>>({});
+  // Initialize cvLang state from the CV items
+  const [cvLang, setCvLang] = React.useState<Record<string, PdfLang>>(
+    cvs.reduce((acc, cv) => {
+      if (cv.language) {
+        acc[cv.id] = cv.language;
+      }
+      return acc;
+    }, {} as Record<string, PdfLang>)
+  );
   const addCV = () => {
     const created = newCV();
     onChange([created, ...(cvs || [])]);
     if (onSelect) onSelect(created.id);
   };
 
-  const updateCV = (index: number, field: keyof CVOverviewItem, value: string) => {
+  const updateCV = (index: number, field: keyof CVOverviewItem, value: string | PdfLang) => {
     const updated = [...(cvs || [])];
     const current = updated[index] || newCV();
-    updated[index] = { ...current, [field]: value } as CVOverviewItem;
+    
+    // Create a new CV with the updated field
+    const updatedCv: CVOverviewItem = {
+      ...current,
+      [field]: field === 'language' ? (value as PdfLang) : value
+    };
+    
+    // Update the local state for language if needed
+    if (field === 'language') {
+      setCvLang(prev => ({
+        ...prev,
+        [current.id]: value as PdfLang
+      }));
+    }
+    
+    // Update the CV in the array
+    updated[index] = updatedCv;
+    
+    // Trigger the parent's onChange with the updated CVs
     onChange(updated);
   };
 
@@ -110,11 +140,15 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                     <ToggleButtonGroup
                       exclusive
                       size="small"
-                      value={cvLang[cv.id] || 'en'}
+                      value={cv.language || cvLang[cv.id] || 'en'}
                       onChange={(e, value) => {
                         e.stopPropagation();
                         if (!value) return; // ignore unselect
-                        setCvLang(prev => ({ ...prev, [cv.id]: value }));
+                        updateCV(
+                          cvs.findIndex(c => c.id === cv.id), 
+                          'language', 
+                          value
+                        );
                       }}
                       aria-label="PDF language toggle"
                     >
@@ -136,7 +170,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                                 rolesCount: ownerRoles?.length ?? 0,
                                 expertiseCount: ownerExpertise?.length ?? 0 
                               });
-                              const lang = (cvLang && cvLang[cv.id]) ? cvLang[cv.id] : 'en';
+                              const lang = cv.language || cvLang[cv.id] || 'en';
                               // Map the selected projects to the format expected by the PDF generator
                               const selectedProjects = ownerSelectedProjects.map(project => ({
                                 customer: project.customer || '',
@@ -152,7 +186,8 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                                 ownerLanguages, 
                                 ownerExpertise,
                                 selectedProjects,
-                                lang
+                                lang,
+                                ownerTitle // Pass the title to the PDF generator
                               );
                               downloadBlob(blob, filenameFromUserName(ownerName));
                               console.debug('[PDF] Download triggered successfully');
