@@ -32,14 +32,33 @@ export function useFont(doc: jsPDF, style: 'normal' | 'bold' = 'normal') {
 
 // Image utilities (browser-only)
 export async function loadImage(dataUrlOrUrl: string): Promise<HTMLImageElement> {
+  // If it's already a data URL, use it directly
+  if (dataUrlOrUrl.startsWith('data:')) {
+    const img = new Image();
+    return new Promise((resolve) => {
+      img.onload = () => resolve(img);
+      img.onerror = (e) => {
+        console.error('[PDF] loadImage: failed to load data URL image', { error: e });
+        // Return a transparent 1x1 pixel as fallback
+        const fallback = new Image();
+        fallback.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+        resolve(fallback);
+      };
+      img.src = dataUrlOrUrl;
+    });
+  }
+
+  // Handle regular URLs
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.onload = () => {
-      resolve(img);
-    };
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
     img.onerror = (e) => {
       console.error('[PDF] loadImage: failed to load image', { src: dataUrlOrUrl, error: e });
-      reject(e);
+      // Return a transparent 1x1 pixel as fallback
+      const fallback = new Image();
+      fallback.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+      resolve(fallback);
     };
     img.src = dataUrlOrUrl;
   });

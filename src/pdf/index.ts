@@ -11,6 +11,7 @@ export async function generateCvPdf(
   roles?: string[],
   languages?: string[],
   expertise?: string[],
+  selectedProjects?: Array<{ customer: string; title: string; description: string }>,
   lang: PdfLang = 'en',
 ): Promise<Blob> {
   console.group('[PDF] generateCvPdf');
@@ -42,9 +43,10 @@ export async function generateCvPdf(
 
     // Build right column with all required options
     console.time('[PDF] buildRightColumn');
-    buildRightColumn(doc, m, name, description, { 
-      cvTitle: strings.cvTitle
-    });
+    await buildRightColumn(doc, m, name, description, selectedProjects, { 
+      cvTitle: strings.cvTitle,
+      selectedProjectsTitle: strings.selectedProjectsTitle
+    }, lang);
     console.timeEnd('[PDF] buildRightColumn');
 
     const blob = toBlob(doc);
@@ -68,9 +70,19 @@ export async function createAndDownloadCvPdf(
   roles?: string[],
   languages?: string[],
   expertise?: string[],
+  selectedProjects?: Array<{ customer: string; title: string; description: string }>,
   lang: PdfLang = 'en'
 ) {
-  const blob = await generateCvPdf(ownerName, ownerDescription, photoDataUrl, roles, languages, expertise, lang);
+  const blob = await generateCvPdf(
+    ownerName, 
+    ownerDescription, 
+    photoDataUrl, 
+    roles, 
+    languages, 
+    expertise,
+    selectedProjects,
+    lang
+  );
   const filename = filenameFromUserName(ownerName);
   downloadBlob(blob, filename);
 }

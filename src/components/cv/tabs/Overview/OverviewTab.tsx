@@ -10,6 +10,13 @@ export interface CVOverviewItem {
   name: string;
 }
 
+export interface ProjectItem {
+  id: string;
+  customer: string;
+  title: string;
+  description: string;
+}
+
 export interface OverviewTabProps {
   cvs: CVOverviewItem[];
   onChange: (cvs: CVOverviewItem[]) => void;
@@ -21,6 +28,7 @@ export interface OverviewTabProps {
   ownerRoles?: string[];
   ownerLanguages?: string[];
   ownerExpertise?: string[];
+  ownerSelectedProjects?: ProjectItem[];
 }
 
 function newCV(): CVOverviewItem {
@@ -31,7 +39,19 @@ function newCV(): CVOverviewItem {
 }
 
 
-const OverviewTab: React.FC<OverviewTabProps> = ({ cvs = [], onChange, selectedId, onSelect, ownerName, ownerDescription, ownerPhotoUrl, ownerRoles, ownerLanguages, ownerExpertise }) => {
+const OverviewTab: React.FC<OverviewTabProps> = ({ 
+  cvs = [], 
+  onChange, 
+  selectedId, 
+  onSelect, 
+  ownerName, 
+  ownerDescription, 
+  ownerPhotoUrl, 
+  ownerRoles, 
+  ownerLanguages, 
+  ownerExpertise,
+  ownerSelectedProjects = []
+}) => {
   const [cvLang, setCvLang] = React.useState<Record<string, 'en' | 'sv'>>({});
   const addCV = () => {
     const created = newCV();
@@ -117,13 +137,21 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ cvs = [], onChange, selectedI
                                 expertiseCount: ownerExpertise?.length ?? 0 
                               });
                               const lang = (cvLang && cvLang[cv.id]) ? cvLang[cv.id] : 'en';
+                              // Map the selected projects to the format expected by the PDF generator
+                              const selectedProjects = ownerSelectedProjects.map(project => ({
+                                customer: project.customer || '',
+                                title: project.title || '',
+                                description: project.description || ''
+                              }));
+                              
                               const blob = await generateCvPdf(
                                 ownerName, 
                                 ownerDescription, 
                                 ownerPhotoUrl, 
                                 ownerRoles, 
                                 ownerLanguages, 
-                                ownerExpertise, 
+                                ownerExpertise,
+                                selectedProjects,
                                 lang
                               );
                               downloadBlob(blob, filenameFromUserName(ownerName));

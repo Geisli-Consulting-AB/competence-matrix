@@ -11,6 +11,7 @@ const resources = {
       languagesTitle: 'Languages',
       expertiseTitle: 'Expertise',
       cvTitle: 'Curriculum Vitae',
+      selectedProjectsTitle: 'Selected Projects',
     },
   },
   sv: {
@@ -20,6 +21,7 @@ const resources = {
       languagesTitle: 'Språk',
       expertiseTitle: 'Expertkunskaper',
       cvTitle: 'Curriculum Vitae',
+      selectedProjectsTitle: 'Utvalda projekt',
     },
   },
 } as const;

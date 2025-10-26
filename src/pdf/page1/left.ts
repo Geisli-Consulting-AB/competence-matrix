@@ -5,6 +5,7 @@ import { addRoles } from './components/roles';
 import { addLanguages } from './components/languages';
 import { addExpertise } from './components/expertise';
 import { addAvatar } from './components/avatar';
+import { SPACING } from './constants';
 
 // Left column background: #101b29
 export function drawSidebar(doc: jsPDF, m: Metrics) {
@@ -35,23 +36,27 @@ export async function buildLeftColumn(
 ) {
   drawSidebar(doc, m);
   const startY = await addAvatar(doc, m, photoDataUrl);
-  const afterContactY = await addContact(doc, m, startY, options.lang);
+  const afterAvatarY = startY + SPACING.SECTION_BOTTOM_MARGIN;
+  const afterContactY = await addContact(doc, m, afterAvatarY, options.lang);
   
   let currentY = afterContactY;
   
   // Add roles section if there are any roles
   if (Array.isArray(roles) && roles.length > 0) {
     currentY = await addRoles(doc, m, currentY, roles, options.lang);
+    currentY += SPACING.SECTION_BOTTOM_MARGIN;
   }
   
   // Add expertise section if there are any expertise items
   if (Array.isArray(expertise) && expertise.length > 0) {
     currentY = await addExpertise(doc, m, currentY, expertise, options.lang);
+    currentY += SPACING.SECTION_BOTTOM_MARGIN;
   }
   
   // Add languages section if there are any languages
   if (Array.isArray(languages) && languages.length > 0) {
     currentY = await addLanguages(doc, m, currentY, languages, options.lang);
+    // No need to add bottom margin after the last section
   }
 }
 

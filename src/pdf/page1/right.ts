@@ -1,6 +1,9 @@
 import jsPDF from 'jspdf';
 import type { Metrics } from '../shared';
 import { useFont } from '../shared';
+import { addSelectedProjects } from './components/selectedProjects';
+import type { ProjectItem } from './components/selectedProjects';
+import type { PdfLang } from '../../../i18n';
 
 function rightColumn(m: Metrics) {
   const x = m.leftColW + m.leftPadding;
@@ -60,32 +63,59 @@ function addBodyNextPages(doc: jsPDF, text: string, m: Metrics, lineH = 16) {
 
 export interface RightColumnOptions {
   cvTitle: string;
-  [key: string]: string; // Allow for additional string properties
+  selectedProjectsTitle?: string;
+  [key: string]: string | undefined; // Allow for additional optional string properties
 }
 
 // Build the right column of page 1 (title + description with wrapping and overflow handling)
-export function buildRightColumn(
+export async function buildRightColumn(
   doc: jsPDF,
   m: Metrics,
   name: string | undefined,
   description: string | undefined,
-  options: RightColumnOptions
+  selectedProjects: ProjectItem[] | undefined,
+  options: RightColumnOptions,
+  lang: PdfLang = 'en'
 ) {
   setTextStyle(doc);
   const { x, width } = rightColumn(m);
 
   const title = (name?.trim() || '').slice(0, 200) || options.cvTitle;
-  const body = (description || '').toString();
 
   const titleTopY = 80;
-  const afterTitleY = addTitle(doc, title, x, titleTopY, width);
+  let y = addTitle(doc, title, x, titleTopY, width);
 
-  const firstPageBottom = m.pageH - m.bottomMargin;
-  const lines = wrap(doc, body, width);
-  const { overflow } = addBodyFirstPage(doc, lines, x, afterTitleY, firstPageBottom);
+  // Add description if provided
+  if (description) {
+    const { x, width } = rightColumn(m);
+    const bottomY = m.pageH - m.bottomMargin;
+    
+    const lines = wrap(doc, description, width);
+    const { overflow } = addBodyFirstPage(doc, lines, x, y, bottomY);
+    
+    // Handle overflow on subsequent pages if needed
+    if (overflow) {
+      doc.addPage();
+      addBodyNextPages(doc, overflow, m);
+    }
+  }
 
-  if (overflow) {
-    doc.addPage();
-    addBodyNextPages(doc, overflow, m);
+  // Add selected projects section if provided
+  if (Array.isArray(selectedProjects) && selectedProjects.length > 0) {
+    const { width } = rightColumn(m);
+    const bottomY = m.pageH - m.bottomMargin;
+    
+    // Add some space before the projects section
+    let projectsY = y + 200;
+    
+    // Add the projects section
+    projectsY = addSelectedProjects(doc, m, projectsY, selectedProjects, width, lang);
+    
+    // If we're too close to the bottom, move to next page
+    if (projectsY > bottomY - 100) { // Leave some margin for at least one project
+      doc.addPage();
+      projectsY = 60; // Start position on new page
+      projectsY = addSelectedProjects(doc, m, projectsY, selectedProjects, width, lang);
+    }
   }
 }

@@ -3,6 +3,7 @@ import type { Metrics } from '../../shared';
 import { useFont } from '../../shared';
 import { getPdfStrings } from '../../../i18n';
 import type { PdfLang } from '../../../i18n';
+import { SPACING } from '../constants';
 
 // Add languages block beneath the given startY; stops if reaching the bottom margin
 export async function addLanguages(
@@ -31,23 +32,21 @@ export async function addLanguages(
   useFont(doc, 'bold');
   doc.setFontSize(14);
   doc.text(t.languagesTitle, x, y);
-  y += 6;
+  y += SPACING.HEADING_UNDERLINE;
 
   // Underline
   doc.setDrawColor(255, 255, 255);
   doc.setLineWidth(1.5);
   const lineRight = m.leftColW - m.leftPadding;
   doc.line(x, y, lineRight, y);
-  y += 16;
+  y += SPACING.SECTION_HEADER;
 
   // Body
   useFont(doc, 'normal');
   doc.setFontSize(12);
   
   // Circle properties
-  const circleRadius = 2;
-  const circleX = x + circleRadius;
-  const circleYOffset = 4; // Vertical adjustment to align circle with text
+  const circleX = x + SPACING.BULLET_RADIUS;
   
   for (const language of languages) {
     const t = (language || '').trim();
@@ -55,11 +54,11 @@ export async function addLanguages(
     
     // Draw circle
     doc.setFillColor(255, 255, 255);
-    doc.circle(circleX, y - circleYOffset, circleRadius, 'F');
+    doc.circle(circleX, y - SPACING.BULLET_Y_OFFSET, SPACING.BULLET_RADIUS, 'F');
     
     // Add text with some spacing from the circle
-    doc.text(t, x + 10, y);
-    y += 16;
+    doc.text(t, x + SPACING.BULLET_TEXT_PADDING, y);
+    y += SPACING.LIST_ITEM;
     
     // Prevent overflow
     if (y > m.pageH - m.bottomMargin) {
