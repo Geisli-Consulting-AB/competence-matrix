@@ -333,6 +333,7 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
       <TabPanel value={tabValue} index={0}>
         <OverviewTab 
           cvs={profile.cvs || []}
+          ownerEngagements={profile.engagementsPublications}
           onChange={(cvs) => {
             // Persist to Firestore: upsert all, delete removed
             const prevList = profile.cvs || [];

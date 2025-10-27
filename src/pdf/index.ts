@@ -35,7 +35,15 @@ export async function generateCvPdf(
   title?: string,
   experiences: Experience[] = [],
   educations: EducationItem[] = [],
-  courses: Array<{ name: string; issuer?: string; year?: string }> = []
+  courses: Array<{ name: string; issuer?: string; year?: string }> = [],
+  engagementsPublications: Array<{
+    type: 'engagement' | 'publication';
+    title: string;
+    year?: string;
+    locationOrPublication?: string;
+    description?: string;
+    url?: string;
+  }> = []
 ): Promise<Blob> {
   const doc = newDoc();
   const m = getMetrics();
@@ -85,7 +93,8 @@ export async function generateCvPdf(
     await buildEducationAndMorePage(doc, m, { 
       lang,
       educations,
-      courses: courses
+      courses: courses,
+      engagementPublications: engagementsPublications
     });
   } else {
     // If no experiences, still add education page as second page
@@ -95,7 +104,8 @@ export async function generateCvPdf(
     await buildEducationAndMorePage(doc, m, { 
       lang,
       educations,
-      courses: courses
+      courses: courses,
+      engagementPublications: engagementsPublications
     });
   }
 
@@ -115,8 +125,23 @@ export async function createAndDownloadCvPdf(
   title?: string,
   experiences: Experience[] = [],
   educations: EducationItem[] = [],
-  courses: Array<{ name: string; issuer?: string; year?: string }> = []
+  courses: Array<{ name: string; issuer?: string; year?: string }> = [],
+  engagementsPublications: Array<{
+    type: 'engagement' | 'publication';
+    title: string;
+    year?: string;
+    locationOrPublication?: string;
+    description?: string;
+    url?: string;
+  }> = []
 ) {
+  console.log('[PDF] createAndDownloadCvPdf called with:', {
+    ownerName,
+    experiences: experiences.length,
+    educations: educations.length,
+    courses: courses.length,
+    engagementsPublications: engagementsPublications.length
+  });
   const blob = await generateCvPdf(
     ownerName,
     ownerDescription,
@@ -129,7 +154,8 @@ export async function createAndDownloadCvPdf(
     title,
     experiences,
     educations,
-    courses
+    courses,
+    engagementsPublications
   );
   const filename = filenameFromUserName(ownerName);
   downloadBlob(blob, filename);

@@ -31,19 +31,23 @@ export interface PublicationItem {
   link?: string;
 }
 
+export interface EngagementPublicationItem {
+  type: 'engagement' | 'publication';
+  title: string;
+  year?: string;
+  locationOrPublication?: string;
+  description?: string;
+  url?: string;
+}
+
 export interface Page3Options {
   lang?: PdfLang;
   educations?: EducationItem[];
   courses?: CourseItem[];
-  publications?: PublicationItem[];
-  engagements?: Array<{
-    title: string;
-    organization: string;
-    startYear: string;
-    endYear?: string;
-    ongoing?: boolean;
-    description?: string;
-  }>;
+  engagementPublications?: EngagementPublicationItem[];
+  // Backward compatibility
+  engagements?: Array<Omit<EngagementPublicationItem, 'type'>>;
+  publications?: Array<Omit<EngagementPublicationItem, 'type'>>;
 }
 
 export async function buildEducationAndMorePage(
@@ -100,14 +104,23 @@ export async function buildEducationAndMorePage(
   }
 
   // Add engagement & publications section if data is provided
-  if ((options.engagements && options.engagements.length > 0) || 
-      (options.publications && options.publications.length > 0)) {
+  const engagementPublications = [
+    ...(options.engagementPublications || []),
+    ...(options.engagements?.map(item => ({ ...item, type: 'engagement' as const })) || []),
+    ...(options.publications?.map(item => ({ ...item, type: 'publication' as const })) || [])
+  ];
+
+  if (engagementPublications.length > 0) {
+    // Add extra space before the section if it's not the first section
+    if (y > LAYOUT.MARGIN.TOP * 1.5) {
+      y += LAYOUT.SPACING.SECTION_HEADER;
+    }
+    
     // Update y with the new position after adding the section
     y = await buildEngagementPublicationsSection(doc, m, y, { 
       ...options, 
       strings,
-      engagements: options.engagements,
-      publications: options.publications
+      engagementPublications
     });
   }
 }

@@ -52,6 +52,13 @@ export interface OverviewTabProps {
     organization?: string;
     title?: string;
   }>;
+  ownerEngagements?: Array<{
+    id: string;
+    title?: string;
+    organization?: string;
+    year?: string;
+    description?: string;
+  }>;
 }
 
 function newCV(): CVOverviewItem {
@@ -78,8 +85,9 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
   ownerSelectedProjects = [],
   ownerExperiences = [],
   ownerEducations = [],
-  ownerCoursesCertifications = []
-}) => {
+  ownerCoursesCertifications = [],
+  ownerEngagements = []
+}: OverviewTabProps) => {
   // Initialize cvLang state from the CV items
   const [cvLang, setCvLang] = React.useState<Record<string, PdfLang>>(
     cvs.reduce((acc, cv) => {
@@ -207,6 +215,15 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                                 year: course.year?.toString()
                               }));
                               
+                              const engagementsPublications = ownerEngagements?.map(engagement => ({
+                                type: 'engagement' as const,
+                                title: engagement.title || '',
+                                year: engagement.year || '',
+                                locationOrPublication: engagement.organization || '',
+                                description: engagement.description,
+                                url: ''
+                              }));
+                              
                               const blob = await generateCvPdf(
                                 ownerName, 
                                 ownerDescription, 
@@ -219,7 +236,8 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                                 ownerTitle,
                                 ownerExperiences,
                                 educations,
-                                courses
+                                courses,
+                                engagementsPublications
                               );
                               downloadBlob(blob, filenameFromUserName(ownerName));
                             } catch (err) {
