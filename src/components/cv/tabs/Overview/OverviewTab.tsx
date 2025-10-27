@@ -59,6 +59,11 @@ export interface OverviewTabProps {
     year?: string;
     description?: string;
   }>;
+  ownerCompetences?: Array<{
+    id: string;
+    name: string;
+    level: number;
+  }>;
 }
 
 function newCV(): CVOverviewItem {
@@ -86,7 +91,8 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
   ownerExperiences = [],
   ownerEducations = [],
   ownerCoursesCertifications = [],
-  ownerEngagements = []
+  ownerEngagements = [],
+  ownerCompetences = []
 }: OverviewTabProps) => {
   // Initialize cvLang state from the CV items
   const [cvLang, setCvLang] = React.useState<Record<string, PdfLang>>(
@@ -237,6 +243,36 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                                 ownerExperiences,
                                 educations,
                                 courses,
+                                // Group competences by level (2-4)
+                                (() => {
+                                  // First, filter to only include levels 2-4
+                                  const filteredCompetences = ownerCompetences
+                                    .filter(comp => comp.level >= 2 && comp.level <= 4);
+                                  
+                                  // Group by level
+                                  const competencesByLevel = {
+                                    2: { name: 'Beginner', items: [] as { name: string; level: number }[] },
+                                    3: { name: 'Proficient', items: [] as { name: string; level: number }[] },
+                                    4: { name: 'Expert', items: [] as { name: string; level: number }[] },
+                                  };
+                                  
+                                  filteredCompetences.forEach(comp => {
+                                    if (comp.level >= 2 && comp.level <= 4) {
+                                      competencesByLevel[comp.level as 2 | 3 | 4].items.push({
+                                        name: comp.name,
+                                        level: comp.level
+                                      });
+                                    }
+                                  });
+                                  
+                                  // Convert to array, filter out empty levels, and map to the expected format
+                                  return Object.values(competencesByLevel)
+                                    .filter(group => group.items.length > 0)
+                                    .map(group => ({
+                                      category: group.name,
+                                      items: group.items
+                                    }));
+                                })(),
                                 engagementsPublications
                               );
                               downloadBlob(blob, filenameFromUserName(ownerName));

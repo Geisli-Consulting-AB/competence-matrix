@@ -18,6 +18,7 @@ const resources = {
       education: 'Education',
       coursesAndCertifications: 'Courses & Certifications',
       engagementAndPublications: 'Engagement & Publications',
+      competences: 'Competences',
     },
   },
   sv: {
@@ -34,6 +35,7 @@ const resources = {
       education: 'Utbildning',
       coursesAndCertifications: 'Kurser & Certifieringar',
       engagementAndPublications: 'Engagemang & Publikationer',
+      competences: 'Kompetenser',
     },
   },
 } as const;

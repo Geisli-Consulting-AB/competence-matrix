@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Box, Tabs, Tab, Typography } from '@mui/material';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Box, Typography, Tabs, Tab } from '@mui/material';
 import type { User } from 'firebase/auth';
 import OverviewTab from './tabs/Overview/OverviewTab';
 import PersonalInfoTab from './tabs/PersonalInfo/PersonalInfoTab';
@@ -8,7 +8,14 @@ import EducationEditor from './tabs/Education/EducationEditor';
 import CoursesCertificationsEditor from './tabs/Courses/CoursesCertificationsEditor';
 import EngagementPublicationsEditor from './tabs/EngagementPublications/EngagementPublicationsEditor';
 import CompetencesCompactTab from './tabs/Competences/CompetencesCompactTab';
-import { subscribeToUserCVs, saveUserCV, deleteUserCV } from '../../firebase';
+import { 
+  subscribeToUserCVs, 
+  saveUserCV, 
+  deleteUserCV, 
+  subscribeToUserCompetences,
+  type CompetenceRow 
+} from '../../firebase';
+import { saveUserCompetences } from '../../firebase';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -115,8 +122,10 @@ export interface UserProfile {
 }
 
 const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }) => {
+  // State declarations at the top
   const [tabValue, setTabValue] = useState(0);
   const [selectedCvId, setSelectedCvId] = useState<string | null>(null);
+  const [userCompetences, setUserCompetences] = useState<CompetenceRow[]>([]);
   const [profile, setProfile] = useState<UserProfile>({ 
     displayName: user?.displayName || '',
     email: user?.email || '',
@@ -131,8 +140,34 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
     educations: [],
     coursesCertifications: [],
     engagementsPublications: [],
+    competences: [],
     cvs: []
   });
+
+  // Fetch user competences
+  useEffect(() => {
+    if (!user) return;
+    
+    const unsubscribe = subscribeToUserCompetences(user.uid, (competences) => {
+      setUserCompetences(competences);
+    });
+    
+    return () => unsubscribe();
+  }, [user]);
+  
+  // Map competences to the format expected by the PDF generator
+  const mappedCompetences = useMemo(() => {
+    // If profile.competences is empty, use all userCompetences
+    const competencesToUse = (!profile.competences || profile.competences.length === 0) 
+      ? userCompetences 
+      : userCompetences.filter(comp => profile.competences?.includes(comp.name));
+    
+    return competencesToUse.map(comp => ({
+      id: comp.id,
+      name: comp.name,
+      level: comp.level
+    }));
+  }, [userCompetences, profile.competences]);
 
   // Helper to select a CV and load its data into the working profile
   const selectCvById = useCallback((id: string | null) => {
@@ -235,12 +270,30 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
     setTabValue(newValue);
   };
 
-  const handleProfileChange = (updates: Partial<UserProfile>) => {
-    if (!user) {
-      // No user is logged in
-      return;
-    }
-    
+  const handleProfileChange = useCallback(async (updates: Partial<UserProfile>) => {
+    setProfile(prev => {
+      const newProfile = {
+        ...prev,
+        ...updates
+      };
+      
+      // If competences were updated, ensure they're saved to the user's profile
+      if (updates.competences && user) {
+        saveUserCompetences(user.uid, user.displayName || 'User', 
+          updates.competences.map(name => ({
+            id: `comp-${name.toLowerCase().replace(/\s+/g, '-')}`,
+            name,
+            level: 3 // Default level
+          }))
+        );
+      }
+      
+      return newProfile;
+    });
+  }, [user]);
+
+  // Update the local state
+  const handleProfileChangeLocal = (updates: Partial<UserProfile>) => {
     // Update the local state
     setProfile((prev: UserProfile) => {
       const next = { ...prev, ...updates };
@@ -398,6 +451,14 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
             organization: course.organization,
             year: course.year
           })) || []}
+          ownerEngagements={profile.engagementsPublications?.map(engagement => ({
+            id: engagement.id,
+            title: engagement.title,
+            organization: engagement.locationOrPublication,
+            year: engagement.year,
+            description: engagement.description
+          })) || []}
+          ownerCompetences={mappedCompetences}
         />
       </TabPanel>
 

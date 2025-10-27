@@ -2,7 +2,8 @@ import { newDoc, getMetrics, toBlob, downloadBlob, filenameFromUserName, ensureI
 import { buildPersonalInfo } from './page1PersonalInfo/page1';
 import { buildExperiencePage } from './page2Experience/page2';
 import { buildEducationAndMorePage } from './page3EducationAndMore/page3';
-import { getPdfStrings, type PdfLang } from '../i18n';
+import { buildCompetencesPage, type CompetenceCategory } from './page4Competences/page4';
+import { getPdfStrings, type PdfLang, type TranslationStrings } from '../i18n';
 
 export interface Experience {
   title: string;
@@ -23,6 +24,7 @@ export interface EducationItem {
   description?: string;
 }
 
+
 export async function generateCvPdf(
   name?: string,
   description?: string,
@@ -36,6 +38,7 @@ export async function generateCvPdf(
   experiences: Experience[] = [],
   educations: EducationItem[] = [],
   courses: Array<{ name: string; issuer?: string; year?: string }> = [],
+  competences: CompetenceCategory[] = [],
   engagementsPublications: Array<{
     type: 'engagement' | 'publication';
     title: string;
@@ -96,6 +99,15 @@ export async function generateCvPdf(
       courses: courses,
       engagementPublications: engagementsPublications
     });
+    
+    // Add competences page
+    doc.addPage();
+    const m2 = getMetrics();
+    await buildCompetencesPage(doc, m2, { 
+      lang,
+      competences,
+      strings: getPdfStrings(lang) as TranslationStrings
+    });
   } else {
     // If no experiences, still add education page as second page
     doc.addPage();
@@ -106,6 +118,15 @@ export async function generateCvPdf(
       educations,
       courses: courses,
       engagementPublications: engagementsPublications
+    });
+    
+    // Add competences page
+    doc.addPage();
+    const m2 = getMetrics();
+    await buildCompetencesPage(doc, m2, { 
+      lang,
+      competences,
+      strings: getPdfStrings(lang) as TranslationStrings
     });
   }
 
@@ -126,6 +147,7 @@ export async function createAndDownloadCvPdf(
   experiences: Experience[] = [],
   educations: EducationItem[] = [],
   courses: Array<{ name: string; issuer?: string; year?: string }> = [],
+  competences: CompetenceCategory[] = [],
   engagementsPublications: Array<{
     type: 'engagement' | 'publication';
     title: string;
@@ -135,13 +157,6 @@ export async function createAndDownloadCvPdf(
     url?: string;
   }> = []
 ) {
-  console.log('[PDF] createAndDownloadCvPdf called with:', {
-    ownerName,
-    experiences: experiences.length,
-    educations: educations.length,
-    courses: courses.length,
-    engagementsPublications: engagementsPublications.length
-  });
   const blob = await generateCvPdf(
     ownerName,
     ownerDescription,
@@ -155,6 +170,7 @@ export async function createAndDownloadCvPdf(
     experiences,
     educations,
     courses,
+    competences,
     engagementsPublications
   );
   const filename = filenameFromUserName(ownerName);

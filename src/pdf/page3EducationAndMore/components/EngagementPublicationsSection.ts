@@ -61,7 +61,10 @@ const renderItem = (
   if (locationOrPublication) {
     doc.setFont('helvetica', 'italic');
     doc.setFontSize(LAYOUT.FONT.BODY);
-    doc.text(locationOrPublication, rightColX, y + LAYOUT.SPACING.HEADING_UNDERLINE / 2);
+    // Add significant space between title and location/publication
+    const locationY = y + LAYOUT.SPACING.SECTION_HEADER * 1.5;
+    doc.text(locationOrPublication, rightColX, locationY);
+    y = locationY + LAYOUT.SPACING.HEADING_UNDERLINE * 0.8; // Adjust the vertical position for the next element
   }
   
   // Description (right column)
@@ -121,22 +124,26 @@ export async function buildEngagementPublicationsSection(
     const items = itemsByType[type] || [];
     if (items.length === 0) continue;
     
-    // Add section title with line underneath
+    // Add section title with consistent spacing
     doc.setFontSize(LAYOUT.FONT.TITLE);
     doc.setFont('helvetica', 'bold');
     doc.text(label, m.leftPadding, y);
     
-    // Add a line under the title
+    // Space after title, before line
     y += LAYOUT.SPACING.SECTION_HEADER;
+    
+    // Add a line under the title
     doc.setDrawColor(200, 200, 200);
     doc.line(m.leftPadding, y, m.pageW - m.rightPadding, y);
-    y += LAYOUT.SPACING.HEADING_UNDERLINE / 2; // Space after the line
+    
+    // Space after line, before content
+    y += LAYOUT.SPACING.HEADING_UNDERLINE / 2;
     
     // Reset to normal font for content
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(LAYOUT.FONT.BODY);
     
-    // Space before first item
+    // Additional space before first item
     y += LAYOUT.SPACING.SECTION_HEADER;
     
     // Render items
