@@ -98,8 +98,8 @@ export async function buildCompetencesPage(
   // Use consistent spacing from LAYOUT constants
   const lineHeight = LAYOUT.SPACING.LIST_ITEM * 0.8; // Slightly smaller than list item spacing
   
-  // Calculate top position based on page metrics
-  const top = m.top || m.topMargin || 50; // Fallback to 50 if top is not defined
+  // Set default top margin
+  const top = 50; // Default top margin in points
   
   // Set font for the content
   doc.setFont('helvetica', 'normal');
