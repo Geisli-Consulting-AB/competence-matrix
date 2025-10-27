@@ -13,6 +13,16 @@ export interface Experience {
 }
 
 /** Create a CV PDF with multiple pages including experience section. */
+export interface EducationItem {
+  school: string;
+  degree: string;
+  fieldOfStudy?: string;
+  startYear: string;
+  endYear: string;
+  ongoing?: boolean;
+  description?: string;
+}
+
 export async function generateCvPdf(
   name?: string,
   description?: string,
@@ -24,6 +34,8 @@ export async function generateCvPdf(
   lang: PdfLang = 'en',
   title?: string,
   experiences: Experience[] = [],
+  educations: EducationItem[] = [],
+  courses: Array<{ name: string; issuer?: string; year?: string }> = []
 ): Promise<Blob> {
   const doc = newDoc();
   const m = getMetrics();
@@ -68,11 +80,23 @@ export async function generateCvPdf(
     
     // Add a new page for education and more
     doc.addPage();
-    await buildEducationAndMorePage(doc, m, { lang });
+    // Re-initialize metrics for the new page
+    const m = getMetrics();
+    await buildEducationAndMorePage(doc, m, { 
+      lang,
+      educations,
+      courses: courses
+    });
   } else {
     // If no experiences, still add education page as second page
     doc.addPage();
-    await buildEducationAndMorePage(doc, m, { lang });
+    // Re-initialize metrics for the new page
+    const m = getMetrics();
+    await buildEducationAndMorePage(doc, m, { 
+      lang,
+      educations,
+      courses: courses
+    });
   }
 
   return toBlob(doc);
@@ -89,19 +113,23 @@ export async function createAndDownloadCvPdf(
   selectedProjects?: Array<{ customer: string; title: string; description: string }>,
   lang: PdfLang = 'en',
   title?: string,
-  experiences: Experience[] = []
+  experiences: Experience[] = [],
+  educations: EducationItem[] = [],
+  courses: Array<{ name: string; issuer?: string; year?: string }> = []
 ) {
   const blob = await generateCvPdf(
-    ownerName, 
-    ownerDescription, 
-    photoDataUrl, 
-    roles, 
-    languages, 
+    ownerName,
+    ownerDescription,
+    photoDataUrl,
+    roles,
+    languages,
     expertise,
     selectedProjects,
     lang,
     title,
-    experiences
+    experiences,
+    educations,
+    courses
   );
   const filename = filenameFromUserName(ownerName);
   downloadBlob(blob, filename);

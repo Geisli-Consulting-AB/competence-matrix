@@ -3,7 +3,7 @@ import type { Metrics } from '../../shared';
 import { loadImage, setFontStyle } from '../../shared';
 import { getPdfStrings } from '../../../i18n';
 import type { PdfLang } from '../../../i18n';
-import { SPACING } from '../constants';
+import { LAYOUT } from '../../constants/layout';
 
 // Import images using Vite's import syntax
 const envelopePng = new URL('../../../assets/envelope.png', import.meta.url).href;
@@ -40,7 +40,7 @@ async function drawIconTextLine(
   y: number,
   iconSize = 12,
   gap = 6,
-  lineH = SPACING.LIST_ITEM,
+  lineH = LAYOUT.SPACING.LIST_ITEM,
 ): Promise<number> {
   await drawPngIcon(doc, iconUrl, x, y, iconSize);
   const textX = x + iconSize + gap;
@@ -61,26 +61,26 @@ export async function addContact(doc: jsPDF, m: Metrics, startY: number, lang: P
   setFontStyle(doc, 'bold');
   doc.setFontSize(14);
   doc.text(t.contactTitle, x, y);
-  y += SPACING.HEADING_UNDERLINE;
+  y += LAYOUT.SPACING.HEADING_UNDERLINE;
 
   // Underline
   doc.setDrawColor(255, 255, 255);
   doc.setLineWidth(1.5);
   const lineRight = m.leftColW - m.leftPadding;
   doc.line(x, y, lineRight, y);
-  y += SPACING.SECTION_HEADER;
+  y += LAYOUT.SPACING.SECTION_HEADER;
 
   // Body
   setFontStyle(doc, 'normal');
   doc.setFontSize(12);
 
   const iconSize = 12;
-  const gap = SPACING.BULLET_TEXT_PADDING;
+  const gap = LAYOUT.SPACING.BULLET_TEXT_PADDING;
 
   y = await drawIconTextLine(doc, envelopePng as unknown as string, 'sale@geisli.se', x, y, iconSize, gap);
   y = await drawIconTextLine(doc, telephonePng as unknown as string, '076-810 17 22', x, y, iconSize, gap);
   y = await drawIconTextLine(doc, placePng as unknown as string, 'Tegnérgatan 34, Stockholm', x, y, iconSize, gap);
   y = await drawIconTextLine(doc, globePng as unknown as string, 'geisli.se', x, y, iconSize, gap);
 
-  return y + SPACING.SECTION_BOTTOM_MARGIN;
+  return y + LAYOUT.SPACING.SECTION_BOTTOM_MARGIN;
 }

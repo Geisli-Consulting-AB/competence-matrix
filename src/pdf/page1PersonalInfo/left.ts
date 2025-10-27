@@ -5,7 +5,7 @@ import { addRoles } from './components/roles';
 import { addLanguages } from './components/languages';
 import { addExpertise } from './components/expertise';
 import { addAvatar } from './components/avatar';
-import { SPACING } from './constants';
+import { LAYOUT } from '../constants/layout';
 
 // Left column background: #101b29
 export function drawSidebar(doc: jsPDF, m: Metrics) {
@@ -36,19 +36,19 @@ export async function buildLeftColumn(
 ) {
   drawSidebar(doc, m);
   const startY = await addAvatar(doc, m, photoDataUrl);
-  const afterAvatarY = startY + SPACING.SECTION_BOTTOM_MARGIN;
+  const afterAvatarY = startY + LAYOUT.SPACING.SECTION_BOTTOM_MARGIN;
   let y = await addContact(doc, m, afterAvatarY, options.lang);
   
   // Add roles section if there are any roles
   if (Array.isArray(roles) && roles.length > 0) {
     y = await addRoles(doc, m, y, roles, options.lang);
-    y += SPACING.SECTION_BOTTOM_MARGIN;
+    y += LAYOUT.SPACING.SECTION_BOTTOM_MARGIN;
   }
   
   // Add expertise section if there are any expertise items
   if (Array.isArray(expertise) && expertise.length > 0) {
     y = await addExpertise(doc, m, y, expertise, options.lang);
-    y += SPACING.SECTION_BOTTOM_MARGIN;
+    y += LAYOUT.SPACING.SECTION_BOTTOM_MARGIN;
   }
   
   // Add languages section if there are any languages

@@ -39,6 +39,19 @@ export interface OverviewTabProps {
     startYear?: string;
     endYear?: string;
   }>;
+  ownerEducations?: Array<{
+    id: string;
+    school?: string;
+    title?: string;
+    startYear?: string;
+    endYear?: string;
+  }>;
+  ownerCoursesCertifications?: Array<{
+    id: string;
+    year?: string;
+    organization?: string;
+    title?: string;
+  }>;
 }
 
 function newCV(): CVOverviewItem {
@@ -63,7 +76,9 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
   ownerLanguages, 
   ownerExpertise,
   ownerSelectedProjects = [],
-  ownerExperiences = []
+  ownerExperiences = [],
+  ownerEducations = [],
+  ownerCoursesCertifications = []
 }) => {
   // Initialize cvLang state from the CV items
   const [cvLang, setCvLang] = React.useState<Record<string, PdfLang>>(
@@ -177,6 +192,21 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                                 title: project.title || '',
                                 description: project.description || ''
                               }));
+                              // Map the education data to match the expected format
+                              const educations = ownerEducations.map(edu => ({
+                                school: edu.school || '',
+                                degree: edu.title || '', // PDF generation expects 'degree' but we map from 'title'
+                                startYear: edu.startYear || '',
+                                endYear: edu.endYear || ''
+                              }));
+                              
+                              // Map courses to match the expected CourseItem interface
+                              const courses = ownerCoursesCertifications.map(course => ({
+                                name: course.title || '',
+                                issuer: course.organization,
+                                year: course.year?.toString()
+                              }));
+                              
                               const blob = await generateCvPdf(
                                 ownerName, 
                                 ownerDescription, 
@@ -187,7 +217,9 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                                 selectedProjects,
                                 lang,
                                 ownerTitle,
-                                ownerExperiences
+                                ownerExperiences,
+                                educations,
+                                courses
                               );
                               downloadBlob(blob, filenameFromUserName(ownerName));
                             } catch (err) {

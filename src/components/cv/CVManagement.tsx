@@ -384,6 +384,19 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
             ongoing: exp.ongoing,
             competences: exp.competences
           })) || []}
+          ownerEducations={profile.educations?.map(edu => ({
+            id: edu.id,
+            school: edu.school,
+            title: edu.title,
+            startYear: edu.startYear,
+            endYear: edu.endYear
+          })) || []}
+          ownerCoursesCertifications={profile.coursesCertifications?.map(course => ({
+            id: course.id,
+            title: course.title,
+            organization: course.organization,
+            year: course.year
+          })) || []}
         />
       </TabPanel>
 

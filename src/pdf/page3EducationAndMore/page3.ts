@@ -1,14 +1,49 @@
 import { jsPDF } from 'jspdf';
-import type { Metrics } from '../shared';
-import { VERTICAL } from '../constants';
+import type { PdfLang, TranslationStrings } from '../../i18n';
+import LAYOUT from '../constants/layout';
 import { buildEducationSection } from './components/EducationSection';
 import { buildCoursesSection } from './components/CoursesSection';
 import { buildEngagementPublicationsSection } from './components/EngagementPublicationsSection';
-import type { PdfLang } from '../../i18n';
+import type { Metrics } from '../shared';
+
+export interface EducationItem {
+  school: string;
+  degree: string;
+  fieldOfStudy?: string;
+  startYear: string;
+  endYear: string;
+  ongoing?: boolean;
+  description?: string;
+}
+
+export interface CourseItem {
+  name: string;
+  issuer?: string;
+  year?: string;
+  credentialId?: string;
+}
+
+export interface PublicationItem {
+  title: string;
+  publisher?: string;
+  year?: string;
+  description?: string;
+  link?: string;
+}
 
 export interface Page3Options {
   lang?: PdfLang;
-  // Add any page 3 specific options here
+  educations?: EducationItem[];
+  courses?: CourseItem[];
+  publications?: PublicationItem[];
+  engagements?: Array<{
+    title: string;
+    organization: string;
+    startYear: string;
+    endYear?: string;
+    ongoing?: boolean;
+    description?: string;
+  }>;
 }
 
 export async function buildEducationAndMorePage(
@@ -16,20 +51,65 @@ export async function buildEducationAndMorePage(
   m: Metrics,
   options: Page3Options = { lang: 'en' }
 ): Promise<void> {
-  // Initial Y position
-  let y = 40;
+  // Get translations with proper type
+  const { getPdfStrings } = await import('../../i18n');
+  const strings = getPdfStrings(options.lang || 'en') as unknown as TranslationStrings;
+  
+  // Set initial Y position with proper top margin (convert mm to points)
+  let y = LAYOUT.MARGIN.TOP * 1.5; // Start lower on the page
+  
+  // Set default font
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(LAYOUT.FONT.BODY);
+  doc.setTextColor(0, 0, 0);
+  
+  // Debug: Draw a rectangle to show the page bounds
+  // doc.setDrawColor(255, 0, 0);
+  // doc.rect(0, 0, m.pageW, m.pageH);
 
-  // Get translations and cast to the expected type
-  const strings = await import('../../i18n').then(m => m.getPdfStrings(options.lang || 'en') as any);
+  // Add education section if educations are provided
+  if (options.educations && options.educations.length > 0) {
+    y = await buildEducationSection(doc, m, y, { 
+      ...options, 
+      strings,
+      educations: options.educations
+    });
+    
+    // Add extra space after the section if there's more content to come
+    if ((options.courses && options.courses.length > 0) || 
+        (options.engagements && options.engagements.length > 0) || 
+        (options.publications && options.publications.length > 0)) {
+      y += LAYOUT.SPACING.SECTION_HEADER;
+    }
+  }
+
+  // Add courses section if courses are provided
   
-  // Add education section
-  y = await buildEducationSection(doc, m, y, { ...options, strings });
-  
-  // Add courses section
-  y = await buildCoursesSection(doc, m, y, { ...options, strings });
-  
-  // Add engagement & publications section
-  await buildEngagementPublicationsSection(doc, m, y, { ...options, strings });
+  if (options.courses && options.courses.length > 0) {
+    y = await buildCoursesSection(doc, m, y, { 
+      ...options, 
+      strings,
+      courses: options.courses
+    });
+    
+    // Add extra space after the section if there's more content to come
+    if ((options.engagements && options.engagements.length > 0) || 
+        (options.publications && options.publications.length > 0)) {
+      y += LAYOUT.SPACING.SECTION_HEADER;
+    }
+  }
+
+  // Add engagement & publications section if data is provided
+  if ((options.engagements && options.engagements.length > 0) || 
+      (options.publications && options.publications.length > 0)) {
+    // Update y with the new position after adding the section
+    y = await buildEngagementPublicationsSection(doc, m, y, { 
+      ...options, 
+      strings,
+      engagements: options.engagements,
+      publications: options.publications
+    });
+  }
 }
 
 // Re-export individual section builders for convenience

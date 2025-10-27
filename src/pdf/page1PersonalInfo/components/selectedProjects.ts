@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import type { Metrics } from '../../shared';
 import { setFontStyle } from '../../shared';
-import { SPACING } from '../constants';
+import { LAYOUT } from '../../constants/layout';
 import { getPdfStrings } from '../../../i18n';
 import type { PdfLang } from '../../../i18n';
 
@@ -38,7 +38,7 @@ export function addSelectedProjects(
   doc.setDrawColor(0, 0, 0);
   doc.setLineWidth(0.5);
   doc.line(m.leftColW + m.leftPadding, y, m.pageW - m.rightPadding, y);
-  y += SPACING.SECTION_HEADER;
+  y += LAYOUT.SPACING.SECTION_HEADER;
 
   // Projects list
   setFontStyle(doc, 'normal');
@@ -56,14 +56,14 @@ export function addSelectedProjects(
     doc.setFontSize(12);
     setFontStyle(doc, 'bold');
     doc.text(project.title || '', m.leftColW + m.leftPadding, y, { maxWidth });
-    y += SPACING.LIST_ITEM -10; 
+    y += LAYOUT.SPACING.LIST_ITEM - 10; 
     
     // Project description
     setFontStyle(doc, 'normal');
     doc.setFontSize(10);
     const lines = doc.splitTextToSize(project.description || '', maxWidth);
     doc.text(lines, m.leftColW + m.leftPadding, y, { maxWidth });
-    y += (lines.length * 12) + SPACING.LIST_ITEM; // 12pt line height for description
+    y += (lines.length * 12) + LAYOUT.SPACING.LIST_ITEM; // 12pt line height for description
   }
 
   return y;
