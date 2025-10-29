@@ -270,25 +270,80 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
   };
 
   const handleProfileChange = useCallback(async (updates: Partial<UserProfile>) => {
-    if (!user) return;
+    if (!user || !selectedCvId) return;
+    
     setProfile(prev => {
       const newProfile = {
         ...prev,
         ...updates
       };
       
+      // Save competences separately if they are updated
       if (updates.competences) {
-        saveUserCompetences(user.uid, user.displayName || 'User', 
+        saveUserCompetences(
+          user.uid, 
+          user.displayName || 'User', 
           updates.competences.map(name => ({
             id: `comp-${name.toLowerCase().replace(/\s+/g, '-')}`,
             name,
             level: 3 // Default level
           }))
-        );
+        ).catch(() => {}); // Silent fail for competences
       }
+
+      // Save the updated CV data to Firestore
+      const currentCv = (newProfile.cvs || []).find(cv => cv.id === selectedCvId);
+      if (currentCv) {
+        // Create a clean updates object without the cvs array and undefined values
+        const cleanUpdates = Object.entries(updates).reduce<Partial<UserProfile>>(
+          (acc, [key, value]) => {
+            if (key !== 'cvs' && value !== undefined) {
+              (acc as Record<string, unknown>)[key] = value;
+            }
+            return acc;
+          }, 
+          {}
+        );
+        
+        const updatedCv = {
+          ...currentCv,
+          data: {
+            ...currentCv.data,
+            ...cleanUpdates
+          }
+        };
+        
+        // Clean up the data object
+        const cleanedData = { ...updatedCv.data };
+        (Object.keys(cleanedData) as Array<keyof typeof cleanedData>).forEach(key => {
+          if (cleanedData[key] === undefined) {
+            delete cleanedData[key];
+          }
+        });
+
+        const finalCv = {
+          ...updatedCv,
+          data: cleanedData
+        };
+        
+        // Update local state
+        const updatedCvs = (newProfile.cvs || []).map(cv => 
+          cv.id === selectedCvId ? finalCv : cv
+        );
+        
+        // Save to Firestore
+        saveUserCV(user.uid, finalCv, false).catch(() => {});
+        
+        return {
+          ...newProfile,
+          ...cleanUpdates,
+          cvs: updatedCvs
+        };
+      }
+      
       return newProfile;
     });
-  }, [user]);
+  }, [user, selectedCvId]);
 
   // Auto-select the first CV when entering the page (or when list loads) if none is selected
   useEffect(() => {

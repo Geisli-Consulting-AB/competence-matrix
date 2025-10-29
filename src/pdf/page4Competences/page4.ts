@@ -107,7 +107,7 @@ export async function buildCompetencesPage(
   
   // Draw each level and its competences
   Object.entries(competencesByLevel)
-    .filter(([_, competences]) => competences.length > 0) // Only show levels with competences
+    .filter(([, competences]) => competences.length > 0) // Only show levels with competences
     .sort(([a], [b]) => Number(b) - Number(a)) // Sort by level (highest first)
     .forEach(([level, competences]) => {
       // Check if we need a new page (leave space for at least 2 lines)
