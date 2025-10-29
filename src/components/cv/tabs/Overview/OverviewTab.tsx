@@ -1,12 +1,21 @@
 import React from 'react';
-import { Box, Button, Paper, TextField, Typography, IconButton, Stack, Tooltip } from '@mui/material';
+import { Box, Button, Paper, TextField, Typography, IconButton, Stack, Tooltip, ToggleButtonGroup, ToggleButton } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import { generateCvPdf, downloadBlob, filenameFromUserName, type PdfLang } from '../../../../pdf';
 
 export interface CVOverviewItem {
   id: string;
   name: string;
+  language?: PdfLang;
+}
+
+export interface ProjectItem {
+  id: string;
+  customer: string;
+  title: string;
+  description: string;
 }
 
 export interface OverviewTabProps {
@@ -15,56 +24,113 @@ export interface OverviewTabProps {
   selectedId?: string | null;
   onSelect?: (id: string) => void;
   ownerName?: string;
+  ownerTitle?: string;
+  ownerDescription?: string;
+  ownerPhotoUrl?: string;
+  ownerRoles?: string[];
+  ownerLanguages?: string[];
+  ownerExpertise?: string[];
+  ownerSelectedProjects?: ProjectItem[];
+  ownerExperiences?: Array<{
+    id: string;
+    title: string;
+    employer: string;
+    description: string;
+    startYear?: string;
+    endYear?: string;
+  }>;
+  ownerEducations?: Array<{
+    id: string;
+    school?: string;
+    title?: string;
+    startYear?: string;
+    endYear?: string;
+  }>;
+  ownerCoursesCertifications?: Array<{
+    id: string;
+    year?: string;
+    organization?: string;
+    title?: string;
+  }>;
+  ownerEngagements?: Array<{
+    id: string;
+    title?: string;
+    organization?: string;
+    year?: string;
+    description?: string;
+  }>;
+  ownerCompetences?: Array<{
+    id: string;
+    name: string;
+    level: number;
+  }>;
 }
 
 function newCV(): CVOverviewItem {
   return {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    name: ''
+    name: '',
+    language: 'en' // Default to English
   };
 }
 
-// Minimal blank PDF (one empty page) as base64. Dependency-free.
-const EMPTY_PDF_BASE64 =
-  'JVBERi0xLjQKJeLjz9MKMSAwIG9iago8PAovVHlwZSAvQ2F0YWxvZwovUGFnZXMgMiAwIFIKPj4KZW5kb2JqCjIgMCBvYmoKPDwKL1R5cGUgL1BhZ2VzCi9Db3VudCAxCi9LaWRzIFszIDAgUl0KPj4KZW5kb2JqCjMgMCBvYmoKPDwKL1R5cGUgL1BhZ2UKL1BhcmVudCAyIDAgUgovTWVkaWFCb3ggWzAgMCA1OTUgODQyXQo+PgplbmRvYmoKeHJlZgowIDQKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDQxIDAwMDAwIG4gCjAwMDAwMDAwOTYgMDAwMDAgbiAKMDAwMDAwMDE1MSAwMDAwMCBuIAp0cmFpbGVyCjw8Ci9TaXplIDQKL1Jvb3QgMSAwIFIKPj4Kc3RhcnR4cmVmCjIwNQolJUVPRgo=';
 
-function createEmptyPdfBlob(): Blob {
-  const byteChars = atob(EMPTY_PDF_BASE64);
-  const bytes = new Uint8Array(byteChars.length);
-  for (let i = 0; i < byteChars.length; i++) bytes[i] = byteChars.charCodeAt(i);
-  return new Blob([bytes], { type: 'application/pdf' });
-}
-
-function downloadBlob(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
-
-function filenameFromUserName(name?: string) {
-  const clean = (name || '').trim();
-  if (!clean) return 'CV.pdf';
-  // Allow letters, numbers, space, dot, underscore, and hyphen. Collapse multiple spaces.
-  const safe = clean.replace(/[^A-Za-z0-9 ._-]+/g, '').replace(/\s+/g, ' ').trim();
-  return `${safe} - CV.pdf`;
-}
-
-const OverviewTab: React.FC<OverviewTabProps> = ({ cvs = [], onChange, selectedId, onSelect, ownerName }) => {
+const OverviewTab: React.FC<OverviewTabProps> = ({ 
+  cvs = [], 
+  onChange, 
+  selectedId, 
+  onSelect, 
+  ownerName, 
+  ownerTitle,
+  ownerDescription, 
+  ownerPhotoUrl, 
+  ownerRoles, 
+  ownerLanguages, 
+  ownerExpertise,
+  ownerSelectedProjects = [],
+  ownerExperiences = [],
+  ownerEducations = [],
+  ownerCoursesCertifications = [],
+  ownerEngagements = [],
+  ownerCompetences = []
+}: OverviewTabProps) => {
+  // Initialize cvLang state from the CV items
+  const [cvLang, setCvLang] = React.useState<Record<string, PdfLang>>(
+    cvs.reduce((acc, cv) => {
+      if (cv.language) {
+        acc[cv.id] = cv.language;
+      }
+      return acc;
+    }, {} as Record<string, PdfLang>)
+  );
   const addCV = () => {
     const created = newCV();
     onChange([created, ...(cvs || [])]);
     if (onSelect) onSelect(created.id);
   };
 
-  const updateCV = (index: number, field: keyof CVOverviewItem, value: string) => {
+  const updateCV = (index: number, field: keyof CVOverviewItem, value: string | PdfLang) => {
     const updated = [...(cvs || [])];
     const current = updated[index] || newCV();
-    updated[index] = { ...current, [field]: value } as CVOverviewItem;
+    
+    // Create a new CV with the updated field
+    const updatedCv: CVOverviewItem = {
+      ...current,
+      [field]: field === 'language' ? (value as PdfLang) : value
+    };
+    
+    // Update the local state for language if needed
+    if (field === 'language') {
+      setCvLang(prev => ({
+        ...prev,
+        [current.id]: value as PdfLang
+      }));
+    }
+    
+    // Update the CV in the array
+    updated[index] = updatedCv;
+    
+    // Trigger the parent's onChange with the updated CVs
     onChange(updated);
   };
 
@@ -78,7 +144,9 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ cvs = [], onChange, selectedI
     <Paper elevation={3} sx={{ p: 3, mb: 3, maxWidth: 600, mx: 'auto' }}>
       <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Typography variant="h5">CVs</Typography>
-        <Button variant="outlined" startIcon={<AddIcon />} onClick={addCV}>Add CV</Button>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Button variant="outlined" startIcon={<AddIcon />} onClick={addCV}>Add CV</Button>
+        </Box>
       </Box>
 
       {(cvs || []).length === 0 ? (
@@ -107,13 +175,112 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ cvs = [], onChange, selectedI
                     {cv.name?.trim() || 'Untitled CV'}
                   </Typography>
                   <Stack direction="row" spacing={0.5} alignItems="center">
+                    <ToggleButtonGroup
+                      exclusive
+                      size="small"
+                      value={cv.language || cvLang[cv.id] || 'en'}
+                      onChange={(e, value) => {
+                        e.stopPropagation();
+                        if (!value) return; // ignore unselect
+                        updateCV(
+                          cvs.findIndex(c => c.id === cv.id), 
+                          'language', 
+                          value
+                        );
+                      }}
+                      aria-label="PDF language toggle"
+                    >
+                      <ToggleButton value="en" aria-label="English" sx={{ px: 1, textTransform: 'none' }}>EN</ToggleButton>
+                      <ToggleButton value="sv" aria-label="Svenska" sx={{ px: 1, textTransform: 'none' }}>SV</ToggleButton>
+                    </ToggleButtonGroup>
                     <Tooltip title="Create PDF">
                       <IconButton
                         aria-label="create pdf"
                         onClick={(e) => {
                           e.stopPropagation();
-                          const blob = createEmptyPdfBlob();
-                          downloadBlob(blob, filenameFromUserName(ownerName));
+                          (async () => {
+                            try {
+                              const lang = cv.language || cvLang[cv.id] || 'en';
+                              const selectedProjects = ownerSelectedProjects.map(project => ({
+                                customer: project.customer || '',
+                                title: project.title || '',
+                                description: project.description || ''
+                              }));
+                              // Map the education data to match the expected format
+                              const educations = ownerEducations.map(edu => ({
+                                school: edu.school || '',
+                                degree: edu.title || '', // PDF generation expects 'degree' but we map from 'title'
+                                startYear: edu.startYear || '',
+                                endYear: edu.endYear || ''
+                              }));
+                              
+                              // Map courses to match the expected CourseItem interface
+                              const courses = ownerCoursesCertifications.map(course => ({
+                                name: course.title || '',
+                                issuer: course.organization,
+                                year: course.year?.toString()
+                              }));
+                              
+                              const engagementsPublications = ownerEngagements?.map(engagement => ({
+                                type: 'engagement' as const,
+                                title: engagement.title || '',
+                                year: engagement.year || '',
+                                locationOrPublication: engagement.organization || '',
+                                description: engagement.description,
+                                url: ''
+                              }));
+                              
+                              const blob = await generateCvPdf(
+                                ownerName, 
+                                ownerDescription, 
+                                ownerPhotoUrl, 
+                                ownerRoles, 
+                                ownerLanguages, 
+                                ownerExpertise,
+                                selectedProjects,
+                                lang,
+                                ownerTitle,
+                                ownerExperiences,
+                                educations,
+                                courses,
+                                // Group competences by level (2-4)
+                                (() => {
+                                  // First, filter to only include levels 2-4
+                                  const filteredCompetences = ownerCompetences
+                                    .filter(comp => comp.level >= 2 && comp.level <= 4);
+                                  
+                                  // Group by level
+                                  const competencesByLevel = {
+                                    2: { name: 'Beginner', items: [] as { name: string; level: number }[] },
+                                    3: { name: 'Proficient', items: [] as { name: string; level: number }[] },
+                                    4: { name: 'Expert', items: [] as { name: string; level: number }[] },
+                                  };
+                                  
+                                  filteredCompetences.forEach(comp => {
+                                    if (comp.level >= 2 && comp.level <= 4) {
+                                      competencesByLevel[comp.level as 2 | 3 | 4].items.push({
+                                        name: comp.name,
+                                        level: comp.level
+                                      });
+                                    }
+                                  });
+                                  
+                                  // Convert to array, filter out empty levels, and map to the expected format
+                                  return Object.values(competencesByLevel)
+                                    .filter(group => group.items.length > 0)
+                                    .map(group => ({
+                                      category: group.name,
+                                      items: group.items
+                                    }));
+                                })(),
+                                engagementsPublications
+                              );
+                              downloadBlob(blob, filenameFromUserName(ownerName));
+                            } catch (err) {
+                              console.error('[PDF] UI: Failed to generate or download PDF', err);
+                              alert('Failed to create PDF. See console for details.');
+                            }
+                          })();
                         }}
                         size="small"
                       >

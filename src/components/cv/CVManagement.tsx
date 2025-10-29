@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Box, Tabs, Tab, Typography } from '@mui/material';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Box, Typography, Tabs, Tab } from '@mui/material';
 import type { User } from 'firebase/auth';
 import OverviewTab from './tabs/Overview/OverviewTab';
 import PersonalInfoTab from './tabs/PersonalInfo/PersonalInfoTab';
@@ -8,7 +8,14 @@ import EducationEditor from './tabs/Education/EducationEditor';
 import CoursesCertificationsEditor from './tabs/Courses/CoursesCertificationsEditor';
 import EngagementPublicationsEditor from './tabs/EngagementPublications/EngagementPublicationsEditor';
 import CompetencesCompactTab from './tabs/Competences/CompetencesCompactTab';
-import { subscribeToUserCVs, saveUserCV, deleteUserCV } from '../../firebase';
+import { 
+  subscribeToUserCVs, 
+  saveUserCV, 
+  deleteUserCV, 
+  subscribeToUserCompetences,
+  type CompetenceRow 
+} from '../../firebase';
+import { saveUserCompetences } from '../../firebase';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -91,6 +98,7 @@ export interface EngagementPublication {
 export interface CVItem {
   id: string;
   name: string;
+  language?: 'en' | 'sv';
   data?: Partial<Omit<UserProfile, 'cvs'>>;
 }
 
@@ -98,6 +106,7 @@ export interface UserProfile {
   displayName: string;
   photoUrl?: string;
   email?: string;
+  title?: string;
   description?: string;
   roles?: string[];
   languages?: string[];
@@ -113,11 +122,14 @@ export interface UserProfile {
 }
 
 const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }) => {
+  // State declarations at the top
   const [tabValue, setTabValue] = useState(0);
   const [selectedCvId, setSelectedCvId] = useState<string | null>(null);
+  const [userCompetences, setUserCompetences] = useState<CompetenceRow[]>([]);
   const [profile, setProfile] = useState<UserProfile>({ 
     displayName: user?.displayName || '',
     email: user?.email || '',
+    title: '',
     photoUrl: user?.photoURL || undefined,
     description: '',
     roles: [],
@@ -128,8 +140,57 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
     educations: [],
     coursesCertifications: [],
     engagementsPublications: [],
+    competences: [],
     cvs: []
   });
+
+  // Fetch user competences
+  useEffect(() => {
+    if (!user) return;
+    
+    const unsubscribe = subscribeToUserCompetences(user.uid, (competences) => {
+      setUserCompetences(competences);
+    });
+    
+    return () => unsubscribe();
+  }, [user]);
+  
+  // Map competences to the format expected by the PDF generator
+  const mappedCompetences = useMemo(() => {
+    // If profile.competences is empty, use all userCompetences
+    const competencesToUse = (!profile.competences || profile.competences.length === 0) 
+      ? userCompetences 
+      : userCompetences.filter(comp => profile.competences?.includes(comp.name));
+    
+    return competencesToUse.map(comp => ({
+      id: comp.id,
+      name: comp.name,
+      level: comp.level
+    }));
+  }, [userCompetences, profile.competences]);
+
+  // Helper to select a CV and load its data into the working profile
+  const selectCvById = useCallback((id: string | null) => {
+    if (!id) return;
+    setSelectedCvId(id);
+    const cv = (profile.cvs || []).find(c => c.id === id);
+    const data = cv?.data ?? {};
+    setProfile(prev => ({
+      ...prev,
+      displayName: (data.displayName ?? (user?.displayName ?? '')),
+      email: (data.email ?? (user?.email ?? '')),
+      title: data.title ?? '',
+      description: data.description ?? '',
+      roles: data.roles ?? [],
+      languages: data.languages ?? [],
+      expertise: data.expertise ?? [],
+      projects: data.projects ?? [],
+      experiences: data.experiences ?? [],
+      educations: data.educations ?? [],
+      coursesCertifications: data.coursesCertifications ?? [],
+      engagementsPublications: data.engagementsPublications ?? []
+    }));
+  }, [profile.cvs, user]);
 
   // Update profile when user changes
   useEffect(() => {
@@ -139,6 +200,24 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
         displayName: user.displayName || '',
         email: user.email || '',
         photoUrl: user.photoURL || undefined
+      }));
+    } else {
+      setProfile(prev => ({
+        ...prev,
+        displayName: '',
+        email: '',
+        title: '',
+        photoUrl: undefined,
+        description: '',
+        roles: [],
+        languages: [],
+        expertise: [],
+        projects: [],
+        experiences: [],
+        educations: [],
+        coursesCertifications: [],
+        engagementsPublications: [],
+        cvs: []
       }));
     }
   }, [user]);
@@ -150,10 +229,22 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
       return;
     }
     const unsub = subscribeToUserCVs(user.uid, (rows) => {
-      setProfile(prev => ({
-        ...prev,
-        cvs: rows.map(r => ({ id: r.id, name: r.name, data: r.data as Partial<Omit<UserProfile, 'cvs'>> | undefined }))
-      }));
+      setProfile(prev => {
+        const updatedCVs = rows.map(r => ({
+          id: r.id, 
+          name: r.name, 
+          language: r.language || 'en', // Ensure we have a default language
+          data: {
+            ...(r.data as Partial<Omit<UserProfile, 'cvs'>> || {}),
+            // Ensure language is also in data for backward compatibility
+            language: r.language || 'en'
+          }
+        }));
+        return {
+          ...prev,
+          cvs: updatedCVs
+        };
+      });
     });
     return () => unsub();
   }, [user]);
@@ -174,61 +265,85 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
     }
   }, [selectedCvId, tabValue]);
 
-
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
 
-  const handleProfileChange = (updates: Partial<UserProfile>) => {
-    let toSave: { id: string; name: string; data: unknown } | null = null;
+  const handleProfileChange = useCallback(async (updates: Partial<UserProfile>) => {
+    if (!user || !selectedCvId) return;
+    
     setProfile(prev => {
-      const next = { ...prev, ...updates };
-      // If a CV is selected, persist updates into that CV's data snapshot
-      if (selectedCvId && Array.isArray(next.cvs)) {
-        const idx = next.cvs.findIndex(cv => cv.id === selectedCvId);
-        if (idx >= 0) {
-          const cv = next.cvs[idx];
-          const currentData = cv.data || {};
-          // Exclude cvs field from being embedded
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const { cvs: _ignored, ...updatesWithoutCvs } = updates;
-          const updatedCv = { ...cv, data: { ...currentData, ...updatesWithoutCvs } };
-          next.cvs[idx] = updatedCv;
-          toSave = { id: updatedCv.id, name: updatedCv.name, data: updatedCv.data };
-        }
+      const newProfile = {
+        ...prev,
+        ...updates
+      };
+      
+      // Save competences separately if they are updated
+      if (updates.competences) {
+        saveUserCompetences(
+          user.uid, 
+          user.displayName || 'User', 
+          updates.competences.map(name => ({
+            id: `comp-${name.toLowerCase().replace(/\s+/g, '-')}`,
+            name,
+            level: 3 // Default level
+          }))
+        ).catch(() => {}); // Silent fail for competences
       }
-      return next;
-    });
-    // Save the selected CV snapshot to Firestore on every change
-    if (toSave && user) {
-      saveUserCV(user.uid, toSave, false);
-    }
-  };
 
-  // Helper to select a CV and load its data into the working profile
-  const selectCvById = useCallback((id: string | null) => {
-    if (!id) return;
-    setSelectedCvId(id);
-    const cv = (profile.cvs || []).find(c => c.id === id);
-    const data = cv?.data ?? {};
-    setProfile(prev => ({
-      displayName: (data.displayName ?? (user?.displayName ?? '')),
-      email: (data.email ?? (user?.email ?? '')),
-      photoUrl: data.photoUrl ?? undefined,
-      description: data.description ?? '',
-      roles: data.roles ?? [],
-      languages: data.languages ?? [],
-      expertise: data.expertise ?? [],
-      // If not set for this CV, it means all user competences are implicitly included until modified in the tab
-      competences: data.competences,
-      projects: data.projects ?? [],
-      experiences: data.experiences ?? [],
-      educations: data.educations ?? [],
-      coursesCertifications: data.coursesCertifications ?? [],
-      engagementsPublications: data.engagementsPublications ?? [],
-      cvs: prev.cvs ?? [],
-    }));
-  }, [profile.cvs, user]);
+      // Save the updated CV data to Firestore
+      const currentCv = (newProfile.cvs || []).find(cv => cv.id === selectedCvId);
+      if (currentCv) {
+        // Create a clean updates object without the cvs array and undefined values
+        const cleanUpdates = Object.entries(updates).reduce<Partial<UserProfile>>(
+          (acc, [key, value]) => {
+            if (key !== 'cvs' && value !== undefined) {
+              (acc as Record<string, unknown>)[key] = value;
+            }
+            return acc;
+          }, 
+          {}
+        );
+        
+        const updatedCv = {
+          ...currentCv,
+          data: {
+            ...currentCv.data,
+            ...cleanUpdates
+          }
+        };
+        
+        // Clean up the data object
+        const cleanedData = { ...updatedCv.data };
+        (Object.keys(cleanedData) as Array<keyof typeof cleanedData>).forEach(key => {
+          if (cleanedData[key] === undefined) {
+            delete cleanedData[key];
+          }
+        });
+
+        const finalCv = {
+          ...updatedCv,
+          data: cleanedData
+        };
+        
+        // Update local state
+        const updatedCvs = (newProfile.cvs || []).map(cv => 
+          cv.id === selectedCvId ? finalCv : cv
+        );
+        
+        // Save to Firestore
+        saveUserCV(user.uid, finalCv, false).catch(() => {});
+        
+        return {
+          ...newProfile,
+          ...cleanUpdates,
+          cvs: updatedCvs
+        };
+      }
+      
+      return newProfile;
+    });
+  }, [user, selectedCvId]);
 
   // Auto-select the first CV when entering the page (or when list loads) if none is selected
   useEffect(() => {
@@ -284,24 +399,80 @@ const CVManagement: React.FC<CVManagementProps> = ({ user, existingCompetences }
           onChange={(cvs) => {
             // Persist to Firestore: upsert all, delete removed
             const prevList = profile.cvs || [];
-            setProfile(prev => ({ ...prev, cvs }));
+            
+            // Update local state
+            setProfile(prev => ({
+              ...prev,
+              cvs: [...cvs]
+            }));
+            
+            // Persist to Firestore if user is logged in
             if (user) {
-              const nextIds = new Set((cvs || []).map(c => c.id));
-              // deletions
-              prevList.forEach(c => { if (!nextIds.has(c.id)) deleteUserCV(user.uid, c.id); });
-              // upserts
-              (cvs || []).forEach(c => {
-                const existing = prevList.find(p => p.id === c.id);
-                const isNew = !existing;
-                saveUserCV(user.uid, { id: c.id, name: c.name || '', data: existing?.data || {} }, isNew);
+              // Save all CVs
+              cvs.forEach(cv => {
+                if (cv.name.trim()) { // Only save if CV has a name
+                  saveUserCV(user.uid, cv, false).catch(error => 
+                    console.error('Error saving CV:', error)
+                  );
+                }
+              });
+              
+              // Delete any CVs that were removed
+              const deletedCVs = prevList.filter(oldCV => 
+                !cvs.some(newCV => newCV.id === oldCV.id)
+              );
+              
+              deletedCVs.forEach(cv => {
+                deleteUserCV(user.uid, cv.id).catch(error =>
+                  console.error('Error deleting CV:', error)
+                );
               });
             }
           }}
           selectedId={selectedCvId}
-          onSelect={(id) => {
-            selectCvById(id);
-          }}
+          onSelect={selectCvById}
           ownerName={profile.displayName}
+          ownerTitle={profile.title}
+          ownerDescription={profile.description}
+          ownerPhotoUrl={profile.photoUrl}
+          ownerRoles={profile.roles}
+          ownerLanguages={profile.languages}
+          ownerExpertise={profile.expertise}
+          ownerSelectedProjects={profile.projects?.map(project => ({
+            id: project.id,
+            customer: project.customer,
+            title: project.title,
+            description: project.description || ''
+          })) || []}
+          ownerExperiences={profile.experiences?.map(exp => ({
+            id: exp.id,
+            title: exp.title,
+            employer: exp.employer,
+            description: exp.description,
+            startYear: exp.startYear,
+            endYear: exp.endYear
+          })) || []}
+          ownerEducations={profile.educations?.map(edu => ({
+            id: edu.id,
+            school: edu.school,
+            title: edu.title,
+            startYear: edu.startYear,
+            endYear: edu.endYear
+          })) || []}
+          ownerCoursesCertifications={profile.coursesCertifications?.map(course => ({
+            id: course.id,
+            title: course.title,
+            organization: course.organization,
+            year: course.year
+          })) || []}
+          ownerEngagements={profile.engagementsPublications?.map(engagement => ({
+            id: engagement.id,
+            title: engagement.title,
+            organization: engagement.locationOrPublication,
+            year: engagement.year,
+            description: engagement.description
+          })) || []}
+          ownerCompetences={mappedCompetences}
         />
       </TabPanel>
 
