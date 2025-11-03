@@ -1,9 +1,25 @@
-import React from 'react';
-import { Box, Button, Paper, TextField, Typography, IconButton, Stack, Tooltip, ToggleButtonGroup, ToggleButton } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
-import { generateCvPdf, downloadBlob, filenameFromUserName, type PdfLang } from '../../../../pdf';
+import React from "react";
+import {
+  Box,
+  Button,
+  Paper,
+  TextField,
+  Typography,
+  IconButton,
+  Stack,
+  Tooltip,
+  ToggleButtonGroup,
+  ToggleButton,
+} from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
+import {
+  generateCvPdf,
+  downloadBlob,
+  filenameFromUserName,
+  type PdfLang,
+} from "../../../../pdf";
 
 export interface CVOverviewItem {
   id: string;
@@ -30,7 +46,12 @@ export interface OverviewTabProps {
   ownerRoles?: string[];
   ownerLanguages?: string[];
   ownerExpertise?: string[];
-  ownerSelectedProjects?: ProjectItem[];
+  ownerSelectedProjects?: Array<{
+    id: string;
+    customer: string;
+    title: string;
+    description: string;
+  }>;
   ownerExperiences?: Array<{
     id: string;
     title: string;
@@ -69,30 +90,29 @@ export interface OverviewTabProps {
 function newCV(): CVOverviewItem {
   return {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    name: '',
-    language: 'en' // Default to English
+    name: "",
+    language: "en", // Default to English
   };
 }
 
-
-const OverviewTab: React.FC<OverviewTabProps> = ({ 
-  cvs = [], 
-  onChange, 
-  selectedId, 
-  onSelect, 
-  ownerName, 
+const OverviewTab: React.FC<OverviewTabProps> = ({
+  cvs = [],
+  onChange,
+  selectedId,
+  onSelect,
+  ownerName,
   ownerTitle,
-  ownerDescription, 
-  ownerPhotoUrl, 
-  ownerRoles, 
-  ownerLanguages, 
+  ownerDescription,
+  ownerPhotoUrl,
+  ownerRoles,
+  ownerLanguages,
   ownerExpertise,
   ownerSelectedProjects = [],
   ownerExperiences = [],
   ownerEducations = [],
   ownerCoursesCertifications = [],
   ownerEngagements = [],
-  ownerCompetences = []
+  ownerCompetences = [],
 }: OverviewTabProps) => {
   // Initialize cvLang state from the CV items
   const [cvLang, setCvLang] = React.useState<Record<string, PdfLang>>(
@@ -103,33 +123,38 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
       return acc;
     }, {} as Record<string, PdfLang>)
   );
+  const [isGenerating, setIsGenerating] = React.useState(false);
   const addCV = () => {
     const created = newCV();
     onChange([created, ...(cvs || [])]);
     if (onSelect) onSelect(created.id);
   };
 
-  const updateCV = (index: number, field: keyof CVOverviewItem, value: string | PdfLang) => {
+  const updateCV = (
+    index: number,
+    field: keyof CVOverviewItem,
+    value: string | PdfLang
+  ) => {
     const updated = [...(cvs || [])];
     const current = updated[index] || newCV();
-    
+
     // Create a new CV with the updated field
     const updatedCv: CVOverviewItem = {
       ...current,
-      [field]: field === 'language' ? (value as PdfLang) : value
+      [field]: field === "language" ? (value as PdfLang) : value,
     };
-    
+
     // Update the local state for language if needed
-    if (field === 'language') {
-      setCvLang(prev => ({
+    if (field === "language") {
+      setCvLang((prev) => ({
         ...prev,
-        [current.id]: value as PdfLang
+        [current.id]: value as PdfLang,
       }));
     }
-    
+
     // Update the CV in the array
     updated[index] = updatedCv;
-    
+
     // Trigger the parent's onChange with the updated CVs
     onChange(updated);
   };
@@ -140,17 +165,146 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
     onChange(updated);
   };
 
+  // Memoized mappings for PDF data to avoid heavy work in click handlers
+  const selectedProjectsMapped = React.useMemo(
+    () =>
+      (ownerSelectedProjects || []).map((p) => ({
+        customer: p.customer || "",
+        title: p.title || "",
+        description: p.description || "",
+      })),
+    [ownerSelectedProjects]
+  );
+
+  const educationsMapped = React.useMemo(
+    () =>
+      (ownerEducations || []).map((edu) => ({
+        school: edu.school || "",
+        degree: edu.title || "",
+        startYear: edu.startYear || "",
+        endYear: edu.endYear || "",
+      })),
+    [ownerEducations]
+  );
+
+  const coursesMapped = React.useMemo(
+    () =>
+      (ownerCoursesCertifications || []).map((course) => ({
+        name: course.title || "",
+        issuer: course.organization,
+        year: course.year,
+      })),
+    [ownerCoursesCertifications]
+  );
+
+  const engagementsMapped = React.useMemo(
+    () =>
+      (ownerEngagements || []).map((eng) => ({
+        type: "engagement" as const,
+        title: eng.title || "",
+        year: eng.year,
+        locationOrPublication: eng.organization || "",
+        description: eng.description,
+        url: "",
+      })),
+    [ownerEngagements]
+  );
+
+  const competencesMapped = React.useMemo(() => {
+    const byLevel: Record<
+      2 | 3 | 4,
+      { name: string; items: { name: string; level: number }[] }
+    > = {
+      2: { name: "Beginner", items: [] },
+      3: { name: "Proficient", items: [] },
+      4: { name: "Expert", items: [] },
+    };
+    (ownerCompetences || []).forEach((comp) => {
+      if (comp.level >= 2 && comp.level <= 4) {
+        byLevel[comp.level as 2 | 3 | 4].items.push({
+          name: comp.name,
+          level: comp.level,
+        });
+      }
+    });
+    return Object.values(byLevel)
+      .filter((g) => g.items.length > 0)
+      .map((g) => ({ category: g.name, items: g.items }));
+  }, [ownerCompetences]);
+
+  // Async PDF generation with race condition prevention and error handling
+  const handleCreatePdf = React.useCallback(
+    (cv: CVOverviewItem) => async (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.stopPropagation();
+      if (isGenerating) return;
+      setIsGenerating(true);
+      try {
+        const lang = (cv.language || cvLang[cv.id] || "en") as PdfLang;
+        const blob = await generateCvPdf(
+          ownerName,
+          ownerDescription,
+          ownerPhotoUrl,
+          ownerRoles,
+          ownerLanguages,
+          ownerExpertise,
+          selectedProjectsMapped,
+          lang,
+          ownerTitle,
+          ownerExperiences,
+          educationsMapped,
+          coursesMapped,
+          competencesMapped,
+          engagementsMapped
+        );
+        downloadBlob(blob, filenameFromUserName(ownerName));
+      } catch (error) {
+        console.error("[PDF] UI: Failed to generate or download PDF", error);
+        alert("Failed to create PDF. See console for details.");
+      } finally {
+        setIsGenerating(false);
+      }
+    },
+    [
+      isGenerating,
+      ownerName,
+      ownerDescription,
+      ownerPhotoUrl,
+      ownerRoles,
+      ownerLanguages,
+      ownerExpertise,
+      ownerTitle,
+      ownerExperiences,
+      selectedProjectsMapped,
+      educationsMapped,
+      coursesMapped,
+      competencesMapped,
+      engagementsMapped,
+      cvLang,
+    ]
+  );
+
   return (
-    <Paper elevation={3} sx={{ p: 3, mb: 3, maxWidth: 600, mx: 'auto' }}>
-      <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+    <Paper elevation={3} sx={{ p: 3, mb: 3, maxWidth: 600, mx: "auto" }}>
+      <Box
+        sx={{
+          mb: 2,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
         <Typography variant="h5">CVs</Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Button variant="outlined" startIcon={<AddIcon />} onClick={addCV}>Add CV</Button>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Button variant="outlined" startIcon={<AddIcon />} onClick={addCV}>
+            Add CV
+          </Button>
         </Box>
       </Box>
 
       {(cvs || []).length === 0 ? (
-        <Typography color="text.secondary">No CVs yet. Click "Add CV" to create your first one.</Typography>
+        <Typography color="text.secondary">
+          No CVs yet. Click "Add CV" to create your first one.
+        </Typography>
       ) : (
         (cvs || []).map((cv, index) => {
           const isSelected = selectedId === cv.id;
@@ -161,134 +315,75 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
               sx={{
                 p: 2,
                 mb: 2,
-                border: '1px solid',
-                borderColor: isSelected ? 'primary.main' : 'divider',
-                bgcolor: isSelected ? 'action.selected' : 'background.paper',
-                cursor: 'pointer',
-                transition: 'background-color 0.2s, border-color 0.2s',
+                border: "1px solid",
+                borderColor: isSelected ? "primary.main" : "divider",
+                bgcolor: isSelected ? "action.selected" : "background.paper",
+                cursor: "pointer",
+                transition: "background-color 0.2s, border-color 0.2s",
               }}
               onClick={() => onSelect && onSelect(cv.id)}
             >
               <Stack spacing={1}>
-                <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  alignItems="center"
+                  justifyContent="space-between"
+                >
                   <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                    {cv.name?.trim() || 'Untitled CV'}
+                    {cv.name?.trim() || "Untitled CV"}
                   </Typography>
                   <Stack direction="row" spacing={0.5} alignItems="center">
                     <ToggleButtonGroup
                       exclusive
                       size="small"
-                      value={cv.language || cvLang[cv.id] || 'en'}
+                      value={cv.language || cvLang[cv.id] || "en"}
                       onChange={(e, value) => {
                         e.stopPropagation();
                         if (!value) return; // ignore unselect
                         updateCV(
-                          cvs.findIndex(c => c.id === cv.id), 
-                          'language', 
+                          cvs.findIndex((c) => c.id === cv.id),
+                          "language",
                           value
                         );
                       }}
                       aria-label="PDF language toggle"
                     >
-                      <ToggleButton value="en" aria-label="English" sx={{ px: 1, textTransform: 'none' }}>EN</ToggleButton>
-                      <ToggleButton value="sv" aria-label="Svenska" sx={{ px: 1, textTransform: 'none' }}>SV</ToggleButton>
+                      <ToggleButton
+                        value="en"
+                        aria-label="English"
+                        sx={{ px: 1, textTransform: "none" }}
+                      >
+                        EN
+                      </ToggleButton>
+                      <ToggleButton
+                        value="sv"
+                        aria-label="Svenska"
+                        sx={{ px: 1, textTransform: "none" }}
+                      >
+                        SV
+                      </ToggleButton>
                     </ToggleButtonGroup>
-                    <Tooltip title="Create PDF">
+                    <Tooltip
+                      title={isGenerating ? "Generating PDF..." : "Create PDF"}
+                    >
                       <IconButton
                         aria-label="create pdf"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          (async () => {
-                            try {
-                              const lang = cv.language || cvLang[cv.id] || 'en';
-                              const selectedProjects = ownerSelectedProjects.map(project => ({
-                                customer: project.customer || '',
-                                title: project.title || '',
-                                description: project.description || ''
-                              }));
-                              // Map the education data to match the expected format
-                              const educations = ownerEducations.map(edu => ({
-                                school: edu.school || '',
-                                degree: edu.title || '', // PDF generation expects 'degree' but we map from 'title'
-                                startYear: edu.startYear || '',
-                                endYear: edu.endYear || ''
-                              }));
-                              
-                              // Map courses to match the expected CourseItem interface
-                              const courses = ownerCoursesCertifications.map(course => ({
-                                name: course.title || '',
-                                issuer: course.organization,
-                                year: course.year?.toString()
-                              }));
-                              
-                              const engagementsPublications = ownerEngagements?.map(engagement => ({
-                                type: 'engagement' as const,
-                                title: engagement.title || '',
-                                year: engagement.year || '',
-                                locationOrPublication: engagement.organization || '',
-                                description: engagement.description,
-                                url: ''
-                              }));
-                              
-                              const blob = await generateCvPdf(
-                                ownerName, 
-                                ownerDescription, 
-                                ownerPhotoUrl, 
-                                ownerRoles, 
-                                ownerLanguages, 
-                                ownerExpertise,
-                                selectedProjects,
-                                lang,
-                                ownerTitle,
-                                ownerExperiences,
-                                educations,
-                                courses,
-                                // Group competences by level (2-4)
-                                (() => {
-                                  // First, filter to only include levels 2-4
-                                  const filteredCompetences = ownerCompetences
-                                    .filter(comp => comp.level >= 2 && comp.level <= 4);
-                                  
-                                  // Group by level
-                                  const competencesByLevel = {
-                                    2: { name: 'Beginner', items: [] as { name: string; level: number }[] },
-                                    3: { name: 'Proficient', items: [] as { name: string; level: number }[] },
-                                    4: { name: 'Expert', items: [] as { name: string; level: number }[] },
-                                  };
-                                  
-                                  filteredCompetences.forEach(comp => {
-                                    if (comp.level >= 2 && comp.level <= 4) {
-                                      competencesByLevel[comp.level as 2 | 3 | 4].items.push({
-                                        name: comp.name,
-                                        level: comp.level
-                                      });
-                                    }
-                                  });
-                                  
-                                  // Convert to array, filter out empty levels, and map to the expected format
-                                  return Object.values(competencesByLevel)
-                                    .filter(group => group.items.length > 0)
-                                    .map(group => ({
-                                      category: group.name,
-                                      items: group.items
-                                    }));
-                                })(),
-                                engagementsPublications
-                              );
-                              downloadBlob(blob, filenameFromUserName(ownerName));
-                            } catch (err) {
-                              console.error('[PDF] UI: Failed to generate or download PDF', err);
-                              alert('Failed to create PDF. See console for details.');
-                            }
-                          })();
-                        }}
+                        onClick={handleCreatePdf(cv)}
+                        disabled={isGenerating}
                         size="small"
                       >
                         <PictureAsPdfIcon />
                       </IconButton>
                     </Tooltip>
                     <Tooltip title="Delete CV">
-                      <IconButton aria-label="remove cv" onClick={(e) => { e.stopPropagation(); removeCV(index); }}>
+                      <IconButton
+                        aria-label="remove cv"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeCV(index);
+                        }}
+                      >
                         <DeleteOutlineIcon />
                       </IconButton>
                     </Tooltip>
@@ -298,9 +393,9 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                   fullWidth
                   label="Name"
                   size="small"
-                  value={cv.name || ''}
-                  onChange={(e) => updateCV(index, 'name', e.target.value)}
-                  onBlur={(e) => updateCV(index, 'name', e.target.value)}
+                  value={cv.name || ""}
+                  onChange={(e) => updateCV(index, "name", e.target.value)}
+                  onBlur={(e) => updateCV(index, "name", e.target.value)}
                   margin="normal"
                   variant="outlined"
                   onClick={(e) => e.stopPropagation()}
