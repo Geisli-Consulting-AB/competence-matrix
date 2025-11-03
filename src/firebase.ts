@@ -3,6 +3,8 @@ import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import {
   getFirestore,
   doc,
+  Timestamp,
+  FieldValue,
   onSnapshot,
   setDoc,
   serverTimestamp,
@@ -249,11 +251,14 @@ export function subscribeToSharedCategories(
 
 
 // ===== CV management (users/{userId}/cvs subcollection) =====
-export type CVDoc = {
+export interface CVDoc {
   id: string;
   name: string;
-  data?: unknown;
-};
+  language?: 'en' | 'sv';
+  data?: unknown; // CV data structure defined in the CV editor
+  createdAt?: Timestamp | FieldValue; // Can be either Timestamp (when reading) or FieldValue (when writing)
+  updatedAt?: Timestamp | FieldValue; // Can be either Timestamp (when reading) or FieldValue (when writing)
+}
 
 // Realtime subscribe to a user's CVs
 export function subscribeToUserCVs(
@@ -266,10 +271,11 @@ export function subscribeToUserCVs(
   const qRef = query(colRef, orderBy("createdAt", "asc"), orderBy(documentId(), "asc"));
   return onSnapshot(qRef, (snap) => {
     const rows: CVDoc[] = snap.docs.map((d) => {
-      const data = d.data() as { name?: unknown; data?: unknown };
+      const data = d.data() as { name?: unknown; data?: unknown; language?: unknown };
       return {
         id: d.id,
         name: String(data?.name ?? ""),
+        language: data?.language as 'en' | 'sv' | undefined,
         data: (data?.data as unknown) ?? undefined,
       };
     });
@@ -280,19 +286,27 @@ export function subscribeToUserCVs(
 // Create or update a CV document immediately
 export async function saveUserCV(
   userId: string,
-  cv: { id: string; name?: string; data?: unknown },
+  cv: { id: string; name?: string; language?: 'en' | 'sv'; data?: unknown },
   isNew?: boolean,
 ): Promise<void> {
   const ref = doc(db, "users", userId, "cvs", cv.id);
-  const payload: Record<string, unknown> = {
-    name: cv.name ?? "",
-    data: cv.data ?? {},
+  const payload: Partial<CVDoc> = {
+    name: cv.name || 'Untitled CV',
+    language: cv.language || 'en',
+    data: cv.data || {},
     updatedAt: serverTimestamp(),
   };
+
   if (isNew) {
     payload.createdAt = serverTimestamp();
   }
-  await setDoc(ref, payload, { merge: true });
+  
+  try {
+    await setDoc(ref, payload, { merge: true });
+  } catch (error) {
+    console.error('Error saving CV to Firestore:', error);
+    throw error;
+  }
 }
 
 // Delete a CV document
