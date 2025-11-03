@@ -109,7 +109,9 @@ const RolesEditor: React.FC<RolesEditorProps> = ({ roles = [], onChange }) => {
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
+          cursor: "pointer",
         }}
+        onClick={toggleExpanded}
       >
         <Typography variant="h5">Roles</Typography>
         <IconButton
@@ -117,7 +119,10 @@ const RolesEditor: React.FC<RolesEditorProps> = ({ roles = [], onChange }) => {
             expanded ? "Collapse roles section" : "Expand roles section"
           }
           aria-expanded={expanded}
-          onClick={toggleExpanded}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleExpanded();
+          }}
           size="small"
         >
           {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}

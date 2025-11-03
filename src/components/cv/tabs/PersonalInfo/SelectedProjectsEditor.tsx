@@ -126,7 +126,9 @@ const SelectedProjectsEditor: React.FC<SelectedProjectsEditorProps> = ({
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
+          cursor: "pointer",
         }}
+        onClick={toggleExpanded}
       >
         <Typography variant="h5">Selected Projects</Typography>
         <IconButton
@@ -136,7 +138,10 @@ const SelectedProjectsEditor: React.FC<SelectedProjectsEditorProps> = ({
               : "Expand selected projects section"
           }
           aria-expanded={expanded}
-          onClick={toggleExpanded}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleExpanded();
+          }}
           size="small"
         >
           {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}

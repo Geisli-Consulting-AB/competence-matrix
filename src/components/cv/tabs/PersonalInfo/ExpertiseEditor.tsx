@@ -106,7 +106,9 @@ const ExpertiseEditor: React.FC<ExpertiseEditorProps> = ({
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
+          cursor: "pointer",
         }}
+        onClick={toggleExpanded}
       >
         <Typography variant="h5">Expertise</Typography>
         <IconButton
@@ -114,7 +116,10 @@ const ExpertiseEditor: React.FC<ExpertiseEditorProps> = ({
             expanded ? "Collapse expertise section" : "Expand expertise section"
           }
           aria-expanded={expanded}
-          onClick={toggleExpanded}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleExpanded();
+          }}
           size="small"
         >
           {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
