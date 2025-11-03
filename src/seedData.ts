@@ -334,7 +334,7 @@ function createCompetenceRows(competenceNames: string[]): CompetenceRow[] {
 
 // Main seeding function
 export async function seedDatabase() {
-  console.log("🌱 Starting database seeding...");
+  // Database seeding started
 
   try {
     for (const user of sampleUsers) {
@@ -348,19 +348,10 @@ export async function seedDatabase() {
         seeded: true, // Flag to identify seeded data
       });
 
-      console.log(
-        `✅ Added user: ${user.ownerName} with ${competenceRows.length} competences`,
-      );
+      // User and competences added
     }
 
-    console.log(
-      `🎉 Successfully seeded ${sampleUsers.length} users to the database!`,
-    );
-    console.log("📊 Competence distribution:");
-    console.log("   - Want to learn: ~15%");
-    console.log("   - Beginner: ~30%");
-    console.log("   - Proficient: ~40%");
-    console.log("   - Expert: ~15%");
+    // Database seeding completed
   } catch (error) {
     console.error("❌ Error seeding database:", error);
     throw error;
@@ -371,7 +362,7 @@ export async function seedDatabase() {
 if (import.meta.url === `file://${process.argv[1]}`) {
   seedDatabase()
     .then(() => {
-      console.log("✨ Seeding completed successfully!");
+      // Seeding process completed
       process.exit(0);
     })
     .catch((error) => {

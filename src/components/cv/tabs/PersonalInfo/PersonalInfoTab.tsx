@@ -9,6 +9,7 @@ import {
 } from '@mui/material';
 import PhotoCamera from '@mui/icons-material/PhotoCamera';
 import type { User } from 'firebase/auth';
+import { useTranslation } from 'react-i18next';
 import SelectedProjectsEditor from './SelectedProjectsEditor';
 import RolesEditor from './RolesEditor';
 import ExpertiseEditor from './ExpertiseEditor';
@@ -19,9 +20,11 @@ export interface PersonalInfoTabProps {
   user: User | null;
   profile: UserProfile;
   onProfileChange: (updates: Partial<UserProfile>) => void;
+  language?: 'en' | 'sv';
 }
 
 const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({ profile, onProfileChange }) => {
+  const { t } = useTranslation();
   const [isUploading, setIsUploading] = useState(false);
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -122,7 +125,16 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({ profile, onProfileCha
       />
       <TextField
         fullWidth
-        label="Professional Summary"
+        label="Title"
+        value={profile.title || ''}
+        onChange={(e) => onProfileChange({ title: e.target.value })}
+        margin="normal"
+        variant="outlined"
+        placeholder="e.g., Senior Software Engineer"
+      />
+      <TextField
+        fullWidth
+        label={t('professionalSummary')}
         value={profile.description || ''}
         onChange={(e) => onProfileChange({ description: e.target.value })}
         margin="normal"

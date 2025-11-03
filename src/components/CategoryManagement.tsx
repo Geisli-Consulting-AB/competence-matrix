@@ -50,14 +50,11 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
   // Subscribe to shared categories from database
   useEffect(() => {
     if (!user?.uid) {
-      console.log("No user authenticated, skipping category subscription");
-      return;
+      return; // No user authenticated, skip subscription
     }
 
-    console.log("Subscribing to shared categories");
     const unsubscribe = subscribeToSharedCategories(
       (firebaseCategories: Category[]) => {
-        console.log("Received shared categories from database:", firebaseCategories);
         setCategories(firebaseCategories);
       },
     );
@@ -67,15 +64,10 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
 
   // Save individual category to shared database
   const saveCategoryToDB = async (category: Category) => {
-    if (!user?.uid) {
-      console.log("No user authenticated, cannot save category");
-      return;
-    }
-
-    console.log("Saving category to shared database:", category);
+    if (!user?.uid) return;
+    
     try {
       await saveSharedCategory(category);
-      console.log("Category saved successfully");
     } catch (error) {
       console.error("Failed to save category:", error);
     }
@@ -83,15 +75,10 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
 
   // Delete category from shared database
   const deleteCategoryFromDB = async (categoryId: string) => {
-    if (!user?.uid) {
-      console.log("No user authenticated, cannot delete category");
-      return;
-    }
-
-    console.log("Deleting category from shared database:", categoryId);
+    if (!user?.uid) return;
+    
     try {
       await deleteSharedCategory(categoryId);
-      console.log("Category deleted successfully");
     } catch (error) {
       console.error("Failed to delete category:", error);
     }
