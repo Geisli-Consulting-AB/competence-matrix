@@ -106,7 +106,9 @@ const LanguagesEditor: React.FC<LanguagesEditorProps> = ({
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
+          cursor: "pointer",
         }}
+        onClick={toggleExpanded}
       >
         <Typography variant="h5">Languages</Typography>
         <IconButton
@@ -114,7 +116,10 @@ const LanguagesEditor: React.FC<LanguagesEditorProps> = ({
             expanded ? "Collapse languages section" : "Expand languages section"
           }
           aria-expanded={expanded}
-          onClick={toggleExpanded}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleExpanded();
+          }}
           size="small"
         >
           {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
