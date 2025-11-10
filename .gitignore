@@ -23,8 +23,12 @@ dist-ssr
 *.sln
 *.sw?
 
+
 # Environment files
 .env
+
+# Cursor AI rules (keep local)
+.cursor/rules/
 
 # Playwright
 /test-results/

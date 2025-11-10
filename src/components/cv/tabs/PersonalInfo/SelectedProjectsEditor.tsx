@@ -3,7 +3,6 @@ import {
   Box,
   Button,
   Paper,
-  TextField,
   Typography,
   IconButton,
   Collapse,
@@ -15,6 +14,7 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
+import TranslatableTextField from "../../../TranslatableTextField";
 
 export type ProjectItem = {
   id: string;
@@ -195,29 +195,29 @@ const SelectedProjectsEditor: React.FC<SelectedProjectsEditorProps> = ({
               </Tooltip>
               <Box sx={{ flexGrow: 1 }}>
                 <Stack direction="row" spacing={1} alignItems="center">
-                  <TextField
+                  <TranslatableTextField
                     fullWidth
                     label="Customer"
                     value={project.customer || ""}
-                    onChange={(e) =>
-                      handleProjectChange(index, "customer", e.target.value)
+                    onChange={(value) =>
+                      handleProjectChange(index, "customer", value)
                     }
-                    onBlur={(e) =>
-                      handleProjectChange(index, "customer", e.target.value)
+                    onBlurValue={(value) =>
+                      handleProjectChange(index, "customer", value)
                     }
                     margin="normal"
                     variant="outlined"
                     sx={{ flex: 3 }}
                   />
-                  <TextField
+                  <TranslatableTextField
                     fullWidth
                     label="Project Title"
                     value={project.title || ""}
-                    onChange={(e) =>
-                      handleProjectChange(index, "title", e.target.value)
+                    onChange={(value) =>
+                      handleProjectChange(index, "title", value)
                     }
-                    onBlur={(e) =>
-                      handleProjectChange(index, "title", e.target.value)
+                    onBlurValue={(value) =>
+                      handleProjectChange(index, "title", value)
                     }
                     margin="normal"
                     variant="outlined"
@@ -231,15 +231,15 @@ const SelectedProjectsEditor: React.FC<SelectedProjectsEditorProps> = ({
                     <DeleteOutlineIcon />
                   </IconButton>
                 </Stack>
-                <TextField
+                <TranslatableTextField
                   fullWidth
                   label="Description"
                   value={project.description || ""}
-                  onChange={(e) =>
-                    handleProjectChange(index, "description", e.target.value)
+                  onChange={(value) =>
+                    handleProjectChange(index, "description", value)
                   }
-                  onBlur={(e) =>
-                    handleProjectChange(index, "description", e.target.value)
+                  onBlurValue={(value) =>
+                    handleProjectChange(index, "description", value)
                   }
                   margin="normal"
                   variant="outlined"

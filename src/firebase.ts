@@ -29,7 +29,7 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
+export const app = initializeApp(firebaseConfig);
 
 // Initialize Firebase Authentication and provider
 export const auth = getAuth(app);
@@ -37,8 +37,8 @@ export const googleProvider = new GoogleAuthProvider();
 
 // Add domain hint to encourage users to use their work email
 googleProvider.setCustomParameters({
-  hd: 'geisli.se', // Domain hint for Google Workspace
-  prompt: 'select_account' // Always show account selection
+  hd: "geisli.se", // Domain hint for Google Workspace
+  prompt: "select_account", // Always show account selection
 });
 
 export const db = getFirestore(app);
@@ -55,7 +55,7 @@ export type Category = {
 // Subscribe to a single user document that contains the competences array
 export function subscribeToUserCompetences(
   userId: string,
-  onChange: (rows: CompetenceRow[]) => void,
+  onChange: (rows: CompetenceRow[]) => void
 ): Unsubscribe {
   const userDocRef = doc(db, "users", userId);
   type RawCompetence = { id?: unknown; name?: unknown; level?: unknown };
@@ -76,7 +76,7 @@ export function subscribeToUserCompetences(
 export async function saveUserCompetences(
   userId: string,
   ownerName: string,
-  rows: CompetenceRow[],
+  rows: CompetenceRow[]
 ): Promise<void> {
   const cleaned = rows.map((r) => ({
     id: r.id,
@@ -88,7 +88,7 @@ export async function saveUserCompetences(
   await setDoc(
     userDocRef,
     { ownerName, competences: cleaned, updatedAt: serverTimestamp() },
-    { merge: true },
+    { merge: true }
   );
 }
 
@@ -109,7 +109,10 @@ export async function getAllUsersCompetences(): Promise<{
 
   type RawCompetence = { id?: unknown; name?: unknown; level?: unknown };
   snapshot.forEach((doc) => {
-    const data = doc.data() as { ownerName?: string; competences?: RawCompetence[] };
+    const data = doc.data() as {
+      ownerName?: string;
+      competences?: RawCompetence[];
+    };
     const competences: CompetenceRow[] = Array.isArray(data.competences)
       ? data.competences.map((r: RawCompetence) => ({
           id: String(r.id ?? ""),
@@ -133,7 +136,6 @@ export async function getAllUsersCompetences(): Promise<{
         competenceSet.add(comp.name.trim());
       }
     });
-    
   });
 
   const allCompetences = Array.from(competenceSet).sort();
@@ -147,12 +149,12 @@ export async function getAllUsersCompetences(): Promise<{
 // Get all competences from users and shared categories
 export async function getAllCompetencesForAutocomplete(): Promise<string[]> {
   const competenceSet = new Set<string>();
-  
+
   try {
     // 1. Get competences from users collection
     const usersCollection = collection(db, "users");
     const usersSnapshot = await getDocs(usersCollection);
-    
+
     type RawCompetence = { id?: unknown; name?: unknown; level?: unknown };
     usersSnapshot.forEach((doc) => {
       const data = doc.data() as { competences?: RawCompetence[] };
@@ -163,7 +165,7 @@ export async function getAllCompetencesForAutocomplete(): Promise<string[]> {
             level: Number(r.level ?? 1),
           }))
         : [];
-      
+
       // Add user competences to set
       competences.forEach((comp) => {
         if (comp.name && comp.name.trim()) {
@@ -171,16 +173,15 @@ export async function getAllCompetencesForAutocomplete(): Promise<string[]> {
         }
       });
     });
-    
   } catch (error) {
     console.error("Error fetching from users collection:", error);
   }
-  
+
   try {
     // 2. Get competences from shared categories collection
     const sharedCategoriesCollection = collection(db, "sharedCategories");
     const sharedCategoriesSnapshot = await getDocs(sharedCategoriesCollection);
-    
+
     sharedCategoriesSnapshot.forEach((doc) => {
       const data = doc.data();
       if (Array.isArray(data.competences)) {
@@ -191,11 +192,10 @@ export async function getAllCompetencesForAutocomplete(): Promise<string[]> {
         });
       }
     });
-    
   } catch (error) {
     console.error("Error fetching from shared categories collection:", error);
   }
-  
+
   return Array.from(competenceSet).sort();
 }
 
@@ -220,41 +220,46 @@ export async function deleteSharedCategory(categoryId: string): Promise<void> {
 }
 
 export function subscribeToSharedCategories(
-  onChange: (categories: Category[]) => void,
+  onChange: (categories: Category[]) => void
 ): Unsubscribe {
   const categoriesCollection = collection(db, "sharedCategories");
   const categoriesQuery = query(categoriesCollection, orderBy("name"));
-  
-  return onSnapshot(categoriesQuery, (snapshot) => {
-    const categories: Category[] = [];
-    snapshot.forEach((doc) => {
-      const data = doc.data() as { id?: unknown; name?: unknown; competences?: unknown[]; color?: unknown };
-      categories.push({
-        id: String((data.id ?? doc.id) as string),
-        name: String(data.name ?? ""),
-        competences: Array.isArray(data.competences)
-          ? data.competences.map((c) => String(c))
-          : [],
-        color: String(data.color ?? "#FF6B6B"),
+
+  return onSnapshot(
+    categoriesQuery,
+    (snapshot) => {
+      const categories: Category[] = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data() as {
+          id?: unknown;
+          name?: unknown;
+          competences?: unknown[];
+          color?: unknown;
+        };
+        categories.push({
+          id: String((data.id ?? doc.id) as string),
+          name: String(data.name ?? ""),
+          competences: Array.isArray(data.competences)
+            ? data.competences.map((c) => String(c))
+            : [],
+          color: String(data.color ?? "#FF6B6B"),
+        });
       });
-    });
-    onChange(categories);
-  }, (error) => {
-    console.error("Error in subscribeToSharedCategories:", error);
-    // Return empty array on error to prevent app crashes
-    onChange([]);
-  });
+      onChange(categories);
+    },
+    (error) => {
+      console.error("Error in subscribeToSharedCategories:", error);
+      // Return empty array on error to prevent app crashes
+      onChange([]);
+    }
+  );
 }
-
-
-
-
 
 // ===== CV management (users/{userId}/cvs subcollection) =====
 export interface CVDoc {
   id: string;
   name: string;
-  language?: 'en' | 'sv';
+  language?: "en" | "sv";
   data?: unknown; // CV data structure defined in the CV editor
   createdAt?: Timestamp | FieldValue; // Can be either Timestamp (when reading) or FieldValue (when writing)
   updatedAt?: Timestamp | FieldValue; // Can be either Timestamp (when reading) or FieldValue (when writing)
@@ -263,19 +268,27 @@ export interface CVDoc {
 // Realtime subscribe to a user's CVs
 export function subscribeToUserCVs(
   userId: string,
-  onChange: (rows: CVDoc[]) => void,
+  onChange: (rows: CVDoc[]) => void
 ): Unsubscribe {
   const colRef = collection(db, "users", userId, "cvs");
   // Order CVs by creation time, then by document ID for a stable tiebreaker.
   // Using document ID prevents reordering when the CV name changes.
-  const qRef = query(colRef, orderBy("createdAt", "asc"), orderBy(documentId(), "asc"));
+  const qRef = query(
+    colRef,
+    orderBy("createdAt", "asc"),
+    orderBy(documentId(), "asc")
+  );
   return onSnapshot(qRef, (snap) => {
     const rows: CVDoc[] = snap.docs.map((d) => {
-      const data = d.data() as { name?: unknown; data?: unknown; language?: unknown };
+      const data = d.data() as {
+        name?: unknown;
+        data?: unknown;
+        language?: unknown;
+      };
       return {
         id: d.id,
         name: String(data?.name ?? ""),
-        language: data?.language as 'en' | 'sv' | undefined,
+        language: data?.language as "en" | "sv" | undefined,
         data: (data?.data as unknown) ?? undefined,
       };
     });
@@ -286,13 +299,13 @@ export function subscribeToUserCVs(
 // Create or update a CV document immediately
 export async function saveUserCV(
   userId: string,
-  cv: { id: string; name?: string; language?: 'en' | 'sv'; data?: unknown },
-  isNew?: boolean,
+  cv: { id: string; name?: string; language?: "en" | "sv"; data?: unknown },
+  isNew?: boolean
 ): Promise<void> {
   const ref = doc(db, "users", userId, "cvs", cv.id);
   const payload: Partial<CVDoc> = {
-    name: cv.name || 'Untitled CV',
-    language: cv.language || 'en',
+    name: cv.name || "Untitled CV",
+    language: cv.language || "en",
     data: cv.data || {},
     updatedAt: serverTimestamp(),
   };
@@ -300,17 +313,20 @@ export async function saveUserCV(
   if (isNew) {
     payload.createdAt = serverTimestamp();
   }
-  
+
   try {
     await setDoc(ref, payload, { merge: true });
   } catch (error) {
-    console.error('Error saving CV to Firestore:', error);
+    console.error("Error saving CV to Firestore:", error);
     throw error;
   }
 }
 
 // Delete a CV document
-export async function deleteUserCV(userId: string, cvId: string): Promise<void> {
+export async function deleteUserCV(
+  userId: string,
+  cvId: string
+): Promise<void> {
   const ref = doc(db, "users", userId, "cvs", cvId);
   await deleteDoc(ref);
 }
