@@ -3,7 +3,6 @@ import {
   Box,
   Button,
   Paper,
-  TextField,
   Typography,
   IconButton,
   Stack,
@@ -15,6 +14,7 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
+import TranslatableTextField from "../../../TranslatableTextField";
 
 export interface LanguagesEditorProps {
   languages: string[];
@@ -170,12 +170,12 @@ const LanguagesEditor: React.FC<LanguagesEditorProps> = ({
                   <DragIndicatorIcon fontSize="small" />
                 </Box>
               </Tooltip>
-              <TextField
+              <TranslatableTextField
                 fullWidth
                 label="Language"
                 value={lang || ""}
-                onChange={(e) => updateLanguage(index, e.target.value)}
-                onBlur={(e) => updateLanguage(index, e.target.value)}
+                onChange={(value) => updateLanguage(index, value)}
+                onBlurValue={(value) => updateLanguage(index, value)}
                 margin="normal"
                 variant="outlined"
                 placeholder="e.g., English (native), Swedish (fluent), German (basic)"

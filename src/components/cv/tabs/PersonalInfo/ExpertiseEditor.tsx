@@ -3,7 +3,6 @@ import {
   Box,
   Button,
   Paper,
-  TextField,
   Typography,
   IconButton,
   Stack,
@@ -15,6 +14,7 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
+import TranslatableTextField from "../../../TranslatableTextField";
 
 export interface ExpertiseEditorProps {
   expertise: string[];
@@ -170,12 +170,12 @@ const ExpertiseEditor: React.FC<ExpertiseEditorProps> = ({
                   <DragIndicatorIcon fontSize="small" />
                 </Box>
               </Tooltip>
-              <TextField
+              <TranslatableTextField
                 fullWidth
                 label="Expertise"
                 value={item || ""}
-                onChange={(e) => updateExpertise(index, e.target.value)}
-                onBlur={(e) => updateExpertise(index, e.target.value)}
+                onChange={(value) => updateExpertise(index, value)}
+                onBlurValue={(value) => updateExpertise(index, value)}
                 margin="normal"
                 variant="outlined"
                 placeholder="e.g., React, Kubernetes, Domain-Driven Design"

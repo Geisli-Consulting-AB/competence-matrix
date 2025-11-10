@@ -3,7 +3,6 @@ import {
   Box,
   Button,
   Paper,
-  TextField,
   Typography,
   IconButton,
   Stack,
@@ -15,6 +14,7 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
+import TranslatableTextField from "../../../TranslatableTextField";
 
 export interface RolesEditorProps {
   roles: string[];
@@ -173,12 +173,12 @@ const RolesEditor: React.FC<RolesEditorProps> = ({ roles = [], onChange }) => {
                   <DragIndicatorIcon fontSize="small" />
                 </Box>
               </Tooltip>
-              <TextField
+              <TranslatableTextField
                 fullWidth
                 label="Role"
                 value={role || ""}
-                onChange={(e) => updateRole(index, e.target.value)}
-                onBlur={(e) => updateRole(index, e.target.value)}
+                onChange={(value) => updateRole(index, value)}
+                onBlurValue={(value) => updateRole(index, value)}
                 margin="normal"
                 variant="outlined"
                 placeholder="e.g., Backend Developer, Scrum Master, Tech Lead"

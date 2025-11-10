@@ -1,29 +1,33 @@
-import React, { useState } from 'react';
-import { 
-  Box, 
-  TextField, 
-  Typography, 
-  Paper, 
-  Avatar, 
-  IconButton
-} from '@mui/material';
-import PhotoCamera from '@mui/icons-material/PhotoCamera';
-import type { User } from 'firebase/auth';
-import { useTranslation } from 'react-i18next';
-import SelectedProjectsEditor from './SelectedProjectsEditor';
-import RolesEditor from './RolesEditor';
-import ExpertiseEditor from './ExpertiseEditor';
-import LanguagesEditor from './LanguagesEditor';
-import type { UserProfile } from '../../CVManagement';
+import React, { useState } from "react";
+import {
+  Box,
+  TextField,
+  Typography,
+  Paper,
+  Avatar,
+  IconButton,
+} from "@mui/material";
+import PhotoCamera from "@mui/icons-material/PhotoCamera";
+import type { User } from "firebase/auth";
+import { useTranslation } from "react-i18next";
+import TranslatableTextField from "../../../TranslatableTextField";
+import SelectedProjectsEditor from "./SelectedProjectsEditor";
+import RolesEditor from "./RolesEditor";
+import ExpertiseEditor from "./ExpertiseEditor";
+import LanguagesEditor from "./LanguagesEditor";
+import type { UserProfile } from "../../CVManagement";
 
 export interface PersonalInfoTabProps {
   user: User | null;
   profile: UserProfile;
   onProfileChange: (updates: Partial<UserProfile>) => void;
-  language?: 'en' | 'sv';
+  language?: "en" | "sv";
 }
 
-const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({ profile, onProfileChange }) => {
+const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
+  profile,
+  onProfileChange,
+}) => {
   const { t } = useTranslation();
   const [isUploading, setIsUploading] = useState(false);
 
@@ -31,70 +35,76 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({ profile, onProfileCha
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.match('image.*')) {
-      alert('Please select an image file (JPEG, PNG, etc.)');
+    if (!file.type.match("image.*")) {
+      alert("Please select an image file (JPEG, PNG, etc.)");
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      alert('File size should be less than 5MB');
+      alert("File size should be less than 5MB");
       return;
     }
-    
+
     setIsUploading(true);
-    
+
     const reader = new FileReader();
     reader.onloadend = () => {
       onProfileChange({ photoUrl: reader.result as string });
       setIsUploading(false);
     };
     reader.onerror = () => {
-      console.error('Error reading file');
-      alert('Error reading file. Please try again.');
+      console.error("Error reading file");
+      alert("Error reading file. Please try again.");
       setIsUploading(false);
     };
-    
+
     reader.readAsDataURL(file);
-    event.target.value = '';
+    event.target.value = "";
   };
 
-
   return (
-    <Paper elevation={3} sx={{ p: 3, mb: 3, maxWidth: 600, mx: 'auto' }}>
+    <Paper elevation={3} sx={{ p: 3, mb: 3, maxWidth: 600, mx: "auto" }}>
       <Typography variant="h5" gutterBottom>
         Personal Information
       </Typography>
-      
-      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 4 }}>
-        <Box sx={{ position: 'relative', mb: 2 }}>
+
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          mb: 4,
+        }}
+      >
+        <Box sx={{ position: "relative", mb: 2 }}>
           <Avatar
             src={profile.photoUrl}
             alt={profile.displayName}
-            sx={{ width: 120, height: 120, fontSize: '3rem' }}
+            sx={{ width: 120, height: 120, fontSize: "3rem" }}
           >
-            {profile.displayName?.charAt(0) || 'U'}
+            {profile.displayName?.charAt(0) || "U"}
           </Avatar>
           <input
             accept="image/*"
-            style={{ display: 'none' }}
+            style={{ display: "none" }}
             id="profile-image-upload"
             type="file"
             onChange={handleImageUpload}
             disabled={isUploading}
           />
           <label htmlFor="profile-image-upload">
-            <IconButton 
-              color="primary" 
-              aria-label="upload picture" 
+            <IconButton
+              color="primary"
+              aria-label="upload picture"
               component="span"
               sx={{
-                position: 'absolute',
+                position: "absolute",
                 bottom: 0,
                 right: 0,
-                backgroundColor: 'background.paper',
-                '&:hover': {
-                  backgroundColor: 'action.hover'
-                }
+                backgroundColor: "background.paper",
+                "&:hover": {
+                  backgroundColor: "action.hover",
+                },
               }}
             >
               <PhotoCamera />
@@ -102,41 +112,46 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({ profile, onProfileCha
           </label>
         </Box>
         <Typography variant="caption" color="textSecondary" align="center">
-          {isUploading ? 'Processing...' : 'Click the camera icon to upload a profile picture'}
+          {isUploading
+            ? "Processing..."
+            : "Click the camera icon to upload a profile picture"}
         </Typography>
       </Box>
 
-      <TextField
+      <TranslatableTextField
         fullWidth
         label="Full Name"
-        value={profile.displayName || ''}
-        onChange={(e) => onProfileChange({ displayName: e.target.value })}
+        value={profile.displayName || ""}
+        onChange={(value) => onProfileChange({ displayName: value })}
+        onBlurValue={(value) => onProfileChange({ displayName: value })}
         margin="normal"
         variant="outlined"
       />
       <TextField
         fullWidth
         label="Email"
-        value={profile.email || ''}
+        value={profile.email || ""}
         onChange={(e) => onProfileChange({ email: e.target.value })}
         margin="normal"
         variant="outlined"
         type="email"
       />
-      <TextField
+      <TranslatableTextField
         fullWidth
         label="Title"
-        value={profile.title || ''}
-        onChange={(e) => onProfileChange({ title: e.target.value })}
+        value={profile.title || ""}
+        onChange={(value) => onProfileChange({ title: value })}
+        onBlurValue={(value) => onProfileChange({ title: value })}
         margin="normal"
         variant="outlined"
         placeholder="e.g., Senior Software Engineer"
       />
-      <TextField
+      <TranslatableTextField
         fullWidth
-        label={t('professionalSummary')}
-        value={profile.description || ''}
-        onChange={(e) => onProfileChange({ description: e.target.value })}
+        label={t("professionalSummary")}
+        value={profile.description || ""}
+        onChange={(value) => onProfileChange({ description: value })}
+        onBlurValue={(value) => onProfileChange({ description: value })}
         margin="normal"
         variant="outlined"
         multiline
