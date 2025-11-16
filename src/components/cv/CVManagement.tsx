@@ -13,9 +13,21 @@ import {
   saveUserCV,
   deleteUserCV,
   subscribeToUserCompetences,
-  type CompetenceRow,
 } from "../../firebase";
 import { saveUserCompetences } from "../../firebase";
+import { getUserCv } from "../../firebase";
+import type { CompetenceRow } from "../../firebase";
+
+// Define the CVOverviewItem type locally since it's not in ../../types
+type CVOverviewItem = {
+  id: string;
+  name: string;
+  language?: 'en' | 'sv';
+  ownerName?: string;
+  userId?: string;
+  // When receiving from OverviewTab admin list, data may be unknown
+  data?: unknown;
+};
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -128,6 +140,8 @@ const CVManagement: React.FC<CVManagementProps> = ({
   // State declarations at the top
   const [tabValue, setTabValue] = useState(0);
   const [selectedCvId, setSelectedCvId] = useState<string | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [selectedCvLabel, setSelectedCvLabel] = useState<string>("");
   const [userCompetences, setUserCompetences] = useState<CompetenceRow[]>([]);
   const [profile, setProfile] = useState<UserProfile>({
     displayName: user?.displayName || "",
@@ -159,48 +173,125 @@ const CVManagement: React.FC<CVManagementProps> = ({
   }, [user]);
 
   // Map competences to the format expected by the PDF generator
-  const mappedCompetences = useMemo(() => {
-    // If profile.competences is empty, use all userCompetences
-    const competencesToUse =
-      !profile.competences || profile.competences.length === 0
-        ? userCompetences
-        : userCompetences.filter((comp) =>
-            profile.competences?.includes(comp.name)
-          );
+  const competencesToUse = useMemo<CompetenceRow[]>(() => {
+    const isForeignSelection = !!selectedUserId && selectedUserId !== user?.uid;
 
-    return competencesToUse.map((comp) => ({
-      id: comp.id,
-      name: comp.name,
-      level: comp.level,
-    }));
-  }, [userCompetences, profile.competences]);
+    // When viewing another user's CV (admin foreign selection), use the CV's own competences
+    if (isForeignSelection) {
+      if (profile.competences && profile.competences.length > 0) {
+        return (profile.competences as unknown as CompetenceRow[]).map((comp) => ({
+          id: comp.id || '',
+          name: comp.name || '',
+          level: comp.level || 0,
+        }));
+      }
+      return [];
+    }
+
+    // Otherwise (own CV), prefer live userCompetences; fall back to CV's competences
+    if (userCompetences && userCompetences.length > 0) {
+      return userCompetences;
+    }
+
+    if (profile.competences && profile.competences.length > 0) {
+      return (profile.competences as unknown as CompetenceRow[]).map((comp) => ({
+        id: comp.id || '',
+        name: comp.name || '',
+        level: comp.level || 0,
+      }));
+    }
+
+    return [];
+  }, [userCompetences, profile.competences, selectedUserId, user?.uid]);
 
   // Helper to select a CV and load its data into the working profile
   const selectCvById = useCallback(
-    (id: string | null) => {
+    (id: string | null, cvData?: CVOverviewItem) => {
       if (!id) return;
+      
+      // Set the selected CV ID first
       setSelectedCvId(id);
-      const cv = (profile.cvs || []).find((c) => c.id === id);
-      const data = cv?.data ?? {};
-      setProfile((prev) => ({
-        displayName: data.displayName ?? user?.displayName ?? "",
-        email: data.email ?? user?.email ?? "",
-        photoUrl: data.photoUrl ?? undefined,
-        description: data.description ?? "",
-        roles: data.roles ?? [],
-        languages: data.languages ?? [],
-        expertise: data.expertise ?? [],
-        // If not set for this CV, it means all user competences are implicitly included until modified in the tab
-        competences: data.competences,
-        projects: data.projects ?? [],
-        experiences: data.experiences ?? [],
-        educations: data.educations ?? [],
-        coursesCertifications: data.coursesCertifications ?? [],
-        engagementsPublications: data.engagementsPublications ?? [],
-        cvs: prev.cvs ?? [],
-      }));
+      
+      // If we have the CV data passed in (from admin view or another user's CV), prefer fetching the latest from Firestore
+      if (cvData) {
+        const ownerUid = cvData.userId || null;
+        setSelectedUserId(ownerUid);
+        setSelectedCvLabel(cvData.name || "");
+
+        const hydrate = (payload: Partial<UserProfile>) => {
+          const data = payload || {};
+          const updatedProfile: UserProfile = {
+            displayName: data.displayName || cvData.ownerName || "",
+            email: data.email || "",
+            title: data.title || "",
+            photoUrl: data.photoUrl || undefined,
+            description: data.description || "",
+            roles: Array.isArray(data.roles) ? [...data.roles] : [],
+            languages: Array.isArray(data.languages) ? [...data.languages] : [],
+            expertise: Array.isArray(data.expertise) ? [...data.expertise] : [],
+            competences: Array.isArray(data.competences) ? [...data.competences] : [],
+            projects: Array.isArray(data.projects)
+              ? (data.projects as Project[]).map((p) => ({ ...p }))
+              : [],
+            experiences: Array.isArray(data.experiences)
+              ? (data.experiences as Experience[]).map((e) => ({ ...e }))
+              : [],
+            educations: Array.isArray(data.educations)
+              ? (data.educations as Education[]).map((ed) => ({ ...ed }))
+              : [],
+            coursesCertifications: Array.isArray(data.coursesCertifications)
+              ? (data.coursesCertifications as CourseCert[]).map((cc) => ({ ...cc }))
+              : [],
+            engagementsPublications: Array.isArray(data.engagementsPublications)
+              ? (data.engagementsPublications as EngagementPublication[]).map((ep) => ({ ...ep }))
+              : [],
+            cvs: [...(profile.cvs || [])],
+          };
+
+          setProfile((prev) => ({
+            ...prev,
+            ...updatedProfile,
+            cvs: prev.cvs || [],
+          }));
+          setSelectedCvId(id);
+        };
+
+        // If we have an owner user id, fetch the latest CV to avoid hydrating with stale admin list data
+        if (ownerUid) {
+          getUserCv(ownerUid, id)
+            .then((fresh) => {
+              if (fresh && fresh.data && typeof fresh.data === 'object') {
+                hydrate(fresh.data as Partial<UserProfile>);
+              } else {
+                // Fallback to provided cvData if no fresh data
+                hydrate((cvData.data || {}) as Partial<UserProfile>);
+              }
+            })
+            .catch(() => {
+              hydrate((cvData.data || {}) as Partial<UserProfile>);
+            });
+        } else {
+          hydrate((cvData.data || {}) as Partial<UserProfile>);
+        }
+      } else if (profile.cvs) {
+        // If no cvData is provided, try to find the CV in the current user's CVs
+        const selectedCv = profile.cvs.find(cv => cv.id === id);
+        if (selectedCv) {
+          setSelectedUserId(user?.uid || null);
+          setSelectedCvLabel(selectedCv.name || "");
+          const data = (selectedCv.data || {}) as Partial<UserProfile>;
+          setProfile(prev => ({
+            ...prev, // Keep existing state
+            ...data, // Override with CV data
+            cvs: prev.cvs || [] // Make sure we keep the existing CVs array
+          }));
+          
+          // Update the selected CV ID again to ensure it's set after the profile update
+          setSelectedCvId(id);
+        }
+      }
     },
-    [profile.cvs?.length, user?.uid]
+    [profile.cvs, user?.uid]
   );
 
   // Update profile when user changes
@@ -263,11 +354,16 @@ const CVManagement: React.FC<CVManagementProps> = ({
   // Clear selection if the selected CV no longer exists
   useEffect(() => {
     if (!selectedCvId) return;
+    // If we're viewing another user's CV in admin mode, do NOT clear selection
+    // Admin-selected CVs won't exist in the current user's `profile.cvs` list
+    const isForeignSelection = !!selectedUserId && selectedUserId !== user?.uid;
+    if (isForeignSelection) return;
+
     const exists = (profile.cvs || []).some((cv) => cv.id === selectedCvId);
     if (!exists) {
       setSelectedCvId(null);
     }
-  }, [profile.cvs, selectedCvId]);
+  }, [profile.cvs, selectedCvId, selectedUserId, user?.uid]);
 
   // If no CV selected, ensure we are on Overview tab
   useEffect(() => {
@@ -292,9 +388,11 @@ const CVManagement: React.FC<CVManagementProps> = ({
 
         // Save competences separately if they are updated
         if (updates.competences) {
+          const targetUid = selectedUserId || user.uid;
+          const ownerName = (newProfile.displayName || prev.displayName || "User");
           saveUserCompetences(
-            user.uid,
-            user.displayName || "User",
+            targetUid,
+            ownerName,
             updates.competences.map((name) => ({
               id: `comp-${name.toLowerCase().replace(/\s+/g, "-")}`,
               name,
@@ -350,8 +448,9 @@ const CVManagement: React.FC<CVManagementProps> = ({
 
           // Save to Firestore
           const toSave = finalCv;
-          if (toSave && user) {
-            saveUserCV(user.uid, toSave, false).catch((error) => {
+          const targetUid = selectedUserId || user.uid;
+          if (toSave && targetUid) {
+            saveUserCV(targetUid, toSave, false).catch((error) => {
               console.error("Failed to save CV profile changes:", error);
             });
           }
@@ -363,21 +462,63 @@ const CVManagement: React.FC<CVManagementProps> = ({
           };
         }
 
-        return newProfile;
+        // Foreign CV (not in current user's cvs list) — still persist to the selected user's CV
+        const cleanUpdates = Object.entries(updates).reduce<
+          Partial<UserProfile>
+        >((acc, [key, value]) => {
+          if (key !== "cvs" && value !== undefined) {
+            (acc as Record<string, unknown>)[key] = value;
+          }
+          return acc;
+        }, {});
+
+        const targetUid = selectedUserId || user.uid;
+        if (targetUid) {
+          // When editing a foreign CV (admin editing someone else's CV), avoid overwriting
+          // the CV's top-level name accidentally with the owner's display name.
+          // Only include `name` when we actually know the current CV name.
+          const existingForeignCv = (prev.cvs || []).find((cv) => cv.id === selectedCvId);
+          const knownName = existingForeignCv?.name; // may be undefined for foreign CVs not in local list
+          const explicitLang = (cleanUpdates as unknown as { language?: 'en' | 'sv' }).language;
+
+          const toSave = {
+            id: selectedCvId,
+            // include name only if we know it; otherwise let saveUserCV skip it to preserve stored value
+            ...(knownName ? { name: knownName } : {}),
+            language: existingForeignCv?.language || (explicitLang ?? 'en'),
+            data: {
+              ...(cleanUpdates as Record<string, unknown>),
+            },
+          };
+          saveUserCV(targetUid, toSave, false).catch((error) => {
+            console.error("Failed to save foreign CV profile changes:", error);
+          });
+        }
+
+        // Update local working profile so UI reflects changes immediately
+        return {
+          ...newProfile,
+          ...cleanUpdates,
+        };
       });
     },
-    [user, selectedCvId]
+    [user, selectedCvId, selectedUserId]
   );
 
-  // Auto-select the first CV when entering the page (or when list loads) if none is selected
+  // Auto-select first CV if none selected and we have CVs
   useEffect(() => {
-    if (!selectedCvId) {
-      const firstId = (profile.cvs && profile.cvs[0]?.id) || null;
+    // Only auto-select from the current user's list when we're not viewing
+    // another user's CV (admin mode foreign selection)
+    const isForeignSelection = !!selectedUserId && selectedUserId !== user?.uid;
+    if (isForeignSelection) return;
+
+    if (profile.cvs && profile.cvs.length > 0 && !selectedCvId) {
+      const firstId = profile.cvs[0]?.id;
       if (firstId) {
         selectCvById(firstId);
       }
     }
-  }, [profile.cvs, selectedCvId, selectCvById]);
+  }, [profile.cvs, selectCvById, selectedCvId, selectedUserId, user?.uid]);
 
   return (
     <Box sx={{ width: "100%" }}>
@@ -435,13 +576,9 @@ const CVManagement: React.FC<CVManagementProps> = ({
                 textOverflow: "ellipsis",
                 maxWidth: { xs: 160, sm: 240, md: 320 },
               }}
-              title={
-                (profile.cvs || []).find((cv) => cv.id === selectedCvId)
-                  ?.name || ""
-              }
+              title={selectedCvLabel || (profile.cvs || []).find((cv) => cv.id === selectedCvId)?.name || ""}
             >
-              {(profile.cvs || []).find((cv) => cv.id === selectedCvId)?.name ||
-                ""}
+              {selectedCvLabel || (profile.cvs || []).find((cv) => cv.id === selectedCvId)?.name || ""}
             </Typography>
           )}
         </Box>
@@ -457,7 +594,13 @@ const CVManagement: React.FC<CVManagementProps> = ({
             // Update local state
             setProfile((prev) => ({
               ...prev,
-              cvs: [...cvs],
+              // Map OverviewTab CVs into our CVItem shape
+              cvs: cvs.map((cv) => ({
+                id: cv.id,
+                name: cv.name,
+                language: cv.language || 'en',
+                data: (cv.data as Partial<Omit<UserProfile, 'cvs'>> | undefined),
+              })),
             }));
 
             // Persist to Firestore if user is logged in
@@ -486,6 +629,7 @@ const CVManagement: React.FC<CVManagementProps> = ({
           }}
           selectedId={selectedCvId}
           onSelect={selectCvById}
+          user={user}
           ownerName={profile.displayName}
           ownerTitle={profile.title}
           ownerDescription={profile.description}
@@ -537,7 +681,7 @@ const CVManagement: React.FC<CVManagementProps> = ({
               description: engagement.description,
             })) || []
           }
-          ownerCompetences={mappedCompetences}
+          ownerCompetences={competencesToUse}
         />
       </TabPanel>
 
@@ -585,10 +729,9 @@ const CVManagement: React.FC<CVManagementProps> = ({
       <TabPanel value={tabValue} index={6}>
         <CompetencesCompactTab
           user={user}
+          competencesUserId={selectedUserId || user?.uid || null}
           includedCompetences={profile.competences}
-          onChangeIncluded={(list) =>
-            handleProfileChange({ competences: list })
-          }
+          onChangeIncluded={(list) => handleProfileChange({ competences: list })}
         />
       </TabPanel>
     </Box>

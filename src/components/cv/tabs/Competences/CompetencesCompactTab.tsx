@@ -5,6 +5,8 @@ import { subscribeToUserCompetences, type CompetenceRow } from '../../../../fire
 
 export interface CompetencesCompactTabProps {
   user: User | null;
+  // When provided, competences will be loaded for this user id (used in admin viewing another user's CV)
+  competencesUserId?: string | null;
   // Names of competences included in the current CV. If undefined, all user competences are implicitly included until modified.
   includedCompetences?: string[];
   onChangeIncluded?: (list: string[]) => void;
@@ -18,17 +20,18 @@ const levelLabels: Record<number, string> = {
 
 const order: number[] = [4, 3, 2];
 
-const CompetencesCompactTab: React.FC<CompetencesCompactTabProps> = ({ user, includedCompetences, onChangeIncluded }) => {
+const CompetencesCompactTab: React.FC<CompetencesCompactTabProps> = ({ user, competencesUserId, includedCompetences, onChangeIncluded }) => {
   const [rows, setRows] = useState<CompetenceRow[] | null>(null);
 
   useEffect(() => {
-    if (!user) {
+    const uid = competencesUserId || user?.uid || null;
+    if (!uid) {
       setRows([]);
       return;
     }
-    const unsub = subscribeToUserCompetences(user.uid, (r) => setRows(r));
+    const unsub = subscribeToUserCompetences(uid, (r) => setRows(r));
     return () => unsub();
-  }, [user]);
+  }, [user, competencesUserId]);
 
   // Helper: set of included names. If undefined, treat all user competences (levels 2-4) as included.
   const includedSet = useMemo(() => {
