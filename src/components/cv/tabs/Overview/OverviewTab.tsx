@@ -248,8 +248,34 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
 
     // Normal (non-admin) flow: add to current user's list
     const created = newCV();
-    onChange([created, ...(cvs || [])]);
+    // Seed personal info for new CV so the Personal Information tab is pre-populated
+    const initialPersonalInfo: Record<string, unknown> = {
+      displayName: user?.displayName || "",
+      email: user?.email || "",
+    };
+    // Optimistically update local state (include seeded personal info) and selection
+    onChange([{ ...created, data: initialPersonalInfo }, ...(cvs || [])]);
     if (onSelect) onSelect(created.id);
+    // Persist immediately so email is saved on creation
+    try {
+      if (!user) {
+        console.warn('Attempted to create CV without authenticated user');
+        return;
+      }
+      await saveUserCV(
+        user.uid,
+        {
+          id: created.id,
+          name: created.name,
+          language: created.language as PdfLang,
+          data: initialPersonalInfo,
+        },
+        true
+      );
+    } catch (err) {
+      console.error('Failed to persist new CV on creation:', err);
+      // Optional: surface a non-blocking message; keep optimistic UI entry
+    }
   };
 
   const updateCV = (

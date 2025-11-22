@@ -39,7 +39,8 @@ export async function setAdminStatus(
     userRef,
     {
       email,
-      displayName: displayName || null,
+      // Global name field is ownerName
+      ownerName: displayName || null,
       isAdmin,
       lastUpdated: serverTimestamp(),
       updatedBy: {
@@ -113,7 +114,8 @@ export async function getCurrentUserRole(): Promise<UserRole | null> {
     return {
       isAdmin: !!data?.isAdmin,
       email: data?.email || user.email || '',
-      displayName: data?.displayName || user.displayName || undefined,
+      // Prefer global ownerName, then legacy displayName, then auth displayName
+      displayName: data?.ownerName || data?.displayName || user.displayName || undefined,
       lastUpdated: data?.lastUpdated?.toDate()
     };
   } catch (error) {

@@ -369,6 +369,19 @@ export async function saveUserCV(
     console.error("Error saving CV to Firestore:", error);
     throw error;
   }
+
+  // After saving the CV, optionally backfill the global profile documents with
+  // displayName/email IF they are currently missing there. This is non-destructive
+  // and will never overwrite existing non-empty values.
+  try {
+    const providedData = (cv.data && typeof cv.data === 'object') ? (cv.data as Record<string, unknown>) : undefined;
+    const displayNameFromCv = (providedData?.displayName as string) || ((payload as Partial<CVDoc>).data as any)?.displayName;
+    const emailFromCv = (providedData?.email as string) || ((payload as Partial<CVDoc>).data as any)?.email;
+
+    await ensureGlobalProfileNameEmail(userId, displayNameFromCv, emailFromCv);
+  } catch (e) {
+    console.warn('Non-fatal: failed to backfill global profile name/email', { userId, cvId: cv.id, error: e });
+  }
 }
 
 // Delete a CV document
@@ -408,6 +421,56 @@ export async function getUserEmail(userId: string): Promise<string | null> {
   } catch (error) {
     console.error('Error fetching user email:', { userId, error });
     return null;
+  }
+}
+
+// Ensure global profile docs contain displayName/email if they are missing.
+// This will NOT overwrite existing non-empty values. Safe for both owner and admin.
+export async function ensureGlobalProfileNameEmail(
+  userId: string,
+  displayName?: string,
+  email?: string
+): Promise<void> {
+  // Normalize values
+  const nameVal = (typeof displayName === 'string' && displayName.trim().length > 0) ? displayName.trim() : undefined;
+  const emailVal = (typeof email === 'string' && email.trim().length > 0) ? email.trim() : undefined;
+
+  if (!nameVal && !emailVal) return; // nothing to do
+
+  // Helper to check empty string / missing
+  const isMissing = (v: unknown) => v == null || (typeof v === 'string' && v.trim().length === 0);
+
+  // Backfill userProfiles/{userId}
+  try {
+    const profileRef = doc(db, 'userProfiles', userId);
+    const profileSnap = await getDoc(profileRef);
+    const pdata = profileSnap.exists() ? profileSnap.data() as { ownerName?: string; displayName?: string; email?: string } : {};
+    const toSet: Record<string, unknown> = {};
+    // Global field is ownerName; backfill it if missing regardless of displayName.
+    if (nameVal && isMissing(pdata.ownerName)) toSet.ownerName = nameVal;
+    if (emailVal && isMissing(pdata.email)) toSet.email = emailVal;
+    if (Object.keys(toSet).length > 0) {
+      await setDoc(profileRef, toSet, { merge: true });
+    }
+  } catch (e) {
+    // Non-fatal; just log
+    console.warn('Failed to backfill userProfiles with ownerName/email', { userId, error: e });
+  }
+
+  // Backfill users/{userId}
+  try {
+    const userRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userRef);
+    const udata = userSnap.exists() ? userSnap.data() as { ownerName?: string; displayName?: string; email?: string } : {};
+    const toSet: Record<string, unknown> = {};
+    // Global field is ownerName; backfill it if missing regardless of displayName.
+    if (nameVal && isMissing(udata.ownerName)) toSet.ownerName = nameVal;
+    if (emailVal && isMissing(udata.email)) toSet.email = emailVal;
+    if (Object.keys(toSet).length > 0) {
+      await setDoc(userRef, toSet, { merge: true });
+    }
+  } catch (e) {
+    console.warn('Failed to backfill users doc with ownerName/email', { userId, error: e });
   }
 }
 
