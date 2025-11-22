@@ -7,6 +7,16 @@ service cloud.firestore {
         && request.auth.token.email_verified == true
         && request.auth.token.email.matches('.*@geisli\\.se$');
     }
+    
+    // Check if user is admin
+    function isAdmin() {
+      return isGeisliUser() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
 
     function isOwner(userId) {
       return isGeisliUser() && request.auth.uid == userId;
@@ -27,21 +37,28 @@ service cloud.firestore {
 
       // Competences subcollection
       match /competences/{competenceId} {
-        allow read: if isOwner(userId);
-        allow create, update: if isOwner(userId) && validCompetence(request.resource.data);
-        allow delete: if isOwner(userId);
+        allow read: if isOwner(userId) || isAdmin();
+        allow create, update: if (isOwner(userId) || isAdmin()) && validCompetence(request.resource.data);
+        allow delete: if isOwner(userId) || isAdmin();
       }
 
-      // CVs subcollection
+      // CVs subcollection - allow read if owner or admin
       match /cvs/{cvId} {
-        allow read, write: if isOwner(userId);
+        allow read: if isOwner(userId) || isAdmin();
+        allow write: if isOwner(userId) || isAdmin();
       }
 
       // Allow any geisli.se user to read user documents (for team overview)
       // but only allow users to write to their own documents
       // Also allow reading seeded test data (userIds starting with "user_")
       allow read: if isGeisliUser() || userId.matches('^user_.*');
-      allow write: if isOwner(userId);
+      allow write: if isOwner(userId) || isAdmin();
+    }
+
+    // User profiles collection - allow any authenticated user to read
+    match /userProfiles/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId) || isAdmin();
     }
 
     // Shared categories collection - all geisli.se users can read and write

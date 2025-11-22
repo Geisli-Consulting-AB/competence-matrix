@@ -36,6 +36,8 @@ import CompetenceOverview from "./components/CompetenceOverview";
 import CategoryManagement from "./components/CategoryManagement";
 import CompetenceMapping from "./components/CompetenceMapping";
 import CVManagement from "./components/cv/CVManagement";
+import { AdminPanel } from "./components/admin/AdminPanel";
+import { getCurrentUserRole } from "./utils/admin";
 
 type CompetenceRow = { id: string; name: string; level: number };
 
@@ -47,6 +49,7 @@ function App() {
   const [currentTab, setCurrentTab] = useState(0);
   const [existingCompetences, setExistingCompetences] = useState<string[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [competenceMatrix, setCompetenceMatrix] = useState<{
     [competenceName: string]: { [userId: string]: number };
   }>({});
@@ -112,42 +115,37 @@ function App() {
     };
   }, [user]);
 
-  // Fetch existing competences for autocomplete suggestions
   useEffect(() => {
-    if (!user) return;
+    const fetchData = async () => {
+      if (!user) return;
 
-    const fetchExistingCompetences = async () => {
       try {
-        // Get competences from both users and categories for autocomplete
-        const allCompetences = await getAllCompetencesForAutocomplete();
-        setExistingCompetences(allCompetences);
+        // Fetch competences
+        const competences = await getAllCompetencesForAutocomplete();
+        setExistingCompetences(competences);
         
-        // Still get user data for the competence matrix
-        const data = await getAllUsersCompetences();
-
-        // Build competence matrix
-        const matrix: {
-          [competenceName: string]: { [userId: string]: number };
-        } = {};
-        data.allCompetences.forEach((competenceName) => {
-          matrix[competenceName] = {};
-          data.users.forEach((userData) => {
-            const userCompetence = userData.competences.find(
-              (c) => c.name === competenceName,
-            );
-            if (userCompetence) {
-              matrix[competenceName][userData.userId] = userCompetence.level;
+        // Check if current user is admin
+        const userRole = await getCurrentUserRole();
+        setIsAdmin(userRole?.isAdmin || false);
+        
+        // Fetch competence matrix
+        const users = await getAllUsersCompetences();
+        const matrix: { [key: string]: { [key: string]: number } } = {};
+        users.users.forEach((userData) => {
+          userData.competences.forEach((comp) => {
+            if (!matrix[comp.name]) {
+              matrix[comp.name] = {};
             }
+            matrix[comp.name][userData.userId] = comp.level;
           });
         });
         setCompetenceMatrix(matrix);
-      } catch (error) {
-        console.error("Failed to fetch existing competences:", error);
+      } catch {
         setExistingCompetences([]);
       }
     };
 
-    fetchExistingCompetences();
+    fetchData();
   }, [user, categories]);
 
   const persistAll = async (rows: CompetenceRow[]) => {
@@ -155,8 +153,8 @@ function App() {
     try {
       const ownerName = user.displayName || user.email || "unknown";
       await saveUserCompetences(user.uid, ownerName, rows);
-    } catch (error) {
-      console.error("Failed to save competences to database:", error);
+    } catch (_error) {
+      console.error("Failed to save competences to database:", _error);
     }
   };
 
@@ -164,13 +162,14 @@ function App() {
     try {
       await signInWithPopup(auth, googleProvider);
     } catch (err) {
-      console.error("Popup login failed, trying redirect...", err);
+      // Log the initial popup error and fall back to redirect
+      console.error("Popup login failed", err);
       try {
         // Fallback to redirect if popup fails
         await signInWithRedirect(auth, googleProvider);
       } catch (redirectErr) {
         console.error("Login failed", redirectErr);
-        alert("Login failed. Check console for details.");
+        alert("Login failed. Please try again.");
       }
     }
   };
@@ -254,6 +253,7 @@ function App() {
                 <Tab label={isMobile ? "Manage" : "Manage Competences"} />
                 <Tab label="My Competences" />
                 <Tab label="CV" />
+                {isAdmin && <Tab label="Admin" />}
               </Tabs>
               <Button
                 variant="outlined"
@@ -292,6 +292,7 @@ function App() {
                 </>
               )}
               {currentTab === 3 && <CVManagement user={user} existingCompetences={existingCompetences} />}
+              {currentTab === 4 && isAdmin && <AdminPanel />}
             </Box>
           </Paper>
         )}

@@ -3,19 +3,20 @@ import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import {
   getFirestore,
   doc,
-  Timestamp,
-  FieldValue,
-  onSnapshot,
   setDoc,
-  serverTimestamp,
+  getDoc,
+  getDocs,
   collection,
+  onSnapshot,
+  serverTimestamp,
+  deleteDoc,
   query,
   orderBy,
-  getDocs,
-  deleteDoc,
+  Timestamp,
+  FieldValue,
   documentId,
+  type Unsubscribe,
 } from "firebase/firestore";
-import type { Unsubscribe } from "firebase/firestore";
 
 // Vite environment variables must be prefixed with VITE_
 const firebaseConfig = {
@@ -303,15 +304,63 @@ export async function saveUserCV(
   isNew?: boolean
 ): Promise<void> {
   const ref = doc(db, "users", userId, "cvs", cv.id);
-  const payload: Partial<CVDoc> = {
-    name: cv.name || "Untitled CV",
-    language: cv.language || "en",
-    data: cv.data || {},
+
+  // Build the payload conservatively so we never overwrite existing fields unintentionally.
+  // - Only set `name` and `language` if explicitly provided, or when creating a brand-new CV.
+  // - For `data`, write into nested field paths (e.g., `data.title`) so we don't replace the whole map.
+  const payload: Partial<CVDoc> & Record<string, unknown> = {
     updatedAt: serverTimestamp(),
   };
 
+  // Handle name
+  if (cv.name !== undefined) {
+    payload.name = cv.name || "Untitled CV";
+  } else if (isNew) {
+    payload.name = "Untitled CV";
+  }
+
+  // Handle language
+  if (cv.language !== undefined) {
+    payload.language = cv.language || "en";
+  } else if (isNew) {
+    payload.language = "en";
+  }
+
+  // Handle data: build a nested map so Firestore can merge it properly.
+  // Avoid using dotted paths with setDoc (which would create keys like "data.title").
+  if (cv.data !== undefined && cv.data && typeof cv.data === 'object') {
+    const dataMap: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(cv.data as Record<string, unknown>)) {
+      if (v === undefined) continue; // skip undefined to avoid clearing
+      dataMap[k] = v;
+    }
+    if (Object.keys(dataMap).length > 0) {
+      (payload as Partial<CVDoc>).data = {
+        ...((payload as Partial<CVDoc>).data as Record<string, unknown>),
+        ...dataMap,
+      } as unknown as CVDoc['data'];
+    }
+    // If caller passed an empty object, do nothing (no-op)
+  }
+
   if (isNew) {
     payload.createdAt = serverTimestamp();
+    // Ensure creator/owner email is captured at creation time if not provided
+    try {
+      const currentData = (payload as Partial<CVDoc>).data as Record<string, unknown> | undefined;
+      const hasEmail = typeof currentData?.email === 'string' && (currentData!.email as string).length > 0;
+      if (!hasEmail) {
+        const ownerEmail = (await getUserEmail(userId)) || getAuth().currentUser?.email || null;
+        if (ownerEmail) {
+          (payload as Partial<CVDoc>).data = {
+            ...currentData,
+            email: ownerEmail,
+          } as unknown as CVDoc['data'];
+        }
+      }
+    } catch (e) {
+      console.warn('Could not resolve email for new CV; proceeding without email', { userId, cvId: cv.id, error: e });
+    }
   }
 
   try {
@@ -319,6 +368,19 @@ export async function saveUserCV(
   } catch (error) {
     console.error("Error saving CV to Firestore:", error);
     throw error;
+  }
+
+  // After saving the CV, optionally backfill the global profile documents with
+  // displayName/email IF they are currently missing there. This is non-destructive
+  // and will never overwrite existing non-empty values.
+  try {
+    const providedData = (cv.data && typeof cv.data === 'object') ? (cv.data as Record<string, unknown>) : undefined;
+    const displayNameFromCv = (providedData?.displayName as string) || ((payload as Partial<CVDoc>).data as any)?.displayName;
+    const emailFromCv = (providedData?.email as string) || ((payload as Partial<CVDoc>).data as any)?.email;
+
+    await ensureGlobalProfileNameEmail(userId, displayNameFromCv, emailFromCv);
+  } catch (e) {
+    console.warn('Non-fatal: failed to backfill global profile name/email', { userId, cvId: cv.id, error: e });
   }
 }
 
@@ -329,4 +391,181 @@ export async function deleteUserCV(
 ): Promise<void> {
   const ref = doc(db, "users", userId, "cvs", cvId);
   await deleteDoc(ref);
+}
+
+// Check if current user is an admin
+export async function isAdminUser(user: { uid: string } | null): Promise<boolean> {
+  if (!user) return false;
+  
+  try {
+    const userDoc = await getDoc(doc(db, 'users', user.uid));
+    return userDoc.exists() && userDoc.data()?.isAdmin === true;
+  } catch (error) {
+    console.error('Error checking admin status:', error);
+    return false;
+  }
+}
+
+// Fetch a user's email for creation metadata (used when creating CVs as admin for another user)
+export async function getUserEmail(userId: string): Promise<string | null> {
+  try {
+    // Prefer profile.email if present
+    const profileSnap = await getDoc(doc(db, 'userProfiles', userId));
+    const profileEmail = profileSnap.exists() ? (profileSnap.data() as { email?: string }).email : undefined;
+    if (profileEmail) return profileEmail;
+
+    // Fallback to users doc email if stored there
+    const userSnap = await getDoc(doc(db, 'users', userId));
+    const userEmail = userSnap.exists() ? (userSnap.data() as { email?: string }).email : undefined;
+    return userEmail ?? null;
+  } catch (error) {
+    console.error('Error fetching user email:', { userId, error });
+    return null;
+  }
+}
+
+// Ensure global profile docs contain displayName/email if they are missing.
+// This will NOT overwrite existing non-empty values. Safe for both owner and admin.
+export async function ensureGlobalProfileNameEmail(
+  userId: string,
+  displayName?: string,
+  email?: string
+): Promise<void> {
+  // Normalize values
+  const nameVal = (typeof displayName === 'string' && displayName.trim().length > 0) ? displayName.trim() : undefined;
+  const emailVal = (typeof email === 'string' && email.trim().length > 0) ? email.trim() : undefined;
+
+  if (!nameVal && !emailVal) return; // nothing to do
+
+  // Helper to check empty string / missing
+  const isMissing = (v: unknown) => v == null || (typeof v === 'string' && v.trim().length === 0);
+
+  // Backfill userProfiles/{userId}
+  try {
+    const profileRef = doc(db, 'userProfiles', userId);
+    const profileSnap = await getDoc(profileRef);
+    const pdata = profileSnap.exists() ? profileSnap.data() as { ownerName?: string; displayName?: string; email?: string } : {};
+    const toSet: Record<string, unknown> = {};
+    // Global field is ownerName; backfill it if missing regardless of displayName.
+    if (nameVal && isMissing(pdata.ownerName)) toSet.ownerName = nameVal;
+    if (emailVal && isMissing(pdata.email)) toSet.email = emailVal;
+    if (Object.keys(toSet).length > 0) {
+      await setDoc(profileRef, toSet, { merge: true });
+    }
+  } catch (e) {
+    // Non-fatal; just log
+    console.warn('Failed to backfill userProfiles with ownerName/email', { userId, error: e });
+  }
+
+  // Backfill users/{userId}
+  try {
+    const userRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userRef);
+    const udata = userSnap.exists() ? userSnap.data() as { ownerName?: string; displayName?: string; email?: string } : {};
+    const toSet: Record<string, unknown> = {};
+    // Global field is ownerName; backfill it if missing regardless of displayName.
+    if (nameVal && isMissing(udata.ownerName)) toSet.ownerName = nameVal;
+    if (emailVal && isMissing(udata.email)) toSet.email = emailVal;
+    if (Object.keys(toSet).length > 0) {
+      await setDoc(userRef, toSet, { merge: true });
+    }
+  } catch (e) {
+    console.warn('Failed to backfill users doc with ownerName/email', { userId, error: e });
+  }
+}
+
+// Get all CVs from all users (admin only)
+export async function getAllCVs(): Promise<Array<{
+  id: string;
+  name: string;
+  language?: "en" | "sv";
+  userId: string;
+  ownerName: string;
+  // Include the full CV data so admin selection can hydrate the UI
+  data?: unknown;
+}>> {
+  const currentUser = getAuth().currentUser;
+  if (!currentUser) {
+    throw new Error('Authentication required');
+  }
+
+  const isAdmin = await isAdminUser(currentUser);
+  if (!isAdmin) {
+    throw new Error('Admin access required');
+  }
+
+  try {
+    // Get all users (admin can query users collection)
+    const usersSnapshot = await getDocs(collection(db, "users"));
+
+    // Process users in parallel
+    const cvPromises = usersSnapshot.docs.map(async (userDoc) => {
+      const userId = userDoc.id;
+      const userData = userDoc.data();
+      
+      try {
+        // Get user's profile for display name
+        const profileDoc = await getDoc(doc(db, "userProfiles", userId));
+        const profileData = profileDoc.data() || {};
+        
+        // Get CVs for this user
+        const cvsSnapshot = await getDocs(collection(db, "users", userId, "cvs"));
+        return cvsSnapshot.docs.map(cvDoc => {
+          // Try to get the owner name from different possible fields
+          const ownerName = userData.ownerName || // First try ownerName in user document
+                          profileData.ownerName || // Then try ownerName in profile
+                          profileData.displayName || // Then try displayName in profile
+                          userData.displayName || // Then try displayName in user document
+                          userData.email?.split('@')[0] || // Then use email prefix
+                          'User'; // Fallback
+                          
+          return {
+            id: cvDoc.id,
+            name: cvDoc.data().name || 'Untitled CV',
+            language: cvDoc.data().language || 'en',
+            userId,
+            ownerName,
+            // Pass through the stored CV payload so the consumer can render that user's data
+            data: cvDoc.data().data ?? {},
+          };
+        });
+      } catch (error) {
+        console.error(`Error processing CVs for user ${userId}:`, error);
+        return [];
+      }
+    });
+
+    // Wait for all CVs to be fetched and flatten the array
+    const results = await Promise.all(cvPromises);
+    return results.flat();
+  } catch (error) {
+    console.error('Error fetching CVs:', error);
+    throw error;
+  }
+}
+
+// Fetch a single CV document for a specific user (admin or owner)
+export async function getUserCv(userId: string, cvId: string): Promise<{
+  id: string;
+  name: string;
+  language?: "en" | "sv";
+  userId: string;
+  data?: unknown;
+} | null> {
+  try {
+    const ref = doc(db, "users", userId, "cvs", cvId);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return null;
+    const d = snap.data() as { name?: string; language?: "en" | "sv"; data?: unknown } | undefined;
+    return {
+      id: cvId,
+      name: (d?.name || "Untitled CV") as string,
+      language: (d?.language || "en") as "en" | "sv",
+      userId,
+      data: (d?.data as unknown) ?? {},
+    };
+  } catch (error) {
+    console.error("Error fetching user CV:", { userId, cvId, error });
+    return null;
+  }
 }
