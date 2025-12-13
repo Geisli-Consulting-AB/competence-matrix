@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   Box,
   Button,
@@ -41,20 +41,7 @@ const EducationEditor: React.FC<EducationEditorProps> = ({
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [expandedById, setExpandedById] = useState<Record<string, boolean>>({});
 
-  // Ensure expanded state exists for all items; default collapsed
-  useEffect(() => {
-    setExpandedById((prev) => {
-      const next: Record<string, boolean> = { ...prev };
-      (educations || []).forEach((ed) => {
-        if (ed?.id && next[ed.id] === undefined) next[ed.id] = false;
-      });
-      // Clean removed ids
-      Object.keys(next).forEach((id) => {
-        if (!(educations || []).some((e) => e.id === id)) delete next[id];
-      });
-      return next;
-    });
-  }, [educations]);
+
 
   const addEducation = () => {
     const ne = newEducation();

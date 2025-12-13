@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   Box,
   Button,
@@ -45,18 +45,7 @@ const CoursesCertificationsEditor: React.FC<
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [expandedById, setExpandedById] = useState<Record<string, boolean>>({});
 
-  useEffect(() => {
-    setExpandedById((prev) => {
-      const next: Record<string, boolean> = { ...prev };
-      (items || []).forEach((it) => {
-        if (it?.id && next[it.id] === undefined) next[it.id] = false;
-      });
-      Object.keys(next).forEach((id) => {
-        if (!(items || []).some((e) => e.id === id)) delete next[id];
-      });
-      return next;
-    });
-  }, [items]);
+
 
   const addItem = () => {
     const ni = newItem();

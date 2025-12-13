@@ -64,10 +64,10 @@ export function subscribeToUserCompetences(
     const data = (snap.data() || {}) as { competences?: RawCompetence[] };
     const rows: CompetenceRow[] = Array.isArray(data.competences)
       ? data.competences.map((r: RawCompetence) => ({
-          id: String(r.id ?? ""),
-          name: String(r.name ?? ""),
-          level: Number(r.level ?? 1),
-        }))
+        id: String(r.id ?? ""),
+        name: String(r.name ?? ""),
+        level: Number(r.level ?? 1),
+      }))
       : [];
     onChange(rows);
   });
@@ -116,10 +116,10 @@ export async function getAllUsersCompetences(): Promise<{
     };
     const competences: CompetenceRow[] = Array.isArray(data.competences)
       ? data.competences.map((r: RawCompetence) => ({
-          id: String(r.id ?? ""),
-          name: String(r.name ?? ""),
-          level: Number(r.level ?? 1),
-        }))
+        id: String(r.id ?? ""),
+        name: String(r.name ?? ""),
+        level: Number(r.level ?? 1),
+      }))
       : [];
 
     // Sort competences alphabetically by name
@@ -161,10 +161,10 @@ export async function getAllCompetencesForAutocomplete(): Promise<string[]> {
       const data = doc.data() as { competences?: RawCompetence[] };
       const competences: CompetenceRow[] = Array.isArray(data.competences)
         ? data.competences.map((r: RawCompetence) => ({
-            id: String(r.id ?? ""),
-            name: String(r.name ?? ""),
-            level: Number(r.level ?? 1),
-          }))
+          id: String(r.id ?? ""),
+          name: String(r.name ?? ""),
+          level: Number(r.level ?? 1),
+        }))
         : [];
 
       // Add user competences to set
@@ -374,9 +374,9 @@ export async function saveUserCV(
   // displayName/email IF they are currently missing there. This is non-destructive
   // and will never overwrite existing non-empty values.
   try {
-    const providedData = (cv.data && typeof cv.data === 'object') ? (cv.data as Record<string, unknown>) : undefined;
-    const displayNameFromCv = (providedData?.displayName as string) || ((payload as Partial<CVDoc>).data as any)?.displayName;
-    const emailFromCv = (providedData?.email as string) || ((payload as Partial<CVDoc>).data as any)?.email;
+    const data = (payload as Partial<CVDoc>).data as Record<string, unknown> | undefined;
+    const displayNameFromCv = data?.displayName as string | undefined;
+    const emailFromCv = data?.email as string | undefined;
 
     await ensureGlobalProfileNameEmail(userId, displayNameFromCv, emailFromCv);
   } catch (e) {
@@ -396,7 +396,7 @@ export async function deleteUserCV(
 // Check if current user is an admin
 export async function isAdminUser(user: { uid: string } | null): Promise<boolean> {
   if (!user) return false;
-  
+
   try {
     const userDoc = await getDoc(doc(db, 'users', user.uid));
     return userDoc.exists() && userDoc.data()?.isAdmin === true;
@@ -502,23 +502,23 @@ export async function getAllCVs(): Promise<Array<{
     const cvPromises = usersSnapshot.docs.map(async (userDoc) => {
       const userId = userDoc.id;
       const userData = userDoc.data();
-      
+
       try {
         // Get user's profile for display name
         const profileDoc = await getDoc(doc(db, "userProfiles", userId));
         const profileData = profileDoc.data() || {};
-        
+
         // Get CVs for this user
         const cvsSnapshot = await getDocs(collection(db, "users", userId, "cvs"));
         return cvsSnapshot.docs.map(cvDoc => {
           // Try to get the owner name from different possible fields
           const ownerName = userData.ownerName || // First try ownerName in user document
-                          profileData.ownerName || // Then try ownerName in profile
-                          profileData.displayName || // Then try displayName in profile
-                          userData.displayName || // Then try displayName in user document
-                          userData.email?.split('@')[0] || // Then use email prefix
-                          'User'; // Fallback
-                          
+            profileData.ownerName || // Then try ownerName in profile
+            profileData.displayName || // Then try displayName in profile
+            userData.displayName || // Then try displayName in user document
+            userData.email?.split('@')[0] || // Then use email prefix
+            'User'; // Fallback
+
           return {
             id: cvDoc.id,
             name: cvDoc.data().name || 'Untitled CV',

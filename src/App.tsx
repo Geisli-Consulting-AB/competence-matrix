@@ -61,13 +61,13 @@ function App() {
         const ALLOWED_DOMAIN = 'geisli.se';
         const email = u.email || '';
         const verified = u.emailVerified;
-        
+
         if (!verified) {
           alert(`Please verify your email address before accessing the application.`);
           await signOut(auth);
           return;
         }
-        
+
         if (!email.endsWith(`@${ALLOWED_DOMAIN}`)) {
           alert(`Access restricted to ${ALLOWED_DOMAIN} accounts only.\n\nPlease sign in with your company email address.`);
           await signOut(auth);
@@ -98,9 +98,11 @@ function App() {
 
   useEffect(() => {
     if (!user) {
-      setCompetences([]);
-      setExistingCompetences([]);
-      setCategories([]);
+      setTimeout(() => {
+        setCompetences([]);
+        setExistingCompetences([]);
+        setCategories([]);
+      }, 0);
       return;
     }
     const unsubCompetences = subscribeToUserCompetences(user.uid, (rows) =>
@@ -123,11 +125,11 @@ function App() {
         // Fetch competences
         const competences = await getAllCompetencesForAutocomplete();
         setExistingCompetences(competences);
-        
+
         // Check if current user is admin
         const userRole = await getCurrentUserRole();
         setIsAdmin(userRole?.isAdmin || false);
-        
+
         // Fetch competence matrix
         const users = await getAllUsersCompetences();
         const matrix: { [key: string]: { [key: string]: number } } = {};
@@ -215,9 +217,9 @@ function App() {
               />
             </Box>
             <Box sx={{ textAlign: "center" }}>
-              <Typography 
-                variant="body2" 
-                color="text.secondary" 
+              <Typography
+                variant="body2"
+                color="text.secondary"
                 sx={{ mb: 2, fontStyle: "italic" }}
               >
                 Only verified @geisli.se accounts are allowed

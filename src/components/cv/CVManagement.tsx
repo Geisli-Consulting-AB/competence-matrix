@@ -208,10 +208,10 @@ const CVManagement: React.FC<CVManagementProps> = ({
   const selectCvById = useCallback(
     (id: string | null, cvData?: CVOverviewItem) => {
       if (!id) return;
-      
+
       // Set the selected CV ID first
       setSelectedCvId(id);
-      
+
       // If we have the CV data passed in (from admin view or another user's CV), prefer fetching the latest from Firestore
       if (cvData) {
         const ownerUid = cvData.userId || null;
@@ -285,7 +285,7 @@ const CVManagement: React.FC<CVManagementProps> = ({
             ...data, // Override with CV data
             cvs: prev.cvs || [] // Make sure we keep the existing CVs array
           }));
-          
+
           // Update the selected CV ID again to ensure it's set after the profile update
           setSelectedCvId(id);
         }
@@ -297,37 +297,41 @@ const CVManagement: React.FC<CVManagementProps> = ({
   // Update profile when user changes
   useEffect(() => {
     if (user) {
-      setProfile((prev) => ({
-        ...prev,
-        displayName: user.displayName || "",
-        email: user.email || "",
-        photoUrl: user.photoURL || undefined,
-      }));
+      setTimeout(() => {
+        setProfile((prev) => ({
+          ...prev,
+          displayName: user.displayName || "",
+          email: user.email || "",
+          photoUrl: user.photoURL || undefined,
+        }));
+      }, 0);
     } else {
-      setProfile((prev) => ({
-        ...prev,
-        displayName: "",
-        email: "",
-        title: "",
-        photoUrl: undefined,
-        description: "",
-        roles: [],
-        languages: [],
-        expertise: [],
-        projects: [],
-        experiences: [],
-        educations: [],
-        coursesCertifications: [],
-        engagementsPublications: [],
-        cvs: [],
-      }));
+      setTimeout(() => {
+        setProfile((prev) => ({
+          ...prev,
+          displayName: "",
+          email: "",
+          title: "",
+          photoUrl: undefined,
+          description: "",
+          roles: [],
+          languages: [],
+          expertise: [],
+          projects: [],
+          experiences: [],
+          educations: [],
+          coursesCertifications: [],
+          engagementsPublications: [],
+          cvs: [],
+        }));
+      }, 0);
     }
   }, [user?.uid]);
 
   // Subscribe to user's CVs in Firestore to populate Overview list
   useEffect(() => {
     if (!user) {
-      setProfile((prev) => ({ ...prev, cvs: [] }));
+      setTimeout(() => setProfile((prev) => ({ ...prev, cvs: [] })), 0);
       return;
     }
     const unsub = subscribeToUserCVs(user.uid, (rows) => {
@@ -361,14 +365,14 @@ const CVManagement: React.FC<CVManagementProps> = ({
 
     const exists = (profile.cvs || []).some((cv) => cv.id === selectedCvId);
     if (!exists) {
-      setSelectedCvId(null);
+      setTimeout(() => setSelectedCvId(null), 0);
     }
   }, [profile.cvs, selectedCvId, selectedUserId, user?.uid]);
 
   // If no CV selected, ensure we are on Overview tab
   useEffect(() => {
     if (!selectedCvId && tabValue !== 0) {
-      setTabValue(0);
+      setTimeout(() => setTabValue(0), 0);
     }
   }, [selectedCvId, tabValue]);
 
@@ -515,7 +519,7 @@ const CVManagement: React.FC<CVManagementProps> = ({
     if (profile.cvs && profile.cvs.length > 0 && !selectedCvId) {
       const firstId = profile.cvs[0]?.id;
       if (firstId) {
-        selectCvById(firstId);
+        setTimeout(() => selectCvById(firstId), 0);
       }
     }
   }, [profile.cvs, selectCvById, selectedCvId, selectedUserId, user?.uid]);
