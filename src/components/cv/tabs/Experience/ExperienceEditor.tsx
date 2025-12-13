@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   Box,
   Button,
@@ -67,20 +67,7 @@ const ExperienceEditor: React.FC<ExperienceEditorProps> = ({
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [expandedById, setExpandedById] = useState<Record<string, boolean>>({});
 
-  // Ensure expanded state exists for all items; default collapsed
-  useEffect(() => {
-    setExpandedById((prev) => {
-      const next: Record<string, boolean> = { ...prev };
-      (experiences || []).forEach((exp) => {
-        if (exp?.id && next[exp.id] === undefined) next[exp.id] = false;
-      });
-      // Clean up any ids that no longer exist
-      Object.keys(next).forEach((id) => {
-        if (!(experiences || []).some((e) => e.id === id)) delete next[id];
-      });
-      return next;
-    });
-  }, [experiences]);
+
 
   const addExperience = () => {
     const ne = newExperience();
