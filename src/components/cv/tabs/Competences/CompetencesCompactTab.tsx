@@ -26,7 +26,7 @@ const CompetencesCompactTab: React.FC<CompetencesCompactTabProps> = ({ user, com
   useEffect(() => {
     const uid = competencesUserId || user?.uid || null;
     if (!uid) {
-      setRows([]);
+      setTimeout(() => setRows([]), 0);
       return;
     }
     const unsub = subscribeToUserCompetences(uid, (r) => setRows(r));
