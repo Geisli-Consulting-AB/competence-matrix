@@ -1,12 +1,15 @@
 import React, { useCallback, useEffect } from "react";
-import { Box, Button, Paper, Typography, IconButton, FormControlLabel, Checkbox, Alert, Snackbar, Stack, ToggleButton, ToggleButtonGroup, Tooltip, TextField, MenuItem } from "@mui/material";
+import { Box, Button, Paper, Typography, IconButton, FormControlLabel, Checkbox, Alert, Snackbar, Stack, ToggleButton, ToggleButtonGroup, Tooltip, TextField, MenuItem, Menu, ListItemIcon, ListItemText } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
+import DescriptionIcon from "@mui/icons-material/Description";
+import DownloadIcon from "@mui/icons-material/Download";
 import type { User } from "firebase/auth";
 import { getAllCVs, isAdminUser, saveUserCV, deleteUserCV } from "../../../../firebase";
-import { generateCvPdf } from "../../../../pdf";
+import { DocumentFormat, ExporterFactory, type ExportData } from "../../../../services/exporters";
 import { downloadBlob, filenameFromUserName } from "../../../../pdf/shared";
+import { useTranslation } from "react-i18next";
 
 type PdfLang = 'en' | 'sv';
 
@@ -120,6 +123,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
     }, {} as Record<string, PdfLang>)
   );
 
+  const { t } = useTranslation();
   const [isGenerating, setIsGenerating] = React.useState(false);
   const [showAllCVs, setShowAllCVs] = React.useState(false);
   const [allCVs, setAllCVs] = React.useState<Array<CVOverviewItem & { userId?: string; ownerName?: string }>>([]);
@@ -131,6 +135,8 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
   const [error, setError] = React.useState<string | null>(null);
   // Admin user filter (when viewing all CVs)
   const [selectedUserFilter, setSelectedUserFilter] = React.useState<string | null>(null);
+  // Download menu state
+  const [downloadMenuAnchor, setDownloadMenuAnchor] = React.useState<null | { element: HTMLElement; cvId: string }>(null);
 
   // Build unique user options from allCVs for the filter dropdown
   const userOptions = React.useMemo(() => {
@@ -413,38 +419,70 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
     }
   }, [selectedId, cvs, allCVs]);
 
-  const handleCreatePdf = React.useCallback(
-    (cv: CVOverviewItem) => async (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleDownloadMenuOpen = React.useCallback(
+    (cv: CVOverviewItem) => (e: React.MouseEvent<HTMLButtonElement>) => {
       e.stopPropagation();
+      setDownloadMenuAnchor({ element: e.currentTarget, cvId: cv.id });
+    },
+    []
+  );
+
+  const handleDownloadMenuClose = React.useCallback(() => {
+    setDownloadMenuAnchor(null);
+  }, []);
+
+  const handleDownload = React.useCallback(
+    (format: DocumentFormat) => async () => {
       if (isGenerating) return;
+      handleDownloadMenuClose();
       setIsGenerating(true);
       try {
+        const cv = downloadMenuAnchor?.cvId ? (showAllCVs ? allCVs : cvs).find(c => c.id === downloadMenuAnchor.cvId) : null;
+        if (!cv) {
+          throw new Error('CV not found');
+        }
+
         const lang = (cv.language || cvLang[cv.id] || "en") as PdfLang;
-        const blob = await generateCvPdf(
-          ownerName,
-          ownerDescription,
-          ownerPhotoUrl,
-          ownerRoles,
-          ownerLanguages,
-          ownerExpertise,
-          selectedProjectsMapped,
+
+        // Prepare export data
+        const exportData: ExportData = {
+          name: ownerName,
+          description: ownerDescription,
+          photoDataUrl: ownerPhotoUrl,
+          roles: ownerRoles,
+          languages: ownerLanguages,
+          expertise: ownerExpertise,
+          selectedProjects: selectedProjectsMapped,
           lang,
-          ownerTitle,
-          ownerExperiences,
-          educationsMapped,
-          coursesMapped,
-          competencesMapped,
-          engagementsMapped
-        );
-        downloadBlob(blob, filenameFromUserName(ownerName));
-      } catch {
-        alert("Failed to create PDF.");
+          title: ownerTitle,
+          experiences: ownerExperiences,
+          educations: educationsMapped,
+          courses: coursesMapped,
+          competences: competencesMapped,
+          engagementsPublications: engagementsMapped,
+        };
+
+        // Use factory to create appropriate exporter
+        const exporter = ExporterFactory.createExporter(format);
+        const blob = await exporter.generate(exportData);
+        
+        // Get file extension based on format
+        const extension = format.toLowerCase();
+        downloadBlob(blob, filenameFromUserName(ownerName, extension));
+      } catch (error) {
+        console.error(`Failed to create ${format}:`, error);
+        alert(`Failed to create ${format}.`);
       } finally {
         setIsGenerating(false);
       }
     },
     [
       isGenerating,
+      downloadMenuAnchor,
+      showAllCVs,
+      allCVs,
+      cvs,
+      cvLang,
       ownerName,
       ownerDescription,
       ownerPhotoUrl,
@@ -458,7 +496,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
       coursesMapped,
       competencesMapped,
       engagementsMapped,
-      cvLang,
+      handleDownloadMenuClose,
     ]
   );
 
@@ -618,15 +656,15 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                       </ToggleButton>
                     </ToggleButtonGroup>
                     <Tooltip
-                      title={isGenerating ? "Generating PDF..." : "Create PDF"}
+                      title={isGenerating ? t('downloadAs') + '...' : t('downloadAs')}
                     >
                       <IconButton
-                        aria-label="create pdf"
-                        onClick={handleCreatePdf(cv)}
+                        aria-label="download document"
+                        onClick={handleDownloadMenuOpen(cv)}
                         disabled={isGenerating}
                         size="small"
                       >
-                        <PictureAsPdfIcon />
+                        <DownloadIcon />
                       </IconButton>
                     </Tooltip>
                     <Tooltip title="Delete CV">
@@ -700,6 +738,27 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
           );
         })
       )}
+
+      {/* Download format menu */}
+      <Menu
+        anchorEl={downloadMenuAnchor?.element}
+        open={Boolean(downloadMenuAnchor)}
+        onClose={handleDownloadMenuClose}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <MenuItem onClick={handleDownload(DocumentFormat.PDF)}>
+          <ListItemIcon>
+            <PictureAsPdfIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>{t('downloadAsPdf')}</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={handleDownload(DocumentFormat.DOCX)}>
+          <ListItemIcon>
+            <DescriptionIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>{t('downloadAsDocx')}</ListItemText>
+        </MenuItem>
+      </Menu>
     </Paper>
   );
 };
