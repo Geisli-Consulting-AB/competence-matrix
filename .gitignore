@@ -29,7 +29,7 @@ dist-ssr
 
 # Cursor AI rules (keep local)
 .cursor/rules/
-
+.windsurf
 # Playwright
 /test-results/
 /playwright-report/

@@ -136,9 +136,10 @@ export function downloadBlob(blob: Blob, filename: string) {
 }
 
 /** Build a safe file name from a user name, e.g., "Uzi Landsmann - CV.pdf" */
-export function filenameFromUserName(name?: string) {
+export function filenameFromUserName(name?: string, extension: string = 'pdf') {
   const clean = (name || '').trim();
-  if (!clean) return 'CV.pdf';
+  const ext = extension.toLowerCase();
+  if (!clean) return `CV.${ext}`;
   const safe = clean.replace(/[^A-Za-z0-9 ._-]+/g, '').replace(/\s+/g, ' ').trim();
-  return `${safe} - CV.pdf`;
+  return `${safe} - CV.${ext}`;
 }
