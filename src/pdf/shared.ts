@@ -31,6 +31,69 @@ export function setFontStyle(doc: jsPDF, style: 'normal' | 'bold' = 'normal') {
 }
 
 // Image utilities (browser-only)
+
+/**
+ * Convert an HTTPS URL (like Firebase Storage URLs) to a data URL for PDF rendering.
+ * For Firebase Storage URLs, we add CORS-friendly parameters and optionally use dev proxy.
+ */
+export async function convertUrlToDataUrl(url: string): Promise<string> {
+  // If it's already a data URL, return as-is
+  if (url.startsWith('data:')) {
+    return url;
+  }
+
+  try {
+    let fetchUrl = url;
+    
+    // For Firebase Storage URLs
+    if (url.includes('firebasestorage.googleapis.com')) {
+      // In development, optionally route through Vite proxy to avoid CORS
+      const isDev = import.meta.env.DEV;
+      if (isDev) {
+        // Extract the path after the bucket name
+        const urlObj = new URL(url);
+        fetchUrl = '/firebase-storage' + urlObj.pathname + urlObj.search;
+        // Ensure alt=media is present
+        const separator = fetchUrl.includes('?') ? '&' : '?';
+        if (!fetchUrl.includes('alt=media')) {
+          fetchUrl = fetchUrl + separator + 'alt=media';
+        }
+      } else {
+        // In production, add alt=media parameter for proper CORS
+        const separator = url.includes('?') ? '&' : '?';
+        if (!url.includes('alt=media')) {
+          fetchUrl = url + separator + 'alt=media';
+        }
+      }
+    }
+
+    // Fetch with explicit CORS settings
+    const response = await fetch(fetchUrl, {
+      method: 'GET',
+      mode: import.meta.env.DEV ? 'same-origin' : 'cors',
+      credentials: 'omit'
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const blob = await response.blob();
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = (e) => reject(e);
+      reader.readAsDataURL(blob);
+    });
+
+    return dataUrl;
+  } catch (error) {
+    console.error('[PDF] convertUrlToDataUrl: failed to convert URL to data URL', { url, error });
+    // Return transparent 1x1 pixel as fallback
+    return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+  }
+}
+
 export async function loadImage(dataUrlOrUrl: string): Promise<HTMLImageElement> {
   // If it's already a data URL, use it directly
   if (dataUrlOrUrl.startsWith('data:')) {
