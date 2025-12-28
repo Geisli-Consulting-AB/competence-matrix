@@ -27,8 +27,8 @@ export class DocxExporter implements DocumentExporter {
     // DOCX uses inverted sidebar (light bg, dark text) for Word compatibility
     // Word ignores white text color on dark backgrounds, so we use readable alternative
     const COLOR = {
-      sidebarBg: "E8EEF4", // Light blue-gray for DOCX sidebar
-      sidebarText: "1A2B3C", // Dark blue text for sidebar
+      sidebarBg: "101b29", // Light blue-gray for DOCX sidebar
+      sidebarText: "F5F5F5", // Dark blue text for sidebar
       sidebarBorder: "B8C8D8", // Light border for sidebar headings
       white: "FFFFFF",
       black: "000000",
@@ -211,6 +211,30 @@ export class DocxExporter implements DocumentExporter {
       });
     }
 
+    // Wrap left column content in a nested table for indentation
+    const leftColumnNestedTable = new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      borders: {
+        top: { style: BorderStyle.NONE },
+        bottom: { style: BorderStyle.NONE },
+        left: { style: BorderStyle.NONE },
+        right: { style: BorderStyle.NONE },
+        insideHorizontal: { style: BorderStyle.NONE },
+        insideVertical: { style: BorderStyle.NONE },
+      },
+      rows: [
+        new TableRow({
+          children: [
+            new TableCell({
+              children: leftColumnContent,
+              width: { size: 100, type: WidthType.PERCENTAGE },
+              margins: { top: 720, bottom: 0, left: 400, right: 0 },
+            }),
+          ],
+        }),
+      ],
+    });
+
     // RIGHT COLUMN CONTENT (Main content area)
     const rightColumnContent: Paragraph[] = [];
 
@@ -313,6 +337,10 @@ export class DocxExporter implements DocumentExporter {
     const table = new Table({
       width: { size: 100, type: WidthType.PERCENTAGE },
       layout: TableLayoutType.FIXED,
+      indent: {
+          size: 0,
+          type: WidthType.DXA,
+      },
       borders: {
         top: { style: BorderStyle.NONE },
         bottom: { style: BorderStyle.NONE },
@@ -323,31 +351,50 @@ export class DocxExporter implements DocumentExporter {
       },
       rows: [
         new TableRow({
+          height: {
+            value: convertInchesToTwip(10.8),
+            rule: "exact",
+          },
           children: [
             new TableCell({
-              children: leftColumnContent,
+              children: [leftColumnNestedTable],
               width: { size: 40, type: WidthType.PERCENTAGE },
               shading: { fill: COLOR.sidebarBg },
               verticalAlign: VerticalAlign.TOP,
-              margins: { top: 200, bottom: 200, left: 200, right: 200 },
+              margins: { top: 0, bottom: 0, left: 0, right: 200 },
             }),
             new TableCell({
               children: rightColumnContent,
               width: { size: 60, type: WidthType.PERCENTAGE },
               verticalAlign: VerticalAlign.TOP,
-              margins: { top: 200, bottom: 200, left: 200, right: 200 },
+              margins: { top: 720, bottom: 720, left: 200, right: 200 },
             }),
           ],
         }),
       ],
     });
 
-    const sections: (Paragraph | Table)[] = [table];
-    sections.push(new Paragraph({ children: [new PageBreak()] }));
+    // All content in one section
+    const allContent: (Paragraph | Table)[] = [table];
+
+    // Add page break before Experience section
+    allContent.push(
+      new Paragraph({
+        children: [new PageBreak()],
+      })
+    );
+
+    // Add empty paragraph for top margin on page 2
+    allContent.push(
+      new Paragraph({
+        children: [new TextRun({ text: "" })],
+        spacing: { before: 1440 },
+      })
+    );
 
     // Experience section
     if (data.experiences && data.experiences.length > 0) {
-      sections.push(
+      allContent.push(
         new Paragraph({
           children: [
             createBlackText(strings.experienceTitle, {
@@ -362,7 +409,8 @@ export class DocxExporter implements DocumentExporter {
               color: COLOR.grayLine,
             },
           },
-          spacing: { before: 400, after: 200 },
+          spacing: { before: 0, after: 200 },
+          indent: { left: 720 },
         })
       );
       data.experiences.forEach((exp) => {
@@ -370,35 +418,53 @@ export class DocxExporter implements DocumentExporter {
           exp.startYear || exp.endYear
             ? `${exp.startYear || ""} - ${exp.endYear || "Present"}`
             : "";
-        sections.push(
+        allContent.push(
           new Paragraph({
             children: [
               createBlackText(exp.title, { bold: true }),
               createBlackText(` at ${exp.employer}`),
             ],
             spacing: { after: 100 },
+            indent: { left: 720 },
           })
         );
         if (period) {
-          sections.push(
+          allContent.push(
             new Paragraph({
               children: [createBlackText(period, { italics: true })],
               spacing: { after: 100 },
+              indent: { left: 720 },
             })
           );
         }
-        sections.push(
+        allContent.push(
           new Paragraph({
             children: [createBlackText(exp.description)],
             spacing: { after: 200 },
+            indent: { left: 720 },
           })
         );
       });
     }
 
+    // Add page break before Education section
+    allContent.push(
+      new Paragraph({
+        children: [new PageBreak()],
+      })
+    );
+
+    // Add empty paragraph for top margin on page 3
+    allContent.push(
+      new Paragraph({
+        children: [new TextRun({ text: "" })],
+        spacing: { before: 1440 },
+      })
+    );
+
     // Education section
     if (data.educations && data.educations.length > 0) {
-      sections.push(
+      allContent.push(
         new Paragraph({
           children: [
             createBlackText(strings.educationTitle, {
@@ -413,17 +479,19 @@ export class DocxExporter implements DocumentExporter {
               color: COLOR.grayLine,
             },
           },
-          spacing: { before: 400, after: 200 },
+          spacing: { before: 0, after: 200 },
+          indent: { left: 720 },
         })
       );
       data.educations.forEach((edu) => {
-        sections.push(
+        allContent.push(
           new Paragraph({
             children: [createBlackText(edu.degree, { bold: true })],
             spacing: { after: 100 },
+            indent: { left: 720 },
           })
         );
-        sections.push(
+        allContent.push(
           new Paragraph({
             children: [
               createBlackText(
@@ -433,6 +501,7 @@ export class DocxExporter implements DocumentExporter {
               ),
             ],
             spacing: { after: 200 },
+            indent: { left: 720 },
           })
         );
       });
@@ -440,7 +509,7 @@ export class DocxExporter implements DocumentExporter {
 
     // Courses section
     if (data.courses && data.courses.length > 0) {
-      sections.push(
+      allContent.push(
         new Paragraph({
           children: [
             createBlackText(strings.coursesTitle, {
@@ -456,16 +525,18 @@ export class DocxExporter implements DocumentExporter {
             },
           },
           spacing: { before: 400, after: 200 },
+          indent: { left: 720 },
         })
       );
       data.courses.forEach((course) => {
         const parts = [course.name];
         if (course.issuer) parts.push(` - ${course.issuer}`);
         if (course.year) parts.push(` (${course.year})`);
-        sections.push(
+        allContent.push(
           new Paragraph({
             children: [createBlackText(`• ${parts.join("")}`)],
             spacing: { after: 100 },
+            indent: { left: 720 },
           })
         );
       });
@@ -476,7 +547,7 @@ export class DocxExporter implements DocumentExporter {
       data.engagementsPublications &&
       data.engagementsPublications.length > 0
     ) {
-      sections.push(
+      allContent.push(
         new Paragraph({
           children: [
             createBlackText(strings.engagementsPublicationsTitle, {
@@ -492,13 +563,15 @@ export class DocxExporter implements DocumentExporter {
             },
           },
           spacing: { before: 400, after: 200 },
+          indent: { left: 720 },
         })
       );
       data.engagementsPublications.forEach((item) => {
-        sections.push(
+        allContent.push(
           new Paragraph({
             children: [createBlackText(item.title, { bold: true })],
             spacing: { after: 100 },
+            indent: { left: 720 },
           })
         );
         const details: string[] = [];
@@ -506,29 +579,46 @@ export class DocxExporter implements DocumentExporter {
         if (item.locationOrPublication)
           details.push(item.locationOrPublication);
         if (details.length > 0) {
-          sections.push(
+          allContent.push(
             new Paragraph({
               children: [
                 createBlackText(details.join(" - "), { italics: true }),
               ],
               spacing: { after: 100 },
+              indent: { left: 720 },
             })
           );
         }
         if (item.description) {
-          sections.push(
+          allContent.push(
             new Paragraph({
               children: [createBlackText(item.description)],
               spacing: { after: 200 },
+              indent: { left: 720 },
             })
           );
         }
       });
     }
 
+    // Add page break before Competences section
+    allContent.push(
+      new Paragraph({
+        children: [new PageBreak()],
+      })
+    );
+
+    // Add empty paragraph for top margin on page 4
+    allContent.push(
+      new Paragraph({
+        children: [new TextRun({ text: "" })],
+        spacing: { before: 1440 },
+      })
+    );
+
     // Competences section
     if (data.competences && data.competences.length > 0) {
-      sections.push(
+      allContent.push(
         new Paragraph({
           children: [
             createBlackText(strings.competencesTitle, {
@@ -543,42 +633,45 @@ export class DocxExporter implements DocumentExporter {
               color: COLOR.grayLine,
             },
           },
-          spacing: { before: 400, after: 200 },
+          spacing: { before: 0, after: 200 },
+          indent: { left: 720 },
         })
       );
       data.competences.forEach((category) => {
-        sections.push(
+        allContent.push(
           new Paragraph({
             children: [createBlackText(category.category, { bold: true })],
             spacing: { after: 100 },
+            indent: { left: 720 },
           })
         );
         category.items.forEach((item) => {
-          sections.push(
+          allContent.push(
             new Paragraph({
               children: [createBlackText(`• ${item.name}`)],
               spacing: { after: 100 },
+              indent: { left: 720 },
             })
           );
         });
       });
     }
 
-    // Create document
+    // Create document with single section
     const doc = new Document({
       sections: [
         {
           properties: {
             page: {
               margin: {
-                top: convertInchesToTwip(0.5),
-                bottom: convertInchesToTwip(0.5),
-                left: convertInchesToTwip(0.5),
+                top: convertInchesToTwip(0),
+                bottom: convertInchesToTwip(0),
+                left: convertInchesToTwip(0),
                 right: convertInchesToTwip(0.5),
               },
             },
           },
-          children: sections,
+          children: allContent,
         },
       ],
     });
