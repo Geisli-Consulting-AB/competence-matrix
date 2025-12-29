@@ -6,6 +6,7 @@ import {
   Paper,
   Avatar,
   IconButton,
+  LinearProgress,
 } from "@mui/material";
 import PhotoCamera from "@mui/icons-material/PhotoCamera";
 import type { User } from "firebase/auth";
@@ -16,6 +17,7 @@ import RolesEditor from "./RolesEditor";
 import ExpertiseEditor from "./ExpertiseEditor";
 import LanguagesEditor from "./LanguagesEditor";
 import type { UserProfile } from "../../CVManagement";
+import { uploadProfileImage, deleteProfileImage } from "../../../../firebase";
 
 export interface PersonalInfoTabProps {
   user: User | null;
@@ -25,13 +27,15 @@ export interface PersonalInfoTabProps {
 }
 
 const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
+  user,
   profile,
   onProfileChange,
 }) => {
   const { t } = useTranslation();
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -45,20 +49,43 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
       return;
     }
 
+    if (file.size === 0) {
+      alert("The selected file is empty. Please choose a different image file.");
+      return;
+    }
+
+    if (!user) {
+      alert("You must be logged in to upload a profile picture.");
+      return;
+    }
+
     setIsUploading(true);
+    setUploadProgress(0);
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      onProfileChange({ photoUrl: reader.result as string });
-      setIsUploading(false);
-    };
-    reader.onerror = () => {
-      console.error("Error reading file");
-      alert("Error reading file. Please try again.");
-      setIsUploading(false);
-    };
+    try {
+      // Delete old profile image if it exists and is a Storage URL
+      if (profile.photoUrl && profile.photoUrl.includes('firebasestorage.googleapis.com')) {
+        await deleteProfileImage(profile.photoUrl);
+      }
 
-    reader.readAsDataURL(file);
+      // Upload new image to Firebase Storage
+      const downloadURL = await uploadProfileImage(
+        user.uid,
+        file,
+        (progress) => setUploadProgress(progress)
+      );
+
+      // Update profile with the new download URL
+      onProfileChange({ photoUrl: downloadURL });
+      setIsUploading(false);
+      setUploadProgress(0);
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      alert("Error uploading image. Please try again.");
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
+
     event.target.value = "";
   };
 
@@ -111,11 +138,19 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
             </IconButton>
           </label>
         </Box>
-        <Typography variant="caption" color="textSecondary" align="center">
-          {isUploading
-            ? "Processing..."
-            : "Click the camera icon to upload a profile picture"}
-        </Typography>
+        {isUploading && (
+          <Box sx={{ width: "100%", mt: 1 }}>
+            <LinearProgress variant="determinate" value={uploadProgress} />
+            <Typography variant="caption" color="textSecondary" align="center">
+              Uploading... {Math.round(uploadProgress)}%
+            </Typography>
+          </Box>
+        )}
+        {!isUploading && (
+          <Typography variant="caption" color="textSecondary" align="center">
+            Click the camera icon to upload a profile picture
+          </Typography>
+        )}
       </Box>
 
       <TranslatableTextField
