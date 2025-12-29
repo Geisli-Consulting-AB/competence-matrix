@@ -12,9 +12,59 @@ import {
   TableLayoutType,
   PageBreak,
   convertInchesToTwip,
+  ImageRun,
+  AlignmentType,
 } from "docx";
 import { getPdfStrings } from "../../i18n";
+import {
+  convertUrlToDataUrl,
+  circleCropToPng,
+  loadImage,
+} from "../../pdf/shared";
 import type { DocumentExporter, ExportData } from "./types";
+
+/**
+ * Create a circular avatar image with a border ring, matching the PDF appearance.
+ * Returns a PNG data URL with the circular image and border.
+ */
+async function createCircularAvatarWithBorder(
+  dataUrl: string,
+  imageDiameter: number,
+  borderWidth: number,
+  borderColor: string // hex color like "3E4D69"
+): Promise<string> {
+  // Total size including border
+  const totalSize = imageDiameter + borderWidth * 2;
+
+  // First, crop the image to a circle
+  const circularImage = await circleCropToPng(dataUrl, imageDiameter);
+  const img = await loadImage(circularImage);
+
+  // Create canvas for the final image with border
+  const canvas = document.createElement("canvas");
+  canvas.width = totalSize;
+  canvas.height = totalSize;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return circularImage;
+
+  const centerX = totalSize / 2;
+  const centerY = totalSize / 2;
+  const outerRadius = totalSize / 2;
+  const innerRadius = imageDiameter / 2;
+
+  // Draw the border ring
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, outerRadius, 0, Math.PI * 2);
+  ctx.arc(centerX, centerY, innerRadius, 0, Math.PI * 2, true); // counter-clockwise for hole
+  ctx.closePath();
+  ctx.fillStyle = `#${borderColor}`;
+  ctx.fill();
+
+  // Draw the circular image in the center
+  ctx.drawImage(img, borderWidth, borderWidth, imageDiameter, imageDiameter);
+
+  return canvas.toDataURL("image/png");
+}
 
 /**
  * DOCX document exporter
@@ -23,6 +73,18 @@ import type { DocumentExporter, ExportData } from "./types";
 export class DocxExporter implements DocumentExporter {
   async generate(data: ExportData): Promise<Blob> {
     const strings = getPdfStrings(data.lang);
+
+    // Convert photo URL to data URL if needed (for Firebase Storage URLs)
+    // This matches the PDF exporter's behavior
+    let photoDataUrl = data.photoDataUrl;
+    if (photoDataUrl && !photoDataUrl.startsWith("data:")) {
+      try {
+        photoDataUrl = await convertUrlToDataUrl(photoDataUrl);
+      } catch (error) {
+        console.error("[DOCX] Failed to convert photo URL to data URL:", error);
+        photoDataUrl = undefined;
+      }
+    }
 
     // DOCX uses inverted sidebar (light bg, dark text) for Word compatibility
     // Word ignores white text color on dark backgrounds, so we use readable alternative
@@ -76,6 +138,54 @@ export class DocxExporter implements DocumentExporter {
 
     // LEFT COLUMN CONTENT (Dark sidebar)
     const leftColumnContent: Paragraph[] = [];
+
+    // Avatar/Profile Picture (circular with border, matching PDF)
+    if (photoDataUrl && photoDataUrl.startsWith("data:image")) {
+      try {
+        // Avatar dimensions matching PDF (see avatar.ts)
+        const imageDiameter = 140; // Inner image diameter
+        const borderWidth = 10; // Border thickness (PDF uses lineWidth 20 at different scale)
+        const totalSize = imageDiameter + borderWidth * 2;
+
+        // Create circular avatar with border ring
+        const circularAvatarDataUrl = await createCircularAvatarWithBorder(
+          photoDataUrl,
+          imageDiameter,
+          borderWidth,
+          "3E4D69" // Border color matching PDF: #3e4d69
+        );
+
+        // Extract base64 from the processed PNG
+        const base64Match = circularAvatarDataUrl.match(
+          /^data:image\/png;base64,(.+)$/
+        );
+        if (base64Match) {
+          const base64Data = base64Match[1];
+
+          leftColumnContent.push(
+            new Paragraph({
+              children: [
+                new ImageRun({
+                  type: "png",
+                  data: Uint8Array.from(atob(base64Data), (c) =>
+                    c.charCodeAt(0)
+                  ),
+                  transformation: {
+                    width: totalSize,
+                    height: totalSize,
+                  },
+                }),
+              ],
+              alignment: AlignmentType.CENTER,
+              spacing: { before: 400, after: 300 },
+            })
+          );
+        }
+      } catch (error) {
+        console.error("[DOCX] Failed to create circular avatar:", error);
+        // Skip avatar on error
+      }
+    }
 
     // Contact Section
     leftColumnContent.push(
@@ -338,8 +448,8 @@ export class DocxExporter implements DocumentExporter {
       width: { size: 100, type: WidthType.PERCENTAGE },
       layout: TableLayoutType.FIXED,
       indent: {
-          size: 0,
-          type: WidthType.DXA,
+        size: 0,
+        type: WidthType.DXA,
       },
       borders: {
         top: { style: BorderStyle.NONE },
@@ -352,7 +462,8 @@ export class DocxExporter implements DocumentExporter {
       rows: [
         new TableRow({
           height: {
-            value: convertInchesToTwip(10.8),
+            // US Letter page is 11 inches tall, with 0 top/bottom margins
+            value: convertInchesToTwip(11.5),
             rule: "exact",
           },
           children: [
