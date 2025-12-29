@@ -17,6 +17,14 @@ import {
   documentId,
   type Unsubscribe,
 } from "firebase/firestore";
+import {
+  getStorage,
+  ref,
+  uploadBytesResumable,
+  getDownloadURL,
+  deleteObject,
+  type UploadTaskSnapshot,
+} from "firebase/storage";
 
 // Vite environment variables must be prefixed with VITE_
 const firebaseConfig = {
@@ -43,6 +51,7 @@ googleProvider.setCustomParameters({
 });
 
 export const db = getFirestore(app);
+export const storage = getStorage(app);
 
 // Shared types
 export type CompetenceRow = { id: string; name: string; level: number };
@@ -256,6 +265,49 @@ export function subscribeToSharedCategories(
   );
 }
 
+/**
+ * Recursively sanitize data for Firestore by removing undefined values,
+ * functions, and other non-serializable data.
+ */
+function sanitizeForFirestore(obj: unknown): unknown {
+  if (obj === null || obj === undefined) {
+    return null;
+  }
+  
+  if (typeof obj === 'function') {
+    return null;
+  }
+  
+  if (obj instanceof Date) {
+    return obj;
+  }
+  
+  if (obj instanceof File || obj instanceof Blob) {
+    // Don't allow File or Blob objects in Firestore
+    return null;
+  }
+  
+  if (Array.isArray(obj)) {
+    return obj
+      .map(item => sanitizeForFirestore(item))
+      .filter(item => item !== null && item !== undefined);
+  }
+  
+  if (typeof obj === 'object') {
+    const cleaned: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
+      const sanitized = sanitizeForFirestore(value);
+      if (sanitized !== null && sanitized !== undefined) {
+        cleaned[key] = sanitized;
+      }
+    }
+    return cleaned;
+  }
+  
+  // Primitive values (string, number, boolean)
+  return obj;
+}
+
 // ===== CV management (users/{userId}/cvs subcollection) =====
 export interface CVDoc {
   id: string;
@@ -329,8 +381,10 @@ export async function saveUserCV(
   // Handle data: build a nested map so Firestore can merge it properly.
   // Avoid using dotted paths with setDoc (which would create keys like "data.title").
   if (cv.data !== undefined && cv.data && typeof cv.data === 'object') {
+    // Sanitize the data to remove any non-serializable values
+    const sanitized = sanitizeForFirestore(cv.data) as Record<string, unknown>;
     const dataMap: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(cv.data as Record<string, unknown>)) {
+    for (const [k, v] of Object.entries(sanitized)) {
       if (v === undefined) continue; // skip undefined to avoid clearing
       dataMap[k] = v;
     }
@@ -471,6 +525,98 @@ export async function ensureGlobalProfileNameEmail(
     }
   } catch (e) {
     console.warn('Failed to backfill users doc with ownerName/email', { userId, error: e });
+  }
+}
+
+// ===== Profile Image Management (Firebase Storage) =====
+
+/**
+ * Upload a profile image to Firebase Storage and return the download URL.
+ * Images are stored at: profile-images/{userId}/{timestamp}-{filename}
+ */
+export async function uploadProfileImage(
+  userId: string,
+  file: File,
+  onProgress?: (progress: number) => void
+): Promise<string> {
+  // Generate a unique filename with timestamp
+  const timestamp = Date.now();
+  const safeFilename = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const storagePath = `profile-images/${userId}/${timestamp}-${safeFilename}`;
+  
+  const storageRef = ref(storage, storagePath);
+  const uploadTask = uploadBytesResumable(storageRef, file, {
+    contentType: file.type,
+    cacheControl: 'public, max-age=31536000', // Cache for 1 year
+  });
+
+  return new Promise((resolve, reject) => {
+    uploadTask.on(
+      'state_changed',
+      (snapshot: UploadTaskSnapshot) => {
+        if (onProgress) {
+          const { bytesTransferred, totalBytes } = snapshot;
+          let progress = 0;
+
+          if (totalBytes > 0) {
+            progress = (bytesTransferred / totalBytes) * 100;
+          }
+
+          if (!Number.isFinite(progress) || Number.isNaN(progress)) {
+            progress = 0;
+          }
+
+          onProgress(progress);
+        }
+      },
+      (error) => {
+        console.error('Error uploading profile image:', error);
+        reject(error);
+      },
+      async () => {
+        try {
+          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+          resolve(downloadURL);
+        } catch (error) {
+          console.error('Error getting download URL:', error);
+          reject(error);
+        }
+      }
+    );
+  });
+}
+
+/**
+ * Delete a profile image from Firebase Storage given its download URL.
+ * Extracts the storage path from the URL and deletes the file.
+ */
+export async function deleteProfileImage(downloadUrl: string): Promise<void> {
+  try {
+    // Extract the storage path from the download URL
+    // Firebase Storage URLs format: https://firebasestorage.googleapis.com/v0/b/{bucket}/o/{path}?...
+    const url = new URL(downloadUrl);
+    const pathMatch = url.pathname.match(/\/o\/(.+)/);
+    
+    if (!pathMatch || !pathMatch[1]) {
+      console.warn('Could not extract storage path from URL:', downloadUrl);
+      return;
+    }
+    
+    // Decode the path (Firebase encodes slashes as %2F)
+    const storagePath = decodeURIComponent(pathMatch[1]);
+    
+    // Only delete if it's in the profile-images directory
+    if (!storagePath.startsWith('profile-images/')) {
+      console.warn('Refusing to delete file outside profile-images directory:', storagePath);
+      return;
+    }
+    
+    const storageRef = ref(storage, storagePath);
+    await deleteObject(storageRef);
+    console.log('Successfully deleted profile image:', storagePath);
+  } catch (error) {
+    // Don't throw on delete errors - the file might already be deleted
+    console.warn('Error deleting profile image:', error);
   }
 }
 

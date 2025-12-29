@@ -1,4 +1,4 @@
-import { newDoc, getMetrics, toBlob, downloadBlob, filenameFromUserName, ensureInterFonts } from './shared';
+import { newDoc, getMetrics, toBlob, downloadBlob, filenameFromUserName, ensureInterFonts, convertUrlToDataUrl } from './shared';
 import { buildPersonalInfo } from './page1PersonalInfo/page1';
 import { buildExperiencePage } from './page2Experience/page2';
 import { buildEducationAndMorePage } from './page3EducationAndMore/page3';
@@ -56,10 +56,22 @@ export async function generateCvPdf(
   // Get translations for the specified language
   const strings = getPdfStrings(lang);
 
+  // Convert photo URL to data URL if needed (for Firebase Storage URLs)
+  let photoDataUrlConverted = photoDataUrl;
+  if (photoDataUrl && !photoDataUrl.startsWith('data:')) {
+    try {
+      photoDataUrlConverted = await convertUrlToDataUrl(photoDataUrl);
+    } catch (error) {
+      console.error('[PDF] Failed to convert photo URL to data URL:', error);
+      // Continue with undefined photo
+      photoDataUrlConverted = undefined;
+    }
+  }
+
   // Build the first page with both columns
   await buildPersonalInfo(doc, m, {
     // Left column options
-    photoDataUrl,
+    photoDataUrl: photoDataUrlConverted,
     roles,
     languages,
     expertise,
