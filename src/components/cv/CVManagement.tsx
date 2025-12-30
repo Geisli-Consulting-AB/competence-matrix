@@ -22,7 +22,7 @@ import type { CompetenceRow } from "../../firebase";
 type CVOverviewItem = {
   id: string;
   name: string;
-  language?: 'en' | 'sv';
+  language?: "en" | "sv";
   ownerName?: string;
   userId?: string;
   // When receiving from OverviewTab admin list, data may be unknown
@@ -179,11 +179,13 @@ const CVManagement: React.FC<CVManagementProps> = ({
     // When viewing another user's CV (admin foreign selection), use the CV's own competences
     if (isForeignSelection) {
       if (profile.competences && profile.competences.length > 0) {
-        return (profile.competences as unknown as CompetenceRow[]).map((comp) => ({
-          id: comp.id || '',
-          name: comp.name || '',
-          level: comp.level || 0,
-        }));
+        return (profile.competences as unknown as CompetenceRow[]).map(
+          (comp) => ({
+            id: comp.id || "",
+            name: comp.name || "",
+            level: comp.level || 0,
+          })
+        );
       }
       return [];
     }
@@ -194,11 +196,13 @@ const CVManagement: React.FC<CVManagementProps> = ({
     }
 
     if (profile.competences && profile.competences.length > 0) {
-      return (profile.competences as unknown as CompetenceRow[]).map((comp) => ({
-        id: comp.id || '',
-        name: comp.name || '',
-        level: comp.level || 0,
-      }));
+      return (profile.competences as unknown as CompetenceRow[]).map(
+        (comp) => ({
+          id: comp.id || "",
+          name: comp.name || "",
+          level: comp.level || 0,
+        })
+      );
     }
 
     return [];
@@ -229,7 +233,9 @@ const CVManagement: React.FC<CVManagementProps> = ({
             roles: Array.isArray(data.roles) ? [...data.roles] : [],
             languages: Array.isArray(data.languages) ? [...data.languages] : [],
             expertise: Array.isArray(data.expertise) ? [...data.expertise] : [],
-            competences: Array.isArray(data.competences) ? [...data.competences] : [],
+            competences: Array.isArray(data.competences)
+              ? [...data.competences]
+              : [],
             projects: Array.isArray(data.projects)
               ? (data.projects as Project[]).map((p) => ({ ...p }))
               : [],
@@ -240,10 +246,14 @@ const CVManagement: React.FC<CVManagementProps> = ({
               ? (data.educations as Education[]).map((ed) => ({ ...ed }))
               : [],
             coursesCertifications: Array.isArray(data.coursesCertifications)
-              ? (data.coursesCertifications as CourseCert[]).map((cc) => ({ ...cc }))
+              ? (data.coursesCertifications as CourseCert[]).map((cc) => ({
+                  ...cc,
+                }))
               : [],
             engagementsPublications: Array.isArray(data.engagementsPublications)
-              ? (data.engagementsPublications as EngagementPublication[]).map((ep) => ({ ...ep }))
+              ? (data.engagementsPublications as EngagementPublication[]).map(
+                  (ep) => ({ ...ep })
+                )
               : [],
             cvs: [...(profile.cvs || [])],
           };
@@ -260,7 +270,7 @@ const CVManagement: React.FC<CVManagementProps> = ({
         if (ownerUid) {
           getUserCv(ownerUid, id)
             .then((fresh) => {
-              if (fresh && fresh.data && typeof fresh.data === 'object') {
+              if (fresh && fresh.data && typeof fresh.data === "object") {
                 hydrate(fresh.data as Partial<UserProfile>);
               } else {
                 // Fallback to provided cvData if no fresh data
@@ -275,15 +285,15 @@ const CVManagement: React.FC<CVManagementProps> = ({
         }
       } else if (profile.cvs) {
         // If no cvData is provided, try to find the CV in the current user's CVs
-        const selectedCv = profile.cvs.find(cv => cv.id === id);
+        const selectedCv = profile.cvs.find((cv) => cv.id === id);
         if (selectedCv) {
           setSelectedUserId(user?.uid || null);
           setSelectedCvLabel(selectedCv.name || "");
           const data = (selectedCv.data || {}) as Partial<UserProfile>;
-          setProfile(prev => ({
+          setProfile((prev) => ({
             ...prev, // Keep existing state
             ...data, // Override with CV data
-            cvs: prev.cvs || [] // Make sure we keep the existing CVs array
+            cvs: prev.cvs || [], // Make sure we keep the existing CVs array
           }));
 
           // Update the selected CV ID again to ensure it's set after the profile update
@@ -297,16 +307,16 @@ const CVManagement: React.FC<CVManagementProps> = ({
   // Update profile when user changes
   useEffect(() => {
     if (user) {
-      setTimeout(() => {
+      queueMicrotask(() => {
         setProfile((prev) => ({
           ...prev,
           displayName: user.displayName || "",
           email: user.email || "",
           photoUrl: user.photoURL || undefined,
         }));
-      }, 0);
+      });
     } else {
-      setTimeout(() => {
+      queueMicrotask(() => {
         setProfile((prev) => ({
           ...prev,
           displayName: "",
@@ -324,14 +334,14 @@ const CVManagement: React.FC<CVManagementProps> = ({
           engagementsPublications: [],
           cvs: [],
         }));
-      }, 0);
+      });
     }
-  }, [user?.uid]);
+  }, [user]);
 
   // Subscribe to user's CVs in Firestore to populate Overview list
   useEffect(() => {
     if (!user) {
-      setTimeout(() => setProfile((prev) => ({ ...prev, cvs: [] })), 0);
+      queueMicrotask(() => setProfile((prev) => ({ ...prev, cvs: [] })));
       return;
     }
     const unsub = subscribeToUserCVs(user.uid, (rows) => {
@@ -353,7 +363,7 @@ const CVManagement: React.FC<CVManagementProps> = ({
       });
     });
     return () => unsub();
-  }, [user?.uid]);
+  }, [user]);
 
   // Clear selection if the selected CV no longer exists
   useEffect(() => {
@@ -365,14 +375,14 @@ const CVManagement: React.FC<CVManagementProps> = ({
 
     const exists = (profile.cvs || []).some((cv) => cv.id === selectedCvId);
     if (!exists) {
-      setTimeout(() => setSelectedCvId(null), 0);
+      queueMicrotask(() => setSelectedCvId(null));
     }
   }, [profile.cvs, selectedCvId, selectedUserId, user?.uid]);
 
   // If no CV selected, ensure we are on Overview tab
   useEffect(() => {
     if (!selectedCvId && tabValue !== 0) {
-      setTimeout(() => setTabValue(0), 0);
+      queueMicrotask(() => setTabValue(0));
     }
   }, [selectedCvId, tabValue]);
 
@@ -393,7 +403,8 @@ const CVManagement: React.FC<CVManagementProps> = ({
         // Save competences separately if they are updated
         if (updates.competences) {
           const targetUid = selectedUserId || user.uid;
-          const ownerName = (newProfile.displayName || prev.displayName || "User");
+          const ownerName =
+            newProfile.displayName || prev.displayName || "User";
           saveUserCompetences(
             targetUid,
             ownerName,
@@ -481,15 +492,19 @@ const CVManagement: React.FC<CVManagementProps> = ({
           // When editing a foreign CV (admin editing someone else's CV), avoid overwriting
           // the CV's top-level name accidentally with the owner's display name.
           // Only include `name` when we actually know the current CV name.
-          const existingForeignCv = (prev.cvs || []).find((cv) => cv.id === selectedCvId);
+          const existingForeignCv = (prev.cvs || []).find(
+            (cv) => cv.id === selectedCvId
+          );
           const knownName = existingForeignCv?.name; // may be undefined for foreign CVs not in local list
-          const explicitLang = (cleanUpdates as unknown as { language?: 'en' | 'sv' }).language;
+          const explicitLang = (
+            cleanUpdates as unknown as { language?: "en" | "sv" }
+          ).language;
 
           const toSave = {
             id: selectedCvId,
             // include name only if we know it; otherwise let saveUserCV skip it to preserve stored value
             ...(knownName ? { name: knownName } : {}),
-            language: existingForeignCv?.language || (explicitLang ?? 'en'),
+            language: existingForeignCv?.language || (explicitLang ?? "en"),
             data: {
               ...(cleanUpdates as Record<string, unknown>),
             },
@@ -519,7 +534,7 @@ const CVManagement: React.FC<CVManagementProps> = ({
     if (profile.cvs && profile.cvs.length > 0 && !selectedCvId) {
       const firstId = profile.cvs[0]?.id;
       if (firstId) {
-        setTimeout(() => selectCvById(firstId), 0);
+        queueMicrotask(() => selectCvById(firstId));
       }
     }
   }, [profile.cvs, selectCvById, selectedCvId, selectedUserId, user?.uid]);
@@ -580,9 +595,17 @@ const CVManagement: React.FC<CVManagementProps> = ({
                 textOverflow: "ellipsis",
                 maxWidth: { xs: 160, sm: 240, md: 320 },
               }}
-              title={selectedCvLabel || (profile.cvs || []).find((cv) => cv.id === selectedCvId)?.name || ""}
+              title={
+                selectedCvLabel ||
+                (profile.cvs || []).find((cv) => cv.id === selectedCvId)
+                  ?.name ||
+                ""
+              }
             >
-              {selectedCvLabel || (profile.cvs || []).find((cv) => cv.id === selectedCvId)?.name || ""}
+              {selectedCvLabel ||
+                (profile.cvs || []).find((cv) => cv.id === selectedCvId)
+                  ?.name ||
+                ""}
             </Typography>
           )}
         </Box>
@@ -602,8 +625,8 @@ const CVManagement: React.FC<CVManagementProps> = ({
               cvs: cvs.map((cv) => ({
                 id: cv.id,
                 name: cv.name,
-                language: cv.language || 'en',
-                data: (cv.data as Partial<Omit<UserProfile, 'cvs'>> | undefined),
+                language: cv.language || "en",
+                data: cv.data as Partial<Omit<UserProfile, "cvs">> | undefined,
               })),
             }));
 
@@ -656,7 +679,11 @@ const CVManagement: React.FC<CVManagementProps> = ({
               employer: exp.employer,
               description: exp.description,
               startYear: exp.startYear,
+              startMonth: exp.startMonth,
               endYear: exp.endYear,
+              endMonth: exp.endMonth,
+              ongoing: exp.ongoing,
+              competences: exp.competences,
             })) || []
           }
           ownerEducations={
@@ -681,8 +708,10 @@ const CVManagement: React.FC<CVManagementProps> = ({
               id: engagement.id,
               title: engagement.title,
               organization: engagement.locationOrPublication,
+              locationOrPublication: engagement.locationOrPublication,
               year: engagement.year,
               description: engagement.description,
+              url: engagement.url,
             })) || []
           }
           ownerCompetences={competencesToUse}
@@ -735,7 +764,9 @@ const CVManagement: React.FC<CVManagementProps> = ({
           user={user}
           competencesUserId={selectedUserId || user?.uid || null}
           includedCompetences={profile.competences}
-          onChangeIncluded={(list) => handleProfileChange({ competences: list })}
+          onChangeIncluded={(list) =>
+            handleProfileChange({ competences: list })
+          }
         />
       </TabPanel>
     </Box>
