@@ -463,7 +463,7 @@ export class DocxExporter implements DocumentExporter {
         new TableRow({
           height: {
             // US Letter page is 11 inches tall, with 0 top/bottom margins
-            value: convertInchesToTwip(11.5),
+            value: convertInchesToTwip(10.8),
             rule: "exact",
           },
           children: [
@@ -712,23 +712,23 @@ export class DocxExporter implements DocumentExporter {
       });
     }
 
-    // Add page break before Competences section
-    allContent.push(
-      new Paragraph({
-        children: [new PageBreak()],
-      })
-    );
-
-    // Add empty paragraph for top margin on page 4
-    allContent.push(
-      new Paragraph({
-        children: [new TextRun({ text: "" })],
-        spacing: { before: 1440 },
-      })
-    );
-
     // Competences section
     if (data.competences && data.competences.length > 0) {
+      // Add page break before Competences section (only if Competences has content)
+      allContent.push(
+        new Paragraph({
+          children: [new PageBreak()],
+        })
+      );
+
+      // Add empty paragraph for top margin on new page
+      allContent.push(
+        new Paragraph({
+          children: [new TextRun({ text: "" })],
+          spacing: { before: 1440 },
+        })
+      );
+
       allContent.push(
         new Paragraph({
           children: [
