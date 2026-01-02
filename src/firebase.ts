@@ -11,6 +11,7 @@ import {
   serverTimestamp,
   deleteDoc,
   query,
+  where,
   orderBy,
   Timestamp,
   FieldValue,
@@ -73,10 +74,10 @@ export function subscribeToUserCompetences(
     const data = (snap.data() || {}) as { competences?: RawCompetence[] };
     const rows: CompetenceRow[] = Array.isArray(data.competences)
       ? data.competences.map((r: RawCompetence) => ({
-        id: String(r.id ?? ""),
-        name: String(r.name ?? ""),
-        level: Number(r.level ?? 1),
-      }))
+          id: String(r.id ?? ""),
+          name: String(r.name ?? ""),
+          level: Number(r.level ?? 1),
+        }))
       : [];
     onChange(rows);
   });
@@ -125,10 +126,10 @@ export async function getAllUsersCompetences(): Promise<{
     };
     const competences: CompetenceRow[] = Array.isArray(data.competences)
       ? data.competences.map((r: RawCompetence) => ({
-        id: String(r.id ?? ""),
-        name: String(r.name ?? ""),
-        level: Number(r.level ?? 1),
-      }))
+          id: String(r.id ?? ""),
+          name: String(r.name ?? ""),
+          level: Number(r.level ?? 1),
+        }))
       : [];
 
     // Sort competences alphabetically by name
@@ -170,10 +171,10 @@ export async function getAllCompetencesForAutocomplete(): Promise<string[]> {
       const data = doc.data() as { competences?: RawCompetence[] };
       const competences: CompetenceRow[] = Array.isArray(data.competences)
         ? data.competences.map((r: RawCompetence) => ({
-          id: String(r.id ?? ""),
-          name: String(r.name ?? ""),
-          level: Number(r.level ?? 1),
-        }))
+            id: String(r.id ?? ""),
+            name: String(r.name ?? ""),
+            level: Number(r.level ?? 1),
+          }))
         : [];
 
       // Add user competences to set
@@ -273,27 +274,27 @@ function sanitizeForFirestore(obj: unknown): unknown {
   if (obj === null || obj === undefined) {
     return null;
   }
-  
-  if (typeof obj === 'function') {
+
+  if (typeof obj === "function") {
     return null;
   }
-  
+
   if (obj instanceof Date) {
     return obj;
   }
-  
+
   if (obj instanceof File || obj instanceof Blob) {
     // Don't allow File or Blob objects in Firestore
     return null;
   }
-  
+
   if (Array.isArray(obj)) {
     return obj
-      .map(item => sanitizeForFirestore(item))
-      .filter(item => item !== null && item !== undefined);
+      .map((item) => sanitizeForFirestore(item))
+      .filter((item) => item !== null && item !== undefined);
   }
-  
-  if (typeof obj === 'object') {
+
+  if (typeof obj === "object") {
     const cleaned: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
       const sanitized = sanitizeForFirestore(value);
@@ -303,7 +304,7 @@ function sanitizeForFirestore(obj: unknown): unknown {
     }
     return cleaned;
   }
-  
+
   // Primitive values (string, number, boolean)
   return obj;
 }
@@ -380,7 +381,7 @@ export async function saveUserCV(
 
   // Handle data: build a nested map so Firestore can merge it properly.
   // Avoid using dotted paths with setDoc (which would create keys like "data.title").
-  if (cv.data !== undefined && cv.data && typeof cv.data === 'object') {
+  if (cv.data !== undefined && cv.data && typeof cv.data === "object") {
     // Sanitize the data to remove any non-serializable values
     const sanitized = sanitizeForFirestore(cv.data) as Record<string, unknown>;
     const dataMap: Record<string, unknown> = {};
@@ -392,7 +393,7 @@ export async function saveUserCV(
       (payload as Partial<CVDoc>).data = {
         ...((payload as Partial<CVDoc>).data as Record<string, unknown>),
         ...dataMap,
-      } as unknown as CVDoc['data'];
+      } as unknown as CVDoc["data"];
     }
     // If caller passed an empty object, do nothing (no-op)
   }
@@ -401,19 +402,27 @@ export async function saveUserCV(
     payload.createdAt = serverTimestamp();
     // Ensure creator/owner email is captured at creation time if not provided
     try {
-      const currentData = (payload as Partial<CVDoc>).data as Record<string, unknown> | undefined;
-      const hasEmail = typeof currentData?.email === 'string' && (currentData!.email as string).length > 0;
+      const currentData = (payload as Partial<CVDoc>).data as
+        | Record<string, unknown>
+        | undefined;
+      const hasEmail =
+        typeof currentData?.email === "string" &&
+        (currentData!.email as string).length > 0;
       if (!hasEmail) {
-        const ownerEmail = (await getUserEmail(userId)) || getAuth().currentUser?.email || null;
+        const ownerEmail =
+          (await getUserEmail(userId)) || getAuth().currentUser?.email || null;
         if (ownerEmail) {
           (payload as Partial<CVDoc>).data = {
             ...currentData,
             email: ownerEmail,
-          } as unknown as CVDoc['data'];
+          } as unknown as CVDoc["data"];
         }
       }
     } catch (e) {
-      console.warn('Could not resolve email for new CV; proceeding without email', { userId, cvId: cv.id, error: e });
+      console.warn(
+        "Could not resolve email for new CV; proceeding without email",
+        { userId, cvId: cv.id, error: e }
+      );
     }
   }
 
@@ -428,13 +437,19 @@ export async function saveUserCV(
   // displayName/email IF they are currently missing there. This is non-destructive
   // and will never overwrite existing non-empty values.
   try {
-    const data = (payload as Partial<CVDoc>).data as Record<string, unknown> | undefined;
+    const data = (payload as Partial<CVDoc>).data as
+      | Record<string, unknown>
+      | undefined;
     const displayNameFromCv = data?.displayName as string | undefined;
     const emailFromCv = data?.email as string | undefined;
 
     await ensureGlobalProfileNameEmail(userId, displayNameFromCv, emailFromCv);
   } catch (e) {
-    console.warn('Non-fatal: failed to backfill global profile name/email', { userId, cvId: cv.id, error: e });
+    console.warn("Non-fatal: failed to backfill global profile name/email", {
+      userId,
+      cvId: cv.id,
+      error: e,
+    });
   }
 }
 
@@ -448,15 +463,50 @@ export async function deleteUserCV(
 }
 
 // Check if current user is an admin
-export async function isAdminUser(user: { uid: string } | null): Promise<boolean> {
+export async function isAdminUser(
+  user: { uid: string } | null
+): Promise<boolean> {
   if (!user) return false;
 
   try {
-    const userDoc = await getDoc(doc(db, 'users', user.uid));
+    const userDoc = await getDoc(doc(db, "users", user.uid));
     return userDoc.exists() && userDoc.data()?.isAdmin === true;
   } catch (error) {
-    console.error('Error checking admin status:', error);
+    console.error("Error checking admin status:", error);
     return false;
+  }
+}
+
+// Get all admin users
+export interface AdminUser {
+  userId: string;
+  email: string;
+  displayName?: string;
+}
+
+export async function getAllAdmins(): Promise<AdminUser[]> {
+  try {
+    const usersRef = collection(db, "users");
+    const q = query(usersRef, where("isAdmin", "==", true));
+    const snapshot = await getDocs(q);
+
+    const admins: AdminUser[] = [];
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      if (data.isAdmin === true) {
+        admins.push({
+          userId: doc.id,
+          email: data.email || "",
+          displayName: data.ownerName || data.displayName,
+        });
+      }
+    });
+
+    // Sort by email for consistent display
+    return admins.sort((a, b) => a.email.localeCompare(b.email));
+  } catch (error) {
+    console.error("Error fetching all admins:", error);
+    return [];
   }
 }
 
@@ -464,16 +514,20 @@ export async function isAdminUser(user: { uid: string } | null): Promise<boolean
 export async function getUserEmail(userId: string): Promise<string | null> {
   try {
     // Prefer profile.email if present
-    const profileSnap = await getDoc(doc(db, 'userProfiles', userId));
-    const profileEmail = profileSnap.exists() ? (profileSnap.data() as { email?: string }).email : undefined;
+    const profileSnap = await getDoc(doc(db, "userProfiles", userId));
+    const profileEmail = profileSnap.exists()
+      ? (profileSnap.data() as { email?: string }).email
+      : undefined;
     if (profileEmail) return profileEmail;
 
     // Fallback to users doc email if stored there
-    const userSnap = await getDoc(doc(db, 'users', userId));
-    const userEmail = userSnap.exists() ? (userSnap.data() as { email?: string }).email : undefined;
+    const userSnap = await getDoc(doc(db, "users", userId));
+    const userEmail = userSnap.exists()
+      ? (userSnap.data() as { email?: string }).email
+      : undefined;
     return userEmail ?? null;
   } catch (error) {
-    console.error('Error fetching user email:', { userId, error });
+    console.error("Error fetching user email:", { userId, error });
     return null;
   }
 }
@@ -486,19 +540,32 @@ export async function ensureGlobalProfileNameEmail(
   email?: string
 ): Promise<void> {
   // Normalize values
-  const nameVal = (typeof displayName === 'string' && displayName.trim().length > 0) ? displayName.trim() : undefined;
-  const emailVal = (typeof email === 'string' && email.trim().length > 0) ? email.trim() : undefined;
+  const nameVal =
+    typeof displayName === "string" && displayName.trim().length > 0
+      ? displayName.trim()
+      : undefined;
+  const emailVal =
+    typeof email === "string" && email.trim().length > 0
+      ? email.trim()
+      : undefined;
 
   if (!nameVal && !emailVal) return; // nothing to do
 
   // Helper to check empty string / missing
-  const isMissing = (v: unknown) => v == null || (typeof v === 'string' && v.trim().length === 0);
+  const isMissing = (v: unknown) =>
+    v == null || (typeof v === "string" && v.trim().length === 0);
 
   // Backfill userProfiles/{userId}
   try {
-    const profileRef = doc(db, 'userProfiles', userId);
+    const profileRef = doc(db, "userProfiles", userId);
     const profileSnap = await getDoc(profileRef);
-    const pdata = profileSnap.exists() ? profileSnap.data() as { ownerName?: string; displayName?: string; email?: string } : {};
+    const pdata = profileSnap.exists()
+      ? (profileSnap.data() as {
+          ownerName?: string;
+          displayName?: string;
+          email?: string;
+        })
+      : {};
     const toSet: Record<string, unknown> = {};
     // Global field is ownerName; backfill it if missing regardless of displayName.
     if (nameVal && isMissing(pdata.ownerName)) toSet.ownerName = nameVal;
@@ -508,14 +575,23 @@ export async function ensureGlobalProfileNameEmail(
     }
   } catch (e) {
     // Non-fatal; just log
-    console.warn('Failed to backfill userProfiles with ownerName/email', { userId, error: e });
+    console.warn("Failed to backfill userProfiles with ownerName/email", {
+      userId,
+      error: e,
+    });
   }
 
   // Backfill users/{userId}
   try {
-    const userRef = doc(db, 'users', userId);
+    const userRef = doc(db, "users", userId);
     const userSnap = await getDoc(userRef);
-    const udata = userSnap.exists() ? userSnap.data() as { ownerName?: string; displayName?: string; email?: string } : {};
+    const udata = userSnap.exists()
+      ? (userSnap.data() as {
+          ownerName?: string;
+          displayName?: string;
+          email?: string;
+        })
+      : {};
     const toSet: Record<string, unknown> = {};
     // Global field is ownerName; backfill it if missing regardless of displayName.
     if (nameVal && isMissing(udata.ownerName)) toSet.ownerName = nameVal;
@@ -524,7 +600,10 @@ export async function ensureGlobalProfileNameEmail(
       await setDoc(userRef, toSet, { merge: true });
     }
   } catch (e) {
-    console.warn('Failed to backfill users doc with ownerName/email', { userId, error: e });
+    console.warn("Failed to backfill users doc with ownerName/email", {
+      userId,
+      error: e,
+    });
   }
 }
 
@@ -541,18 +620,18 @@ export async function uploadProfileImage(
 ): Promise<string> {
   // Generate a unique filename with timestamp
   const timestamp = Date.now();
-  const safeFilename = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const safeFilename = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
   const storagePath = `profile-images/${userId}/${timestamp}-${safeFilename}`;
-  
+
   const storageRef = ref(storage, storagePath);
   const uploadTask = uploadBytesResumable(storageRef, file, {
     contentType: file.type,
-    cacheControl: 'public, max-age=31536000', // Cache for 1 year
+    cacheControl: "public, max-age=31536000", // Cache for 1 year
   });
 
   return new Promise((resolve, reject) => {
     uploadTask.on(
-      'state_changed',
+      "state_changed",
       (snapshot: UploadTaskSnapshot) => {
         if (onProgress) {
           const { bytesTransferred, totalBytes } = snapshot;
@@ -570,7 +649,7 @@ export async function uploadProfileImage(
         }
       },
       (error) => {
-        console.error('Error uploading profile image:', error);
+        console.error("Error uploading profile image:", error);
         reject(error);
       },
       async () => {
@@ -578,7 +657,7 @@ export async function uploadProfileImage(
           const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
           resolve(downloadURL);
         } catch (error) {
-          console.error('Error getting download URL:', error);
+          console.error("Error getting download URL:", error);
           reject(error);
         }
       }
@@ -596,48 +675,53 @@ export async function deleteProfileImage(downloadUrl: string): Promise<void> {
     // Firebase Storage URLs format: https://firebasestorage.googleapis.com/v0/b/{bucket}/o/{path}?...
     const url = new URL(downloadUrl);
     const pathMatch = url.pathname.match(/\/o\/(.+)/);
-    
+
     if (!pathMatch || !pathMatch[1]) {
-      console.warn('Could not extract storage path from URL:', downloadUrl);
+      console.warn("Could not extract storage path from URL:", downloadUrl);
       return;
     }
-    
+
     // Decode the path (Firebase encodes slashes as %2F)
     const storagePath = decodeURIComponent(pathMatch[1]);
-    
+
     // Only delete if it's in the profile-images directory
-    if (!storagePath.startsWith('profile-images/')) {
-      console.warn('Refusing to delete file outside profile-images directory:', storagePath);
+    if (!storagePath.startsWith("profile-images/")) {
+      console.warn(
+        "Refusing to delete file outside profile-images directory:",
+        storagePath
+      );
       return;
     }
-    
+
     const storageRef = ref(storage, storagePath);
     await deleteObject(storageRef);
-    console.log('Successfully deleted profile image:', storagePath);
+    console.log("Successfully deleted profile image:", storagePath);
   } catch (error) {
     // Don't throw on delete errors - the file might already be deleted
-    console.warn('Error deleting profile image:', error);
+    console.warn("Error deleting profile image:", error);
   }
 }
 
 // Get all CVs from all users (admin only)
-export async function getAllCVs(): Promise<Array<{
-  id: string;
-  name: string;
-  language?: "en" | "sv";
-  userId: string;
-  ownerName: string;
-  // Include the full CV data so admin selection can hydrate the UI
-  data?: unknown;
-}>> {
+export async function getAllCVs(): Promise<
+  Array<{
+    id: string;
+    name: string;
+    language?: "en" | "sv";
+    userId: string;
+    ownerName: string;
+    // Include the full CV data so admin selection can hydrate the UI
+    data?: unknown;
+  }>
+> {
   const currentUser = getAuth().currentUser;
   if (!currentUser) {
-    throw new Error('Authentication required');
+    throw new Error("Authentication required");
   }
 
   const isAdmin = await isAdminUser(currentUser);
   if (!isAdmin) {
-    throw new Error('Admin access required');
+    throw new Error("Admin access required");
   }
 
   try {
@@ -655,20 +739,23 @@ export async function getAllCVs(): Promise<Array<{
         const profileData = profileDoc.data() || {};
 
         // Get CVs for this user
-        const cvsSnapshot = await getDocs(collection(db, "users", userId, "cvs"));
-        return cvsSnapshot.docs.map(cvDoc => {
+        const cvsSnapshot = await getDocs(
+          collection(db, "users", userId, "cvs")
+        );
+        return cvsSnapshot.docs.map((cvDoc) => {
           // Try to get the owner name from different possible fields
-          const ownerName = userData.ownerName || // First try ownerName in user document
+          const ownerName =
+            userData.ownerName || // First try ownerName in user document
             profileData.ownerName || // Then try ownerName in profile
             profileData.displayName || // Then try displayName in profile
             userData.displayName || // Then try displayName in user document
-            userData.email?.split('@')[0] || // Then use email prefix
-            'User'; // Fallback
+            userData.email?.split("@")[0] || // Then use email prefix
+            "User"; // Fallback
 
           return {
             id: cvDoc.id,
-            name: cvDoc.data().name || 'Untitled CV',
-            language: cvDoc.data().language || 'en',
+            name: cvDoc.data().name || "Untitled CV",
+            language: cvDoc.data().language || "en",
             userId,
             ownerName,
             // Pass through the stored CV payload so the consumer can render that user's data
@@ -685,13 +772,16 @@ export async function getAllCVs(): Promise<Array<{
     const results = await Promise.all(cvPromises);
     return results.flat();
   } catch (error) {
-    console.error('Error fetching CVs:', error);
+    console.error("Error fetching CVs:", error);
     throw error;
   }
 }
 
 // Fetch a single CV document for a specific user (admin or owner)
-export async function getUserCv(userId: string, cvId: string): Promise<{
+export async function getUserCv(
+  userId: string,
+  cvId: string
+): Promise<{
   id: string;
   name: string;
   language?: "en" | "sv";
@@ -702,7 +792,9 @@ export async function getUserCv(userId: string, cvId: string): Promise<{
     const ref = doc(db, "users", userId, "cvs", cvId);
     const snap = await getDoc(ref);
     if (!snap.exists()) return null;
-    const d = snap.data() as { name?: string; language?: "en" | "sv"; data?: unknown } | undefined;
+    const d = snap.data() as
+      | { name?: string; language?: "en" | "sv"; data?: unknown }
+      | undefined;
     return {
       id: cvId,
       name: (d?.name || "Untitled CV") as string,
