@@ -35,17 +35,17 @@ export default function CompetenceTable({
   // Filter out competences that are already added to avoid duplicates
   const getFilteredSuggestions = (currentIndex: number) => {
     const currentCompetenceNames = competences
-      .map((comp, index) => index !== currentIndex ? comp.name.trim() : '')
-      .filter(name => name !== '');
-    
-    return existingCompetences.filter(suggestion => 
-      !currentCompetenceNames.includes(suggestion)
+      .map((comp, index) => (index !== currentIndex ? comp.name.trim() : ""))
+      .filter((name) => name !== "");
+
+    return existingCompetences.filter(
+      (suggestion) => !currentCompetenceNames.includes(suggestion)
     );
   };
 
   const updateName = async (idx: number, name: string) => {
     const nextRows = competences.map((row, i) =>
-      i === idx ? { ...row, name } : row,
+      i === idx ? { ...row, name } : row
     );
     onChange(nextRows);
     await onSave(nextRows);
@@ -53,7 +53,7 @@ export default function CompetenceTable({
 
   const updateLevel = async (idx: number, level: number) => {
     const nextRows = competences.map((row, i) =>
-      i === idx ? { ...row, level } : row,
+      i === idx ? { ...row, level } : row
     );
     onChange(nextRows);
     await onSave(nextRows);
@@ -86,7 +86,7 @@ export default function CompetenceTable({
 
   // Check if there are any competences with empty names
   const hasEmptyName = competences.some(
-    (competence) => !competence.name.trim(),
+    (competence) => !competence.name.trim()
   );
 
   return (
@@ -95,16 +95,43 @@ export default function CompetenceTable({
       <TableContainer
         sx={{ maxHeight: "calc(100vh - 80px)", overflow: "auto" }}
         className="mobile-hide-table"
-     >
+      >
         <Table size="small" stickyHeader sx={{ minWidth: 900 }}>
           <TableHead>
             <TableRow>
-              <TableCell sx={{ backgroundColor: (t) => t.palette.background.paper }}>Competence</TableCell>
-              <TableCell align="center" sx={{ backgroundColor: (t) => t.palette.background.paper }}>Want to learn</TableCell>
-              <TableCell align="center" sx={{ backgroundColor: (t) => t.palette.background.paper }}>Beginner</TableCell>
-              <TableCell align="center" sx={{ backgroundColor: (t) => t.palette.background.paper }}>Proficient</TableCell>
-              <TableCell align="center" sx={{ backgroundColor: (t) => t.palette.background.paper }}>Expert</TableCell>
-              <TableCell align="center" sx={{ backgroundColor: (t) => t.palette.background.paper }}></TableCell>
+              <TableCell
+                sx={{ backgroundColor: (t) => t.palette.background.paper }}
+              >
+                Competence
+              </TableCell>
+              <TableCell
+                align="center"
+                sx={{ backgroundColor: (t) => t.palette.background.paper }}
+              >
+                Want to learn
+              </TableCell>
+              <TableCell
+                align="center"
+                sx={{ backgroundColor: (t) => t.palette.background.paper }}
+              >
+                Beginner
+              </TableCell>
+              <TableCell
+                align="center"
+                sx={{ backgroundColor: (t) => t.palette.background.paper }}
+              >
+                Proficient
+              </TableCell>
+              <TableCell
+                align="center"
+                sx={{ backgroundColor: (t) => t.palette.background.paper }}
+              >
+                Expert
+              </TableCell>
+              <TableCell
+                align="center"
+                sx={{ backgroundColor: (t) => t.palette.background.paper }}
+              ></TableCell>
             </TableRow>
           </TableHead>
           <TableBody>

@@ -1,14 +1,22 @@
-import jsPDF from 'jspdf';
-import { circleCropToPng } from '../../shared';
-import type { Metrics } from '../../shared';
+import jsPDF from "jspdf";
+import { circleCropToPng } from "../../shared";
+import type { Metrics } from "../../shared";
 
 /**
  * Draw a circular avatar at the top of the left column, centered, with a thick border (#3e4d69).
  * Returns the baseline Y to continue content beneath the avatar.
  */
-export async function addAvatar(doc: jsPDF, m: Metrics, dataUrl?: string): Promise<number> {
+export async function addAvatar(
+  doc: jsPDF,
+  m: Metrics,
+  dataUrl?: string
+): Promise<number> {
   const defaultStartY = 140;
-  if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image')) {
+  if (
+    !dataUrl ||
+    typeof dataUrl !== "string" ||
+    !dataUrl.startsWith("data:image")
+  ) {
     return defaultStartY;
   }
 
@@ -26,12 +34,12 @@ export async function addAvatar(doc: jsPDF, m: Metrics, dataUrl?: string): Promi
     // ignore cropping errors and fall back to original
   }
 
-  doc.addImage(cropped, 'PNG', cx - r, cy - r, r * 2, r * 2, undefined, 'FAST');
+  doc.addImage(cropped, "PNG", cx - r, cy - r, r * 2, r * 2, undefined, "FAST");
 
   // Border color: #3e4d69
   doc.setLineWidth(20);
   doc.setDrawColor(62, 77, 105);
-  doc.circle(cx, cy, r, 'S');
+  doc.circle(cx, cy, r, "S");
 
   return cy + r + 30;
 }

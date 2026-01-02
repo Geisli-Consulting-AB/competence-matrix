@@ -3,8 +3,10 @@ import { TextField, Box, Alert, Snackbar } from "@mui/material";
 import TranslationButton from "./TranslationButton";
 import { translateText } from "../services/translationService";
 
-export interface TranslatableTextFieldProps
-  extends Omit<React.ComponentProps<typeof TextField>, "onChange" | "value"> {
+export interface TranslatableTextFieldProps extends Omit<
+  React.ComponentProps<typeof TextField>,
+  "onChange" | "value"
+> {
   value: string;
   onChange: (value: string) => void;
   onBlurValue?: (value: string) => void;

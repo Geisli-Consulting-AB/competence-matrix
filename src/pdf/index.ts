@@ -1,9 +1,20 @@
-import { newDoc, getMetrics, toBlob, downloadBlob, filenameFromUserName, ensureInterFonts, convertUrlToDataUrl } from './shared';
-import { buildPersonalInfo } from './page1PersonalInfo/page1';
-import { buildExperiencePage } from './page2Experience/page2';
-import { buildEducationAndMorePage } from './page3EducationAndMore/page3';
-import { buildCompetencesPage, type CompetenceCategory } from './page4Competences/page4';
-import { getPdfStrings, type PdfLang, type TranslationStrings } from '../i18n';
+import {
+  newDoc,
+  getMetrics,
+  toBlob,
+  downloadBlob,
+  filenameFromUserName,
+  ensureInterFonts,
+  convertUrlToDataUrl,
+} from "./shared";
+import { buildPersonalInfo } from "./page1PersonalInfo/page1";
+import { buildExperiencePage } from "./page2Experience/page2";
+import { buildEducationAndMorePage } from "./page3EducationAndMore/page3";
+import {
+  buildCompetencesPage,
+  type CompetenceCategory,
+} from "./page4Competences/page4";
+import { getPdfStrings, type PdfLang, type TranslationStrings } from "../i18n";
 
 export interface Experience {
   title: string;
@@ -24,7 +35,6 @@ export interface EducationItem {
   description?: string;
 }
 
-
 export async function generateCvPdf(
   name?: string,
   description?: string,
@@ -32,15 +42,19 @@ export async function generateCvPdf(
   roles?: string[],
   languages?: string[],
   expertise?: string[],
-  selectedProjects?: Array<{ customer: string; title: string; description: string }>,
-  lang: PdfLang = 'en',
+  selectedProjects?: Array<{
+    customer: string;
+    title: string;
+    description: string;
+  }>,
+  lang: PdfLang = "en",
   title?: string,
   experiences: Experience[] = [],
   educations: EducationItem[] = [],
   courses: Array<{ name: string; issuer?: string; year?: string }> = [],
   competences: CompetenceCategory[] = [],
   engagementsPublications: Array<{
-    type: 'engagement' | 'publication';
+    type: "engagement" | "publication";
     title: string;
     year?: string;
     locationOrPublication?: string;
@@ -58,11 +72,11 @@ export async function generateCvPdf(
 
   // Convert photo URL to data URL if needed (for Firebase Storage URLs)
   let photoDataUrlConverted = photoDataUrl;
-  if (photoDataUrl && !photoDataUrl.startsWith('data:')) {
+  if (photoDataUrl && !photoDataUrl.startsWith("data:")) {
     try {
       photoDataUrlConverted = await convertUrlToDataUrl(photoDataUrl);
     } catch (error) {
-      console.error('[PDF] Failed to convert photo URL to data URL:', error);
+      console.error("[PDF] Failed to convert photo URL to data URL:", error);
       // Continue with undefined photo
       photoDataUrlConverted = undefined;
     }
@@ -80,9 +94,9 @@ export async function generateCvPdf(
       rolesTitle: strings.rolesTitle,
       languagesTitle: strings.languagesTitle,
       expertiseTitle: strings.expertiseTitle,
-      lang
+      lang,
     },
-    
+
     // Right column options
     name,
     description,
@@ -90,55 +104,55 @@ export async function generateCvPdf(
     rightColumn: {
       cvTitle: title || strings.cvTitle,
       selectedProjectsTitle: strings.selectedProjectsTitle,
-      summary: strings.summary
+      summary: strings.summary,
     },
-    
+
     // General options
-    lang
+    lang,
   });
 
   // Add experience page if there are experiences
   if (experiences && experiences.length > 0) {
     await buildExperiencePage(doc, lang, experiences);
-    
+
     // Add a new page for education and more
     doc.addPage();
     // Re-initialize metrics for the new page
     const m = getMetrics();
-    await buildEducationAndMorePage(doc, m, { 
+    await buildEducationAndMorePage(doc, m, {
       lang,
       educations,
       courses: courses,
-      engagementPublications: engagementsPublications
+      engagementPublications: engagementsPublications,
     });
-    
+
     // Add competences page
     doc.addPage();
     const m2 = getMetrics();
-    await buildCompetencesPage(doc, m2, { 
+    await buildCompetencesPage(doc, m2, {
       lang,
       competences,
-      strings: getPdfStrings(lang) as TranslationStrings
+      strings: getPdfStrings(lang) as TranslationStrings,
     });
   } else {
     // If no experiences, still add education page as second page
     doc.addPage();
     // Re-initialize metrics for the new page
     const m = getMetrics();
-    await buildEducationAndMorePage(doc, m, { 
+    await buildEducationAndMorePage(doc, m, {
       lang,
       educations,
       courses: courses,
-      engagementPublications: engagementsPublications
+      engagementPublications: engagementsPublications,
     });
-    
+
     // Add competences page
     doc.addPage();
     const m2 = getMetrics();
-    await buildCompetencesPage(doc, m2, { 
+    await buildCompetencesPage(doc, m2, {
       lang,
       competences,
-      strings: getPdfStrings(lang) as TranslationStrings
+      strings: getPdfStrings(lang) as TranslationStrings,
     });
   }
 
@@ -153,15 +167,19 @@ export async function createAndDownloadCvPdf(
   roles?: string[],
   languages?: string[],
   expertise?: string[],
-  selectedProjects?: Array<{ customer: string; title: string; description: string }>,
-  lang: PdfLang = 'en',
+  selectedProjects?: Array<{
+    customer: string;
+    title: string;
+    description: string;
+  }>,
+  lang: PdfLang = "en",
   title?: string,
   experiences: Experience[] = [],
   educations: EducationItem[] = [],
   courses: Array<{ name: string; issuer?: string; year?: string }> = [],
   competences: CompetenceCategory[] = [],
   engagementsPublications: Array<{
-    type: 'engagement' | 'publication';
+    type: "engagement" | "publication";
     title: string;
     year?: string;
     locationOrPublication?: string;
@@ -189,5 +207,5 @@ export async function createAndDownloadCvPdf(
   downloadBlob(blob, filename);
 }
 
-export { downloadBlob, filenameFromUserName } from './shared';
-export type { PdfLang } from '../i18n';
+export { downloadBlob, filenameFromUserName } from "./shared";
+export type { PdfLang } from "../i18n";

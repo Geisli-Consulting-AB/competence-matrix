@@ -66,7 +66,7 @@ const CompetenceMapping: React.FC<CompetenceMappingProps> = ({
         .map((comp, index) => {
           const users = [`User ${index + 1}`, `User ${index + 2}`].slice(
             0,
-            Math.floor(Math.random() * 2) + 1,
+            Math.floor(Math.random() * 2) + 1
           );
           return {
             name: comp,
@@ -88,12 +88,12 @@ const CompetenceMapping: React.FC<CompetenceMappingProps> = ({
 
   const handleMappingChange = async (
     competenceName: string,
-    categoryId: string,
+    categoryId: string
   ) => {
     if (!user?.uid) return;
 
     // Find the category to update
-    const categoryToUpdate = categories.find(cat => cat.id === categoryId);
+    const categoryToUpdate = categories.find((cat) => cat.id === categoryId);
     if (!categoryToUpdate) return;
 
     // Check if competence is already in this category
@@ -111,7 +111,7 @@ const CompetenceMapping: React.FC<CompetenceMappingProps> = ({
 
       // Remove the competence from unmapped list
       setUnmappedCompetences((prev) =>
-        prev.filter((comp) => comp.name !== competenceName),
+        prev.filter((comp) => comp.name !== competenceName)
       );
 
       // Clear the mapping
@@ -153,10 +153,18 @@ const CompetenceMapping: React.FC<CompetenceMappingProps> = ({
               <Table stickyHeader>
                 <TableHead>
                   <TableRow>
-                    <TableCell sx={{ backgroundColor: (t) => t.palette.background.paper }}>
+                    <TableCell
+                      sx={{
+                        backgroundColor: (t) => t.palette.background.paper,
+                      }}
+                    >
                       Unmapped Competence
                     </TableCell>
-                    <TableCell sx={{ backgroundColor: (t) => t.palette.background.paper }}>
+                    <TableCell
+                      sx={{
+                        backgroundColor: (t) => t.palette.background.paper,
+                      }}
+                    >
                       Assign to Category
                     </TableCell>
                   </TableRow>
@@ -184,7 +192,7 @@ const CompetenceMapping: React.FC<CompetenceMappingProps> = ({
                               onClick={() =>
                                 handleMappingChange(
                                   competence.name,
-                                  category.id,
+                                  category.id
                                 )
                               }
                               sx={{

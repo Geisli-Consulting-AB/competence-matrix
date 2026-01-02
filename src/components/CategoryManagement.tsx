@@ -17,10 +17,10 @@ import {
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
 } from "@mui/icons-material";
-import { 
-  saveSharedCategory, 
-  deleteSharedCategory, 
-  subscribeToSharedCategories 
+import {
+  saveSharedCategory,
+  deleteSharedCategory,
+  subscribeToSharedCategories,
 } from "../firebase";
 import type { User } from "firebase/auth";
 
@@ -42,9 +42,11 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
 }) => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [newCategoryName, setNewCategoryName] = useState("");
-  const [newCompetenceNames, setNewCompetenceNames] = useState<Record<string, string>>({});
+  const [newCompetenceNames, setNewCompetenceNames] = useState<
+    Record<string, string>
+  >({});
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
-    new Set(),
+    new Set()
   );
 
   // Subscribe to shared categories from database
@@ -56,7 +58,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
     const unsubscribe = subscribeToSharedCategories(
       (firebaseCategories: Category[]) => {
         setCategories(firebaseCategories);
-      },
+      }
     );
 
     return () => unsubscribe();
@@ -65,7 +67,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
   // Save individual category to shared database
   const saveCategoryToDB = async (category: Category) => {
     if (!user?.uid) return;
-    
+
     try {
       await saveSharedCategory(category);
     } catch (error) {
@@ -76,7 +78,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
   // Delete category from shared database
   const deleteCategoryFromDB = async (categoryId: string) => {
     if (!user?.uid) return;
-    
+
     try {
       await deleteSharedCategory(categoryId);
     } catch (error) {
@@ -154,7 +156,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
     const competenceName = (newCompetenceNames[categoryId] || "").trim();
     if (!competenceName) return;
 
-    const category = categories.find(cat => cat.id === categoryId);
+    const category = categories.find((cat) => cat.id === categoryId);
     if (!category) return;
 
     // Check if competence already exists
@@ -164,30 +166,30 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
       ...category,
       competences: [...category.competences, competenceName],
     };
-    
+
     // Clear only this category's input
-    setNewCompetenceNames(prev => ({
+    setNewCompetenceNames((prev) => ({
       ...prev,
-      [categoryId]: ""
+      [categoryId]: "",
     }));
-    
+
     await saveCategoryToDB(updatedCategory);
   };
 
   const handleRemoveCompetence = async (
     categoryId: string,
-    competenceToRemove: string,
+    competenceToRemove: string
   ) => {
-    const category = categories.find(cat => cat.id === categoryId);
+    const category = categories.find((cat) => cat.id === categoryId);
     if (!category) return;
 
     const updatedCategory = {
       ...category,
       competences: category.competences.filter(
-        (comp) => comp !== competenceToRemove,
+        (comp) => comp !== competenceToRemove
       ),
     };
-    
+
     await saveCategoryToDB(updatedCategory);
   };
 
@@ -335,12 +337,16 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                         <TextField
                           label="Add new Competence"
                           value={newCompetenceNames[category.id] || ""}
-                          onChange={(e) => setNewCompetenceNames(prev => ({
-                            ...prev,
-                            [category.id]: e.target.value
-                          }))}
+                          onChange={(e) =>
+                            setNewCompetenceNames((prev) => ({
+                              ...prev,
+                              [category.id]: e.target.value,
+                            }))
+                          }
                           onBlur={() => {
-                            if ((newCompetenceNames[category.id] || "").trim()) {
+                            if (
+                              (newCompetenceNames[category.id] || "").trim()
+                            ) {
                               handleAddNewCompetence(category.id);
                             }
                           }}

@@ -51,7 +51,7 @@ export default function LevelLegend({
     const selectedLevelLabels = selectedLevels
       .map(
         (level) =>
-          levelOptions.find((option) => option.value === level)?.label || "",
+          levelOptions.find((option) => option.value === level)?.label || ""
       )
       .filter(Boolean);
 
@@ -90,11 +90,11 @@ export default function LevelLegend({
                   backgroundColor:
                     LEVEL_COLORS[levelNum as keyof typeof LEVEL_COLORS],
                   color: theme.palette.getContrastText(
-                    LEVEL_COLORS[levelNum as keyof typeof LEVEL_COLORS],
+                    LEVEL_COLORS[levelNum as keyof typeof LEVEL_COLORS]
                   ),
                   "& .MuiChip-deleteIcon": {
                     color: theme.palette.getContrastText(
-                      LEVEL_COLORS[levelNum as keyof typeof LEVEL_COLORS],
+                      LEVEL_COLORS[levelNum as keyof typeof LEVEL_COLORS]
                     ),
                   },
                 }}
@@ -151,7 +151,7 @@ export default function LevelLegend({
               borderColor: LEVEL_COLORS[levelNum as keyof typeof LEVEL_COLORS],
               color: isSelected
                 ? theme.palette.getContrastText(
-                    LEVEL_COLORS[levelNum as keyof typeof LEVEL_COLORS],
+                    LEVEL_COLORS[levelNum as keyof typeof LEVEL_COLORS]
                   )
                 : LEVEL_COLORS[levelNum as keyof typeof LEVEL_COLORS],
               border: isSelected ? "2px solid white" : "none",

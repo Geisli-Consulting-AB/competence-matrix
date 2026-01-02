@@ -1,14 +1,14 @@
-import jsPDF from 'jspdf';
+import jsPDF from "jspdf";
 
 // ---------- Shared helpers and types ----------
 
 export function newDoc() {
-  return new jsPDF({ unit: 'pt', format: 'a4' });
+  return new jsPDF({ unit: "pt", format: "a4" });
 }
 
 // ---- Inter font support ----
 let interReady = false;
-const INTER_FAMILY = 'Inter';
+const INTER_FAMILY = "Inter";
 
 // Inter font embedding: To avoid any runtime network requests and 404s, we currently do not
 // fetch or embed external font files. PDFs will use built-in Helvetica by default.
@@ -22,11 +22,11 @@ export async function ensureInterFonts(): Promise<void> {
 }
 
 /** Set the text font to Inter when available, otherwise Helvetica. */
-export function setFontStyle(doc: jsPDF, style: 'normal' | 'bold' = 'normal') {
+export function setFontStyle(doc: jsPDF, style: "normal" | "bold" = "normal") {
   if (interReady) {
     doc.setFont(INTER_FAMILY, style);
   } else {
-    doc.setFont('helvetica', style);
+    doc.setFont("helvetica", style);
   }
 }
 
@@ -38,46 +38,46 @@ export function setFontStyle(doc: jsPDF, style: 'normal' | 'bold' = 'normal') {
  */
 export async function convertUrlToDataUrl(url: string): Promise<string> {
   // If it's already a data URL, return as-is
-  if (url.startsWith('data:')) {
+  if (url.startsWith("data:")) {
     return url;
   }
 
   try {
     let fetchUrl = url;
-    
+
     // For Firebase Storage URLs
-    if (url.includes('firebasestorage.googleapis.com')) {
+    if (url.includes("firebasestorage.googleapis.com")) {
       // In development, optionally route through Vite proxy to avoid CORS
       const isDev = import.meta.env.DEV;
       if (isDev) {
         // Extract the path after the bucket name
         const urlObj = new URL(url);
-        fetchUrl = '/firebase-storage' + urlObj.pathname + urlObj.search;
+        fetchUrl = "/firebase-storage" + urlObj.pathname + urlObj.search;
         // Ensure alt=media is present
-        const separator = fetchUrl.includes('?') ? '&' : '?';
-        if (!fetchUrl.includes('alt=media')) {
-          fetchUrl = fetchUrl + separator + 'alt=media';
+        const separator = fetchUrl.includes("?") ? "&" : "?";
+        if (!fetchUrl.includes("alt=media")) {
+          fetchUrl = fetchUrl + separator + "alt=media";
         }
       } else {
         // In production, add alt=media parameter for proper CORS
-        const separator = url.includes('?') ? '&' : '?';
-        if (!url.includes('alt=media')) {
-          fetchUrl = url + separator + 'alt=media';
+        const separator = url.includes("?") ? "&" : "?";
+        if (!url.includes("alt=media")) {
+          fetchUrl = url + separator + "alt=media";
         }
       }
     }
 
     // Fetch with explicit CORS settings
     const response = await fetch(fetchUrl, {
-      method: 'GET',
-      mode: import.meta.env.DEV ? 'same-origin' : 'cors',
-      credentials: 'omit'
+      method: "GET",
+      mode: import.meta.env.DEV ? "same-origin" : "cors",
+      credentials: "omit",
     });
-    
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    
+
     const blob = await response.blob();
     const dataUrl = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
@@ -88,23 +88,31 @@ export async function convertUrlToDataUrl(url: string): Promise<string> {
 
     return dataUrl;
   } catch (error) {
-    console.error('[PDF] convertUrlToDataUrl: failed to convert URL to data URL', { url, error });
+    console.error(
+      "[PDF] convertUrlToDataUrl: failed to convert URL to data URL",
+      { url, error }
+    );
     // Return transparent 1x1 pixel as fallback
-    return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+    return "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
   }
 }
 
-export async function loadImage(dataUrlOrUrl: string): Promise<HTMLImageElement> {
+export async function loadImage(
+  dataUrlOrUrl: string
+): Promise<HTMLImageElement> {
   // If it's already a data URL, use it directly
-  if (dataUrlOrUrl.startsWith('data:')) {
+  if (dataUrlOrUrl.startsWith("data:")) {
     const img = new Image();
     return new Promise((resolve) => {
       img.onload = () => resolve(img);
       img.onerror = (e) => {
-        console.error('[PDF] loadImage: failed to load data URL image', { error: e });
+        console.error("[PDF] loadImage: failed to load data URL image", {
+          error: e,
+        });
         // Return a transparent 1x1 pixel as fallback
         const fallback = new Image();
-        fallback.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+        fallback.src =
+          "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
         resolve(fallback);
       };
       img.src = dataUrlOrUrl;
@@ -114,13 +122,17 @@ export async function loadImage(dataUrlOrUrl: string): Promise<HTMLImageElement>
   // Handle regular URLs
   return new Promise((resolve) => {
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+    img.crossOrigin = "anonymous";
     img.onload = () => resolve(img);
     img.onerror = (e) => {
-      console.error('[PDF] loadImage: failed to load image', { src: dataUrlOrUrl, error: e });
+      console.error("[PDF] loadImage: failed to load image", {
+        src: dataUrlOrUrl,
+        error: e,
+      });
       // Return a transparent 1x1 pixel as fallback
       const fallback = new Image();
-      fallback.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+      fallback.src =
+        "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
       resolve(fallback);
     };
     img.src = dataUrlOrUrl;
@@ -128,12 +140,15 @@ export async function loadImage(dataUrlOrUrl: string): Promise<HTMLImageElement>
 }
 
 // Crop an image into a circle with transparent outside and return a PNG data URL
-export async function circleCropToPng(dataUrl: string, diameterPx: number): Promise<string> {
+export async function circleCropToPng(
+  dataUrl: string,
+  diameterPx: number
+): Promise<string> {
   const img = await loadImage(dataUrl);
-  const canvas = document.createElement('canvas');
+  const canvas = document.createElement("canvas");
   canvas.width = diameterPx;
   canvas.height = diameterPx;
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext("2d");
   if (!ctx) return dataUrl;
 
   // Draw circular clipping path
@@ -153,7 +168,7 @@ export async function circleCropToPng(dataUrl: string, diameterPx: number): Prom
   ctx.drawImage(img, dx, dy, drawW, drawH);
   ctx.restore();
 
-  return canvas.toDataURL('image/png');
+  return canvas.toDataURL("image/png");
 }
 
 export type Metrics = {
@@ -183,13 +198,13 @@ export function getMetrics(): Metrics {
 }
 
 export function toBlob(doc: jsPDF): Blob {
-  return doc.output('blob');
+  return doc.output("blob");
 }
 
 /** Trigger a client-side download for a Blob under the provided filename. */
 export function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
+  const a = document.createElement("a");
   a.href = url;
   a.download = filename;
   document.body.appendChild(a);
@@ -199,10 +214,13 @@ export function downloadBlob(blob: Blob, filename: string) {
 }
 
 /** Build a safe file name from a user name, e.g., "Uzi Landsmann - CV.pdf" */
-export function filenameFromUserName(name?: string, extension: string = 'pdf') {
-  const clean = (name || '').trim();
+export function filenameFromUserName(name?: string, extension: string = "pdf") {
+  const clean = (name || "").trim();
   const ext = extension.toLowerCase();
   if (!clean) return `CV.${ext}`;
-  const safe = clean.replace(/[^A-Za-z0-9 ._-]+/g, '').replace(/\s+/g, ' ').trim();
+  const safe = clean
+    .replace(/[^A-Za-z0-9 ._-]+/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
   return `${safe} - CV.${ext}`;
 }

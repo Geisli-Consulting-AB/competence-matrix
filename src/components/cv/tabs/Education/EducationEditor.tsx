@@ -41,8 +41,6 @@ const EducationEditor: React.FC<EducationEditorProps> = ({
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [expandedById, setExpandedById] = useState<Record<string, boolean>>({});
 
-
-
   const addEducation = () => {
     const ne = newEducation();
     onChange([ne, ...(educations || [])]);

@@ -67,8 +67,6 @@ const ExperienceEditor: React.FC<ExperienceEditorProps> = ({
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [expandedById, setExpandedById] = useState<Record<string, boolean>>({});
 
-
-
   const addExperience = () => {
     const ne = newExperience();
     onChange([ne, ...(experiences || [])]);
