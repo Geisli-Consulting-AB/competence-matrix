@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { Box, Typography, Tabs, Tab } from "@mui/material";
+import { Box, Typography, Tabs, Tab, useTheme } from "@mui/material";
 import type { User } from "firebase/auth";
 import OverviewTab from "./tabs/Overview/OverviewTab";
 import PersonalInfoTab from "./tabs/PersonalInfo/PersonalInfoTab";
@@ -8,6 +8,7 @@ import EducationEditor from "./tabs/Education/EducationEditor";
 import CoursesCertificationsEditor from "./tabs/Courses/CoursesCertificationsEditor";
 import EngagementPublicationsEditor from "./tabs/EngagementPublications/EngagementPublicationsEditor";
 import CompetencesCompactTab from "./tabs/Competences/CompetencesCompactTab";
+import { getCvColor } from "../../utils/cvColors";
 import {
   subscribeToUserCVs,
   saveUserCV,
@@ -390,6 +391,9 @@ const CVManagement: React.FC<CVManagementProps> = ({
     setTabValue(newValue);
   };
 
+  const theme = useTheme();
+  const selectedCvColor = useMemo(() => getCvColor(selectedCvId), [selectedCvId]);
+
   const handleProfileChange = useCallback(
     async (updates: Partial<UserProfile>) => {
       if (!user || !selectedCvId) return;
@@ -541,7 +545,15 @@ const CVManagement: React.FC<CVManagementProps> = ({
 
   return (
     <Box sx={{ width: "100%" }}>
-      <Box sx={{ borderBottom: 1, borderColor: "divider", px: 1 }}>
+      <Box
+        sx={{
+          borderBottom: 1,
+          borderColor: "divider",
+          px: 1,
+          bgcolor: selectedCvColor,
+          transition: "background-color 0.3s ease",
+        }}
+      >
         <Box
           sx={{
             display: "flex",
@@ -555,6 +567,11 @@ const CVManagement: React.FC<CVManagementProps> = ({
             aria-label="CV management tabs"
             variant="scrollable"
             scrollButtons="auto"
+            sx={{
+              "& .MuiTabs-indicator": {
+                backgroundColor: theme.palette.primary.main,
+              },
+            }}
           >
             <Tab label="Overview" {...a11yProps(0)} />
             <Tab
@@ -594,18 +611,22 @@ const CVManagement: React.FC<CVManagementProps> = ({
                 overflow: "hidden",
                 textOverflow: "ellipsis",
                 maxWidth: { xs: 160, sm: 240, md: 320 },
+                fontWeight: 500,
               }}
-              title={
+              title={`Editing ${profile.displayName || "User"}'s CV: ${
+                (profile.cvs || []).find((cv) => cv.id === selectedCvId)
+                  ?.name ||
                 selectedCvLabel ||
-                (profile.cvs || []).find((cv) => cv.id === selectedCvId)
-                  ?.name ||
-                ""
-              }
+                "Untitled CV"
+              }`}
             >
-              {selectedCvLabel ||
-                (profile.cvs || []).find((cv) => cv.id === selectedCvId)
+              <strong>Editing {profile.displayName || "User"}'s CV:{" "}
+
+                {(profile.cvs || []).find((cv) => cv.id === selectedCvId)
                   ?.name ||
-                ""}
+                  selectedCvLabel ||
+                  "Untitled CV"}
+              </strong>
             </Typography>
           )}
         </Box>
@@ -619,16 +640,25 @@ const CVManagement: React.FC<CVManagementProps> = ({
             const prevList = profile.cvs || [];
 
             // Update local state
-            setProfile((prev) => ({
-              ...prev,
-              // Map OverviewTab CVs into our CVItem shape
-              cvs: cvs.map((cv) => ({
+            setProfile((prev) => {
+              const updatedCvs = cvs.map((cv) => ({
                 id: cv.id,
                 name: cv.name,
                 language: cv.language || "en",
                 data: cv.data as Partial<Omit<UserProfile, "cvs">> | undefined,
-              })),
-            }));
+              }));
+
+              // If the currently selected CV was renamed, update selectedCvLabel
+              const currentCv = updatedCvs.find((cv) => cv.id === selectedCvId);
+              if (currentCv && currentCv.name !== selectedCvLabel) {
+                setSelectedCvLabel(currentCv.name);
+              }
+
+              return {
+                ...prev,
+                cvs: updatedCvs,
+              };
+            });
 
             // Persist to Firestore if user is logged in
             if (user) {

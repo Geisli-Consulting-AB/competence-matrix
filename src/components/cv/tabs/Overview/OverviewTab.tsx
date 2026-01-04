@@ -18,6 +18,11 @@ import {
   Menu,
   ListItemIcon,
   ListItemText,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
@@ -26,6 +31,7 @@ import DescriptionIcon from "@mui/icons-material/Description";
 import DownloadIcon from "@mui/icons-material/Download";
 import TranslateIcon from "@mui/icons-material/Translate";
 import type { User } from "firebase/auth";
+import { getCvColor, generateIdWithUnusedColor } from "../../../../utils/cvColors";
 import {
   getAllCVs,
   isAdminUser,
@@ -131,9 +137,9 @@ interface OverviewTabProps {
   }>;
 }
 
-function newCV(): CVOverviewItem {
+function newCV(existingIds: string[] = []): CVOverviewItem {
   return {
-    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    id: generateIdWithUnusedColor(existingIds),
     name: "",
     language: "en", // Default to English
   };
@@ -194,6 +200,10 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
     element: HTMLElement;
     cvId: string;
   }>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = React.useState<{
+    cv: CVOverviewItem & { userId?: string; ownerName?: string };
+    index: number;
+  } | null>(null);
 
   // Translation dialog (using custom hook)
   const {
@@ -302,7 +312,11 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
         );
         return; // require a selected owner to add a CV for
       }
-      const created = newCV();
+      // Use CVs relevant to the current user (either from filter or current selection)
+      const existingIds = (allCVs || [])
+        .filter(cv => cv.userId === targetUserId)
+        .map(cv => cv.id);
+      const created = newCV(existingIds);
       const toSave: {
         id: string;
         name: string;
@@ -349,7 +363,8 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
     }
 
     // Normal (non-admin) flow: add to current user's list
-    const created = newCV();
+    const existingIds = (cvs || []).map(cv => cv.id);
+    const created = newCV(existingIds);
     // Seed personal info for new CV so the Personal Information tab is pre-populated
     const initialPersonalInfo: Record<string, unknown> = {
       displayName: user?.displayName || "",
@@ -386,7 +401,8 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
     value: string | PdfLang
   ) => {
     const updated = [...(cvs || [])];
-    const current = updated[index] || newCV();
+    const existingIds = updated.map(cv => cv.id);
+    const current = updated[index] || newCV(existingIds);
 
     // Create a new CV with the updated field
     const updatedCv: CVOverviewItem = {
@@ -721,9 +737,8 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
     async (translatedData: TranslatedProfile, newCvName: string) => {
       if (!user || !translationState.cvId) return;
       try {
-        const newCvId = `${Date.now()}-${Math.random()
-          .toString(36)
-          .slice(2, 8)}`;
+        const existingIds = (cvs || []).map(cv => cv.id);
+        const newCvId = generateIdWithUnusedColor(existingIds);
         const sourceCv = cvs.find((c) => c.id === translationState.cvId);
         const newCvData: Record<string, unknown> = {
           displayName: translatedData.displayName || ownerProfile.displayName,
@@ -806,8 +821,55 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
     ]
   );
 
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirmation) return;
+    const { cv, index } = deleteConfirmation;
+
+    if (showAllCVs) {
+      if (!isAdmin) return;
+      if (!cv.userId) return;
+      try {
+        await deleteUserCV(cv.userId, cv.id);
+        setAllCVs((prev) => prev.filter((c) => c.id !== cv.id));
+        if (localSelectedId === cv.id) {
+          setLocalSelectedId(null);
+          onSelect?.(null, undefined);
+        }
+      } catch (err) {
+        console.error("Failed to delete CV as admin:", err);
+        alert("Failed to delete CV");
+      }
+    } else {
+      removeCV(index);
+    }
+    setDeleteConfirmation(null);
+  };
+
   return (
     <Paper elevation={3} sx={{ p: 3, mb: 3, maxWidth: 600, mx: "auto" }}>
+      <Dialog
+        open={!!deleteConfirmation}
+        onClose={() => setDeleteConfirmation(null)}
+        aria-labelledby="delete-cv-dialog-title"
+      >
+        <DialogTitle id="delete-cv-dialog-title">Delete CV</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete the CV "
+            {deleteConfirmation?.cv.name || "Untitled CV"}"
+            {showAllCVs && deleteConfirmation?.cv.ownerName
+              ? ` for ${deleteConfirmation.cv.ownerName}`
+              : ""}
+            ? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteConfirmation(null)}>Cancel</Button>
+          <Button onClick={handleConfirmDelete} color="error" autoFocus>
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
       <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
         <Box>
           {isAdmin && (
@@ -894,6 +956,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
             // Use localSelectedId when available to ensure immediate visual feedback
             const effectiveSelectedId = localSelectedId ?? selectedId ?? null;
             const isSelected = effectiveSelectedId === cv.id;
+            const bgColor = getCvColor(cv.id);
             return (
               <Paper
                 key={cv.id || index}
@@ -903,12 +966,15 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                   mb: 2,
                   border: "1px solid",
                   borderColor: isSelected ? "primary.main" : "divider",
-                  bgcolor: isSelected ? "action.selected" : "background.paper",
+                  bgcolor: bgColor,
+                  opacity: isSelected ? 1 : 0.7,
                   "&:hover": {
                     borderColor: isSelected ? "primary.main" : "text.secondary",
+                    opacity: 1,
+                    bgcolor: bgColor,
                   },
                   cursor: "pointer",
-                  transition: "background-color 0.2s, border-color 0.2s",
+                  transition: "background-color 0.2s, border-color 0.2s, opacity 0.2s",
                 }}
                 onClick={() => handleCVSelect(cv)}
               >
@@ -1035,35 +1101,9 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                       <Tooltip title="Delete CV">
                         <IconButton
                           aria-label="remove cv"
-                          onClick={async () => {
-                            if (showAllCVs) {
-                              if (!isAdmin) return;
-                              if (!cv.userId) return;
-                              const ok = confirm(
-                                `Delete CV "${cv.name || "Untitled CV"}" for ${
-                                  cv.ownerName || "user"
-                                }?`
-                              );
-                              if (!ok) return;
-                              try {
-                                await deleteUserCV(cv.userId, cv.id);
-                                setAllCVs((prev) =>
-                                  prev.filter((c) => c.id !== cv.id)
-                                );
-                                if (localSelectedId === cv.id) {
-                                  setLocalSelectedId(null);
-                                  onSelect?.(null, undefined);
-                                }
-                              } catch (err) {
-                                console.error(
-                                  "Failed to delete CV as admin:",
-                                  err
-                                );
-                                alert("Failed to delete CV");
-                              }
-                              return;
-                            }
-                            removeCV(index);
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteConfirmation({ cv, index });
                           }}
                           disabled={showAllCVs && !isAdmin}
                         >
