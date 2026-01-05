@@ -82,17 +82,17 @@ export default function CompetenceTable({
     );
   };
 
-  const updateName = async (idx: number, name: string) => {
-    const nextRows = competences.map((row, i) =>
-      i === idx ? { ...row, name } : row
+  const updateName = async (id: string, name: string) => {
+    const nextRows = competences.map((row) =>
+      row.id === id ? { ...row, name } : row
     );
     onChange(nextRows);
     await onSave(nextRows);
   };
 
-  const updateLevel = async (idx: number, level: number) => {
-    const nextRows = competences.map((row, i) =>
-      i === idx ? { ...row, level } : row
+  const updateLevel = async (id: string, level: number) => {
+    const nextRows = competences.map((row) =>
+      row.id === id ? { ...row, level } : row
     );
     onChange(nextRows);
     await onSave(nextRows);
@@ -219,7 +219,7 @@ export default function CompetenceTable({
                       checked={c.level === lvl}
                       onChange={async () => updateLevel(c.id, lvl)}
                       value={String(lvl)}
-                      inputProps={{ "aria-label": String(lvl) }}
+                      slotProps={{ input: { "aria-label": String(lvl) } }}
                     />
                   </TableCell>
                 ))}
