@@ -45,8 +45,6 @@ const CoursesCertificationsEditor: React.FC<
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [expandedById, setExpandedById] = useState<Record<string, boolean>>({});
 
-
-
   const addItem = () => {
     const ni = newItem();
     onChange([ni, ...(items || [])]);

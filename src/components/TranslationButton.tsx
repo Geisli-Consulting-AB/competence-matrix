@@ -1,8 +1,13 @@
-import React from 'react';
-import { ToggleButtonGroup, ToggleButton, CircularProgress, Tooltip } from '@mui/material';
+import React from "react";
+import {
+  ToggleButtonGroup,
+  ToggleButton,
+  CircularProgress,
+  Tooltip,
+} from "@mui/material";
 
 export interface TranslationButtonProps {
-  onTranslate: (lang: 'en' | 'sv') => void;
+  onTranslate: (lang: "en" | "sv") => void;
   isLoading?: boolean;
   disabled?: boolean;
 }
@@ -12,13 +17,16 @@ const TranslationButton: React.FC<TranslationButtonProps> = ({
   isLoading = false,
   disabled = false,
 }) => {
-  const handleChange = (_: React.MouseEvent<HTMLElement>, value: 'en' | 'sv' | null) => {
+  const handleChange = (
+    _: React.MouseEvent<HTMLElement>,
+    value: "en" | "sv" | null
+  ) => {
     if (!value || disabled || isLoading) return;
     onTranslate(value);
   };
 
   return (
-    <Tooltip title={isLoading ? 'Translating...' : 'Translate text'}>
+    <Tooltip title={isLoading ? "Translating..." : "Translate text"}>
       <span>
         <ToggleButtonGroup
           exclusive
@@ -28,9 +36,9 @@ const TranslationButton: React.FC<TranslationButtonProps> = ({
           disabled={disabled || isLoading}
           aria-label="Translation language toggle"
           sx={{
-            '& .MuiToggleButton-root': {
+            "& .MuiToggleButton-root": {
               px: 1,
-              textTransform: 'none',
+              textTransform: "none",
               minWidth: 40,
             },
           }}
@@ -40,14 +48,14 @@ const TranslationButton: React.FC<TranslationButtonProps> = ({
             aria-label="Translate to English"
             disabled={disabled || isLoading}
           >
-            {isLoading ? <CircularProgress size={14} /> : 'EN'}
+            {isLoading ? <CircularProgress size={14} /> : "EN"}
           </ToggleButton>
           <ToggleButton
             value="sv"
             aria-label="Translate to Swedish"
             disabled={disabled || isLoading}
           >
-            {isLoading ? <CircularProgress size={14} /> : 'SV'}
+            {isLoading ? <CircularProgress size={14} /> : "SV"}
           </ToggleButton>
         </ToggleButtonGroup>
       </span>
@@ -56,4 +64,3 @@ const TranslationButton: React.FC<TranslationButtonProps> = ({
 };
 
 export default TranslationButton;
-

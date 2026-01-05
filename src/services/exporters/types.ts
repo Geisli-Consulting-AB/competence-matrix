@@ -1,14 +1,15 @@
-import type { PdfLang } from '../../i18n';
+import type { PdfLang } from "../../i18n";
 
 /**
  * Supported document export formats
  */
 export const DocumentFormat = {
-  PDF: 'PDF',
-  DOCX: 'DOCX',
+  PDF: "PDF",
+  DOCX: "DOCX",
 } as const;
 
-export type DocumentFormat = typeof DocumentFormat[keyof typeof DocumentFormat];
+export type DocumentFormat =
+  (typeof DocumentFormat)[keyof typeof DocumentFormat];
 
 /**
  * Experience data structure
@@ -47,7 +48,7 @@ export interface CourseData {
  * Engagement/Publication data structure
  */
 export interface EngagementPublicationData {
-  type: 'engagement' | 'publication';
+  type: "engagement" | "publication";
   title: string;
   year?: string;
   locationOrPublication?: string;

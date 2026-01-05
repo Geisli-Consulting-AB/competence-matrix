@@ -1,9 +1,9 @@
-import jsPDF from 'jspdf';
-import type { Metrics } from '../shared';
-import { setFontStyle } from '../shared';
-import { addSelectedProjects } from './components/selectedProjects';
-import type { ProjectItem } from './components/selectedProjects';
-import type { PdfLang } from '../../i18n';
+import jsPDF from "jspdf";
+import type { Metrics } from "../shared";
+import { setFontStyle } from "../shared";
+import { addSelectedProjects } from "./components/selectedProjects";
+import type { ProjectItem } from "./components/selectedProjects";
+import type { PdfLang } from "../../i18n";
 
 function rightColumn(m: Metrics) {
   const x = m.leftColW + m.leftPadding;
@@ -13,10 +13,16 @@ function rightColumn(m: Metrics) {
 
 function setTextStyle(doc: jsPDF) {
   doc.setTextColor(0, 0, 0);
-  setFontStyle(doc, 'normal');
+  setFontStyle(doc, "normal");
 }
 
-function addTitle(doc: jsPDF, text: string, x: number, y: number, maxWidth: number) {
+function addTitle(
+  doc: jsPDF,
+  text: string,
+  x: number,
+  y: number,
+  maxWidth: number
+) {
   doc.setFontSize(24);
   doc.text(text, x, y, { maxWidth });
   return y + 28; // next baseline
@@ -32,7 +38,7 @@ function addBodyFirstPage(
   x: number,
   startY: number,
   bottomY: number,
-  lineH = 16,
+  lineH = 16
 ): { consumed: number; overflow: string } {
   doc.setFontSize(12);
   let y = startY;
@@ -42,7 +48,7 @@ function addBodyFirstPage(
     doc.text(lines[i], x, y);
     y += lineH;
   }
-  const overflow = i < lines.length ? lines.slice(i).join('\n') : '';
+  const overflow = i < lines.length ? lines.slice(i).join("\n") : "";
   return { consumed: i, overflow };
 }
 
@@ -75,14 +81,14 @@ export async function buildRightColumn(
   description: string | undefined,
   selectedProjects: ProjectItem[] | undefined,
   options: RightColumnOptions,
-  lang: PdfLang = 'en'
+  lang: PdfLang = "en"
 ) {
   setTextStyle(doc);
   const { x, width } = rightColumn(m);
 
   // Add user name as the main title
   const titleTopY = 80;
-  const nameTitle = (name?.trim() || '').slice(0, 200) || options.cvTitle;
+  const nameTitle = (name?.trim() || "").slice(0, 200) || options.cvTitle;
   let y = addTitle(doc, nameTitle, x, titleTopY, width);
 
   // Add title (role/position) below the name if it exists
@@ -99,10 +105,10 @@ export async function buildRightColumn(
   // Add Summary heading with a line
   doc.setFontSize(14);
   doc.setTextColor(0, 0, 0); // Black color for the heading
-  doc.setFont('helvetica', 'bold');
-  const summaryText = options.summary || 'Summary';
+  doc.setFont("helvetica", "bold");
+  const summaryText = options.summary || "Summary";
   doc.text(summaryText, x, y);
-  
+
   // Add a line under the heading
   y += 5;
   doc.setDrawColor(200, 200, 200); // Light gray line
@@ -113,14 +119,14 @@ export async function buildRightColumn(
   if (description) {
     const { x: descX, width: descWidth } = rightColumn(m);
     const bottomY = m.pageH - m.bottomMargin;
-    
+
     // Reset font for description text
     doc.setFontSize(12);
-    doc.setFont('helvetica', 'normal');
-    
+    doc.setFont("helvetica", "normal");
+
     const lines = wrap(doc, description, descWidth);
     const { overflow } = addBodyFirstPage(doc, lines, descX, y, bottomY);
-    
+
     // Handle overflow on subsequent pages if needed
     if (overflow) {
       doc.addPage();
@@ -132,18 +138,33 @@ export async function buildRightColumn(
   if (Array.isArray(selectedProjects) && selectedProjects.length > 0) {
     const { width } = rightColumn(m);
     const bottomY = m.pageH - m.bottomMargin;
-    
+
     // Add some space before the projects section
     let projectsY = y + 200;
-    
+
     // Add the projects section
-    projectsY = addSelectedProjects(doc, m, projectsY, selectedProjects, width, lang);
-    
+    projectsY = addSelectedProjects(
+      doc,
+      m,
+      projectsY,
+      selectedProjects,
+      width,
+      lang
+    );
+
     // If we're too close to the bottom, move to next page
-    if (projectsY > bottomY - 100) { // Leave some margin for at least one project
+    if (projectsY > bottomY - 100) {
+      // Leave some margin for at least one project
       doc.addPage();
       projectsY = 60; // Start position on new page
-      projectsY = addSelectedProjects(doc, m, projectsY, selectedProjects, width, lang);
+      projectsY = addSelectedProjects(
+        doc,
+        m,
+        projectsY,
+        selectedProjects,
+        width,
+        lang
+      );
     }
   }
 }

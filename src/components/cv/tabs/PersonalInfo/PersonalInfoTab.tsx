@@ -35,7 +35,9 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -50,7 +52,9 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
     }
 
     if (file.size === 0) {
-      alert("The selected file is empty. Please choose a different image file.");
+      alert(
+        "The selected file is empty. Please choose a different image file."
+      );
       return;
     }
 
@@ -64,15 +68,16 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
 
     try {
       // Delete old profile image if it exists and is a Storage URL
-      if (profile.photoUrl && profile.photoUrl.includes('firebasestorage.googleapis.com')) {
+      if (
+        profile.photoUrl &&
+        profile.photoUrl.includes("firebasestorage.googleapis.com")
+      ) {
         await deleteProfileImage(profile.photoUrl);
       }
 
       // Upload new image to Firebase Storage
-      const downloadURL = await uploadProfileImage(
-        user.uid,
-        file,
-        (progress) => setUploadProgress(progress)
+      const downloadURL = await uploadProfileImage(user.uid, file, (progress) =>
+        setUploadProgress(progress)
       );
 
       // Update profile with the new download URL

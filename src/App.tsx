@@ -58,18 +58,22 @@ function App() {
     const unsub = onAuthStateChanged(auth, async (u) => {
       if (u) {
         // Check if user's email domain is allowed
-        const ALLOWED_DOMAIN = 'geisli.se';
-        const email = u.email || '';
+        const ALLOWED_DOMAIN = "geisli.se";
+        const email = u.email || "";
         const verified = u.emailVerified;
 
         if (!verified) {
-          alert(`Please verify your email address before accessing the application.`);
+          alert(
+            `Please verify your email address before accessing the application.`
+          );
           await signOut(auth);
           return;
         }
 
         if (!email.endsWith(`@${ALLOWED_DOMAIN}`)) {
-          alert(`Access restricted to ${ALLOWED_DOMAIN} accounts only.\n\nPlease sign in with your company email address.`);
+          alert(
+            `Access restricted to ${ALLOWED_DOMAIN} accounts only.\n\nPlease sign in with your company email address.`
+          );
           await signOut(auth);
           return;
         }
@@ -106,10 +110,10 @@ function App() {
       return;
     }
     const unsubCompetences = subscribeToUserCompetences(user.uid, (rows) =>
-      setCompetences(rows),
+      setCompetences(rows)
     );
     const unsubCategories = subscribeToSharedCategories((cats: Category[]) =>
-      setCategories(cats),
+      setCategories(cats)
     );
     return () => {
       unsubCompetences();
@@ -293,7 +297,12 @@ function App() {
                   />
                 </>
               )}
-              {currentTab === 3 && <CVManagement user={user} existingCompetences={existingCompetences} />}
+              {currentTab === 3 && (
+                <CVManagement
+                  user={user}
+                  existingCompetences={existingCompetences}
+                />
+              )}
               {currentTab === 4 && isAdmin && <AdminPanel />}
             </Box>
           </Paper>

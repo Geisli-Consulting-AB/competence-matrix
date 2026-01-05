@@ -1,14 +1,14 @@
-import jsPDF from 'jspdf';
-import type { Metrics } from '../shared';
-import { buildLeftColumn, type LeftColumnOptions } from './left';
-import { buildRightColumn, type RightColumnOptions } from './right';
-import type { ProjectItem } from './components/selectedProjects';
-import type { PdfLang } from '../../i18n';
+import jsPDF from "jspdf";
+import type { Metrics } from "../shared";
+import { buildLeftColumn, type LeftColumnOptions } from "./left";
+import { buildRightColumn, type RightColumnOptions } from "./right";
+import type { ProjectItem } from "./components/selectedProjects";
+import type { PdfLang } from "../../i18n";
 
 // Re-export all components and utilities
-export * from './left';
-export * from './right';
-export * from './components/selectedProjects';
+export * from "./left";
+export * from "./right";
+export * from "./components/selectedProjects";
 
 export interface Page1Options {
   // Left column options
@@ -17,13 +17,13 @@ export interface Page1Options {
   languages?: string[];
   expertise?: string[];
   leftColumn: LeftColumnOptions;
-  
+
   // Right column options
   name?: string;
   description?: string;
   selectedProjects?: ProjectItem[];
-  rightColumn: Omit<RightColumnOptions, 'cvTitle'> & { cvTitle?: string };
-  
+  rightColumn: Omit<RightColumnOptions, "cvTitle"> & { cvTitle?: string };
+
   // General options
   lang?: PdfLang;
 }
@@ -55,9 +55,9 @@ export async function buildPersonalInfo(
     options.description,
     options.selectedProjects,
     {
-      cvTitle: options.rightColumn.cvTitle || '',
+      cvTitle: options.rightColumn.cvTitle || "",
       selectedProjectsTitle: options.rightColumn.selectedProjectsTitle,
-      summary: options.rightColumn.summary
+      summary: options.rightColumn.summary,
     },
     options.lang
   );

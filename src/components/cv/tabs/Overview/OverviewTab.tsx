@@ -161,12 +161,15 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
 }: OverviewTabProps) => {
   // Initialize cvLang state from the CV items
   const [cvLang, setCvLang] = React.useState<Record<string, PdfLang>>(
-    cvs.reduce((acc, cv) => {
-      if (cv.language) {
-        acc[cv.id] = cv.language;
-      }
-      return acc;
-    }, {} as Record<string, PdfLang>)
+    cvs.reduce(
+      (acc, cv) => {
+        if (cv.language) {
+          acc[cv.id] = cv.language;
+        }
+        return acc;
+      },
+      {} as Record<string, PdfLang>
+    )
   );
 
   const { t } = useTranslation();

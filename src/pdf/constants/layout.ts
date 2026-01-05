@@ -4,24 +4,24 @@ export const LAYOUT = {
   LEFT_COLUMN: 60, // in mm
   RIGHT_COLUMN: 130, // in mm
   GUTTER: 20, // Space between columns in mm
-  
+
   // Page margins
   MARGIN: {
-    TOP: 40,    // in points
+    TOP: 40, // in points
     BOTTOM: 40, // in points
-    LEFT: 40,   // in points
-    RIGHT: 40   // in points
+    LEFT: 40, // in points
+    RIGHT: 40, // in points
   },
-  
+
   // Font sizes (in points)
   FONT: {
     TITLE: 24,
     SECTION_TITLE: 14,
     SUBTITLE: 12,
     BODY: 11,
-    SMALL: 10
+    SMALL: 10,
   },
-  
+
   // Common spacing values for PDF layout
   SPACING: {
     // Vertical space between section title and underline
@@ -37,8 +37,8 @@ export const LAYOUT = {
     // Vertical adjustment for bullet alignment
     BULLET_Y_OFFSET: 4,
     // Space after section content (before next section)
-    SECTION_BOTTOM_MARGIN: 30
-  }
+    SECTION_BOTTOM_MARGIN: 30,
+  },
 } as const;
 
 export default LAYOUT;

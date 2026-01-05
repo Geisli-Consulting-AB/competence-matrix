@@ -1,5 +1,5 @@
-import { generateCvPdf } from '../../pdf';
-import type { DocumentExporter, ExportData } from './types';
+import { generateCvPdf } from "../../pdf";
+import type { DocumentExporter, ExportData } from "./types";
 
 /**
  * PDF document exporter
@@ -23,7 +23,7 @@ export class PdfExporter implements DocumentExporter {
       data.competences,
       data.engagementsPublications
     );
-    
+
     return blob;
   }
 }

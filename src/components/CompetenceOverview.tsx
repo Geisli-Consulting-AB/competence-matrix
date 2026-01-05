@@ -52,15 +52,18 @@ const LEVEL_COLORS = {
 };
 
 // Function to group competences by category
-const groupCompetencesByCategory = (competences: string[], categories: Category[]) => {
+const groupCompetencesByCategory = (
+  competences: string[],
+  categories: Category[]
+) => {
   const grouped: { [categoryName: string]: string[] } = {};
   const uncategorized: string[] = [];
 
-  competences.forEach(competenceName => {
-    const category = categories.find(cat => 
+  competences.forEach((competenceName) => {
+    const category = categories.find((cat) =>
       cat.competences.includes(competenceName)
     );
-    
+
     if (category) {
       if (!grouped[category.name]) {
         grouped[category.name] = [];
@@ -73,7 +76,7 @@ const groupCompetencesByCategory = (competences: string[], categories: Category[
 
   // Add uncategorized competences if any exist
   if (uncategorized.length > 0) {
-    grouped['Uncategorized'] = uncategorized;
+    grouped["Uncategorized"] = uncategorized;
   }
 
   return grouped;
@@ -93,7 +96,7 @@ export default function CompetenceOverview() {
   const [users, setUsers] = useState<UserData[]>([]);
   const [allCompetences, setAllCompetences] = useState<string[]>([]);
   const [competenceMatrix, setCompetenceMatrix] = useState<CompetenceMatrix>(
-    {},
+    {}
   );
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -105,7 +108,9 @@ export default function CompetenceOverview() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
+    new Set()
+  );
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
   // Listen to authentication state changes
@@ -146,7 +151,7 @@ export default function CompetenceOverview() {
           matrix[competenceName] = {};
           data.users.forEach((userData) => {
             const userCompetence = userData.competences.find(
-              (c) => c.name === competenceName,
+              (c) => c.name === competenceName
             );
             if (userCompetence) {
               matrix[competenceName][userData.userId] = userCompetence.level;
@@ -200,7 +205,7 @@ export default function CompetenceOverview() {
   const filteredCompetences =
     selectedCompetences.length > 0
       ? categoryFilteredCompetences.filter((comp) =>
-          selectedCompetences.includes(comp),
+          selectedCompetences.includes(comp)
         )
       : categoryFilteredCompetences;
 
@@ -228,16 +233,19 @@ export default function CompetenceOverview() {
       : filteredUsers;
 
   // Group competences by category for mobile view (when competences are on left)
-  const groupedCompetences = groupCompetencesByCategory(levelFilteredCompetences, categories);
+  const groupedCompetences = groupCompetencesByCategory(
+    levelFilteredCompetences,
+    categories
+  );
 
   // Initialize all categories as expanded when they first appear
   const categoryNames = Object.keys(groupedCompetences);
-  const categoryNamesKey = categoryNames.join(',');
+  const categoryNamesKey = categoryNames.join(",");
   useEffect(() => {
-    setExpandedCategories(prev => {
+    setExpandedCategories((prev) => {
       const newSet = new Set(prev);
       let hasChanges = false;
-      categoryNames.forEach(name => {
+      categoryNames.forEach((name) => {
         if (!newSet.has(name)) {
           newSet.add(name);
           hasChanges = true;
@@ -249,7 +257,7 @@ export default function CompetenceOverview() {
 
   // Toggle category expansion
   const toggleCategoryExpansion = (categoryName: string) => {
-    setExpandedCategories(prev => {
+    setExpandedCategories((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(categoryName)) {
         newSet.delete(categoryName);
@@ -553,212 +561,228 @@ export default function CompetenceOverview() {
               }}
             >
               {!isTransposed
-                ? Object.entries(groupedCompetences).map(([categoryName, competences]) => [
-                    // Category header row
-                    <Box
-                      key={`category-row-${categoryName}`}
-                      sx={{
-                        display: "flex",
-                        backgroundColor: theme.palette.grey[800],
-                        borderBottom: "2px solid rgba(255, 255, 255, 0.12)",
-                        cursor: "pointer",
-                        "&:hover": {
-                          backgroundColor: theme.palette.grey[700],
-                        },
-                      }}
-                      onClick={() => toggleCategoryExpansion(categoryName)}
-                    >
+                ? Object.entries(groupedCompetences)
+                    .map(([categoryName, competences]) => [
+                      // Category header row
                       <Box
+                        key={`category-row-${categoryName}`}
                         sx={{
-                          width: "80px",
-                          minWidth: "80px",
                           display: "flex",
-                          alignItems: "center",
-                          padding: "8px",
-                          gap: 0.5,
-                        }}
-                      >
-                        {expandedCategories.has(categoryName) ? (
-                          <ExpandMoreIcon fontSize="small" />
-                        ) : (
-                          <ChevronRightIcon fontSize="small" />
-                        )}
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            color: categoryName === 'Uncategorized' ? "#666666" : 
-                              categories.find(cat => cat.name === categoryName)?.color || "#666666",
-                            fontWeight: "bold",
-                            fontSize: "0.8rem",
-                          }}
-                        >
-                          {categoryName}
-                        </Typography>
-                      </Box>
-                      {/* Empty cells for user columns */}
-                      {levelFilteredUsers.map((user) => (
-                        <Box
-                          key={user.userId}
-                          sx={{
-                            width: "40px",
-                            minWidth: "40px",
-                            height: "40px",
-                          }}
-                        />
-                      ))}
-                    </Box>,
-                    // Competence rows for this category (only if expanded)
-                    ...(expandedCategories.has(categoryName) ? competences.map((competenceName) => (
-                    <Box
-                      key={competenceName}
-                      sx={{
-                        display: "flex",
-                        borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
-                        "&:hover": {
-                          backgroundColor: "rgba(255, 255, 255, 0.04)",
-                        },
-                      }}
-                    >
-                      {/* Row header */}
-                      <Box
-                        onClick={() => {
-                          if (selectedCompetences.includes(competenceName)) {
-                            setSelectedCompetences(
-                              selectedCompetences.filter(
-                                (c) => c !== competenceName,
-                              ),
-                            );
-                          } else {
-                            setSelectedCompetences([
-                              ...selectedCompetences,
-                              competenceName,
-                            ]);
-                          }
-                        }}
-                        sx={{
-                          width: "80px",
-                          minWidth: "80px",
-                          backgroundColor: selectedCompetences.includes(
-                            competenceName,
-                          )
-                            ? theme.palette.primary.dark
-                            : theme.palette.grey[900],
-                          borderRight: "1px solid rgba(255, 255, 255, 0.12)",
-                          display: "flex",
-                          alignItems: "center",
-                          padding: "8px",
+                          backgroundColor: theme.palette.grey[800],
+                          borderBottom: "2px solid rgba(255, 255, 255, 0.12)",
                           cursor: "pointer",
                           "&:hover": {
-                            backgroundColor: selectedCompetences.includes(
-                              competenceName,
-                            )
-                              ? theme.palette.primary.main
-                              : theme.palette.grey[800],
+                            backgroundColor: theme.palette.grey[700],
                           },
                         }}
+                        onClick={() => toggleCategoryExpansion(categoryName)}
                       >
-                        <Typography
-                          variant="caption"
+                        <Box
                           sx={{
-                            color: theme.palette.common.white,
-                            fontSize: "0.7rem",
-                            fontWeight: "medium",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
+                            width: "80px",
+                            minWidth: "80px",
+                            display: "flex",
+                            alignItems: "center",
+                            padding: "8px",
+                            gap: 0.5,
                           }}
                         >
-                          {competenceName}
-                        </Typography>
-                      </Box>
-
-                      {/* Data cells */}
-                      {levelFilteredUsers.map((user) => {
-                        const level =
-                          competenceMatrix[competenceName]?.[user.userId];
-                        const shouldShowLevel =
-                          selectedLevels.length === 0 ||
-                          (level && selectedLevels.includes(level));
-                        return (
+                          {expandedCategories.has(categoryName) ? (
+                            <ExpandMoreIcon fontSize="small" />
+                          ) : (
+                            <ChevronRightIcon fontSize="small" />
+                          )}
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color:
+                                categoryName === "Uncategorized"
+                                  ? "#666666"
+                                  : categories.find(
+                                      (cat) => cat.name === categoryName
+                                    )?.color || "#666666",
+                              fontWeight: "bold",
+                              fontSize: "0.8rem",
+                            }}
+                          >
+                            {categoryName}
+                          </Typography>
+                        </Box>
+                        {/* Empty cells for user columns */}
+                        {levelFilteredUsers.map((user) => (
                           <Box
                             key={user.userId}
                             sx={{
                               width: "40px",
                               minWidth: "40px",
                               height: "40px",
-                              borderRight:
-                                "1px solid rgba(255, 255, 255, 0.12)",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
                             }}
-                          >
-                            {level && shouldShowLevel ? (
-                              <Tooltip
-                                title={
-                                  <Box>
-                                    <Typography
-                                      variant="caption"
-                                      display="block"
-                                      sx={{ fontWeight: "bold" }}
-                                    >
-                                      {user.ownerName}
-                                    </Typography>
-                                    <Typography
-                                      variant="caption"
-                                      display="block"
-                                    >
-                                      {competenceName}
-                                    </Typography>
-                                    <Typography
-                                      variant="caption"
-                                      display="block"
-                                      sx={{
-                                        color:
-                                          LEVEL_COLORS[
-                                            level as keyof typeof LEVEL_COLORS
-                                          ],
-                                      }}
-                                    >
-                                      {
-                                        LEVEL_LABELS[
-                                          level as keyof typeof LEVEL_LABELS
-                                        ]
-                                      }
-                                    </Typography>
-                                  </Box>
-                                }
-                              >
-                                <Box
-                                  sx={{
-                                    width: 20,
-                                    height: 20,
-                                    borderRadius: "50%",
+                          />
+                        ))}
+                      </Box>,
+                      // Competence rows for this category (only if expanded)
+                      ...(expandedCategories.has(categoryName)
+                        ? competences.map((competenceName) => (
+                            <Box
+                              key={competenceName}
+                              sx={{
+                                display: "flex",
+                                borderBottom:
+                                  "1px solid rgba(255, 255, 255, 0.06)",
+                                "&:hover": {
+                                  backgroundColor: "rgba(255, 255, 255, 0.04)",
+                                },
+                              }}
+                            >
+                              {/* Row header */}
+                              <Box
+                                onClick={() => {
+                                  if (
+                                    selectedCompetences.includes(competenceName)
+                                  ) {
+                                    setSelectedCompetences(
+                                      selectedCompetences.filter(
+                                        (c) => c !== competenceName
+                                      )
+                                    );
+                                  } else {
+                                    setSelectedCompetences([
+                                      ...selectedCompetences,
+                                      competenceName,
+                                    ]);
+                                  }
+                                }}
+                                sx={{
+                                  width: "80px",
+                                  minWidth: "80px",
+                                  backgroundColor: selectedCompetences.includes(
+                                    competenceName
+                                  )
+                                    ? theme.palette.primary.dark
+                                    : theme.palette.grey[900],
+                                  borderRight:
+                                    "1px solid rgba(255, 255, 255, 0.12)",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  padding: "8px",
+                                  cursor: "pointer",
+                                  "&:hover": {
                                     backgroundColor:
-                                      LEVEL_COLORS[
-                                        level as keyof typeof LEVEL_COLORS
-                                      ],
-                                    color: level === 1 ? "black" : "white",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
+                                      selectedCompetences.includes(
+                                        competenceName
+                                      )
+                                        ? theme.palette.primary.main
+                                        : theme.palette.grey[800],
+                                  },
+                                }}
+                              >
+                                <Typography
+                                  variant="caption"
+                                  sx={{
+                                    color: theme.palette.common.white,
                                     fontSize: "0.7rem",
-                                    fontWeight: "bold",
-                                    cursor: "pointer",
+                                    fontWeight: "medium",
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    whiteSpace: "nowrap",
                                   }}
                                 >
-                                  {level}
-                                </Box>
-                              </Tooltip>
-                            ) : (
-                              <Box sx={{ width: 20, height: 20 }} />
-                            )}
-                          </Box>
-                        );
-                      })}
-                    </Box>
-                  )) : [])
-                  ]).flat()
+                                  {competenceName}
+                                </Typography>
+                              </Box>
+
+                              {/* Data cells */}
+                              {levelFilteredUsers.map((user) => {
+                                const level =
+                                  competenceMatrix[competenceName]?.[
+                                    user.userId
+                                  ];
+                                const shouldShowLevel =
+                                  selectedLevels.length === 0 ||
+                                  (level && selectedLevels.includes(level));
+                                return (
+                                  <Box
+                                    key={user.userId}
+                                    sx={{
+                                      width: "40px",
+                                      minWidth: "40px",
+                                      height: "40px",
+                                      borderRight:
+                                        "1px solid rgba(255, 255, 255, 0.12)",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                    }}
+                                  >
+                                    {level && shouldShowLevel ? (
+                                      <Tooltip
+                                        title={
+                                          <Box>
+                                            <Typography
+                                              variant="caption"
+                                              display="block"
+                                              sx={{ fontWeight: "bold" }}
+                                            >
+                                              {user.ownerName}
+                                            </Typography>
+                                            <Typography
+                                              variant="caption"
+                                              display="block"
+                                            >
+                                              {competenceName}
+                                            </Typography>
+                                            <Typography
+                                              variant="caption"
+                                              display="block"
+                                              sx={{
+                                                color:
+                                                  LEVEL_COLORS[
+                                                    level as keyof typeof LEVEL_COLORS
+                                                  ],
+                                              }}
+                                            >
+                                              {
+                                                LEVEL_LABELS[
+                                                  level as keyof typeof LEVEL_LABELS
+                                                ]
+                                              }
+                                            </Typography>
+                                          </Box>
+                                        }
+                                      >
+                                        <Box
+                                          sx={{
+                                            width: 20,
+                                            height: 20,
+                                            borderRadius: "50%",
+                                            backgroundColor:
+                                              LEVEL_COLORS[
+                                                level as keyof typeof LEVEL_COLORS
+                                              ],
+                                            color:
+                                              level === 1 ? "black" : "white",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            fontSize: "0.7rem",
+                                            fontWeight: "bold",
+                                            cursor: "pointer",
+                                          }}
+                                        >
+                                          {level}
+                                        </Box>
+                                      </Tooltip>
+                                    ) : (
+                                      <Box sx={{ width: 20, height: 20 }} />
+                                    )}
+                                  </Box>
+                                );
+                              })}
+                            </Box>
+                          ))
+                        : []),
+                    ])
+                    .flat()
                 : levelFilteredUsers.map((user) => (
                     <Box
                       key={user.userId}
@@ -775,7 +799,7 @@ export default function CompetenceOverview() {
                         onClick={() => {
                           if (selectedUsers.includes(user.ownerName)) {
                             setSelectedUsers(
-                              selectedUsers.filter((u) => u !== user.ownerName),
+                              selectedUsers.filter((u) => u !== user.ownerName)
                             );
                           } else {
                             setSelectedUsers([
@@ -788,7 +812,7 @@ export default function CompetenceOverview() {
                           width: "80px",
                           minWidth: "80px",
                           backgroundColor: selectedUsers.includes(
-                            user.ownerName,
+                            user.ownerName
                           )
                             ? theme.palette.primary.dark
                             : theme.palette.grey[900],
@@ -799,7 +823,7 @@ export default function CompetenceOverview() {
                           cursor: "pointer",
                           "&:hover": {
                             backgroundColor: selectedUsers.includes(
-                              user.ownerName,
+                              user.ownerName
                             )
                               ? theme.palette.primary.main
                               : theme.palette.grey[800],
@@ -1022,182 +1046,207 @@ export default function CompetenceOverview() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {Object.entries(groupedCompetences).map(([categoryName, competences]) => [
-                    // Category header row
-                    <TableRow key={`category-${categoryName}`}>
-                      <TableCell
-                        colSpan={levelFilteredUsers.length + 1}
-                        sx={{
-                          backgroundColor: theme.palette.grey[800],
-                          fontWeight: "bold",
-                          fontSize: "0.9rem",
-                          color: categoryName === 'Uncategorized' ? "#666666" : 
-                            categories.find(cat => cat.name === categoryName)?.color || "#666666",
-                          borderBottom: `2px solid ${theme.palette.divider}`,
-                          textAlign: "left",
-                          padding: "8px 8px",
-                          cursor: "pointer",
-                          "&:hover": {
-                            backgroundColor: theme.palette.grey[700],
-                          },
-                        }}
-                        onClick={() => toggleCategoryExpansion(categoryName)}
-                      >
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                          {expandedCategories.has(categoryName) ? (
-                            <ExpandMoreIcon fontSize="small" />
-                          ) : (
-                            <ChevronRightIcon fontSize="small" />
-                          )}
-                          {categoryName}
-                        </Box>
-                      </TableCell>
-                    </TableRow>,
-                    // Competence rows for this category (only if expanded)
-                    ...(expandedCategories.has(categoryName) ? competences.map((competenceName) => {
-                    return (
-                      <TableRow key={competenceName} hover>
+                  {Object.entries(groupedCompetences)
+                    .map(([categoryName, competences]) => [
+                      // Category header row
+                      <TableRow key={`category-${categoryName}`}>
                         <TableCell
-                          component="th"
-                          scope="row"
-                          onClick={() => {
-                            if (selectedCompetences.includes(competenceName)) {
-                              setSelectedCompetences(
-                                selectedCompetences.filter(
-                                  (c) => c !== competenceName,
-                                ),
-                              );
-                            } else {
-                              setSelectedCompetences([
-                                ...selectedCompetences,
-                                competenceName,
-                              ]);
-                            }
-                          }}
+                          colSpan={levelFilteredUsers.length + 1}
                           sx={{
-                            fontWeight: "medium",
-                            backgroundColor: selectedCompetences.includes(
-                              competenceName,
-                            )
-                              ? theme.palette.primary.dark
-                              : theme.palette.grey[900],
-                            color: theme.palette.common.white,
-                            position: "sticky",
-                            left: 0,
-                            zIndex: 1,
-                            borderRight: `1px solid ${theme.palette.divider}`,
-                            fontSize: "0.7rem",
-                            padding: "4px 6px",
-                            maxWidth: 100,
-                            width: 100,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
+                            backgroundColor: theme.palette.grey[800],
+                            fontWeight: "bold",
+                            fontSize: "0.9rem",
+                            color:
+                              categoryName === "Uncategorized"
+                                ? "#666666"
+                                : categories.find(
+                                    (cat) => cat.name === categoryName
+                                  )?.color || "#666666",
+                            borderBottom: `2px solid ${theme.palette.divider}`,
+                            textAlign: "left",
+                            padding: "8px 8px",
                             cursor: "pointer",
                             "&:hover": {
-                              backgroundColor: selectedCompetences.includes(
-                                competenceName,
-                              )
-                                ? theme.palette.primary.main
-                                : theme.palette.grey[800],
+                              backgroundColor: theme.palette.grey[700],
                             },
                           }}
+                          onClick={() => toggleCategoryExpansion(categoryName)}
                         >
-                          {competenceName}
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 0.5,
+                            }}
+                          >
+                            {expandedCategories.has(categoryName) ? (
+                              <ExpandMoreIcon fontSize="small" />
+                            ) : (
+                              <ChevronRightIcon fontSize="small" />
+                            )}
+                            {categoryName}
+                          </Box>
                         </TableCell>
-                        {levelFilteredUsers.map((user) => {
-                          const level =
-                            competenceMatrix[competenceName]?.[user.userId];
-                          const shouldShowLevel =
-                            selectedLevels.length === 0 ||
-                            (level && selectedLevels.includes(level));
-                          return (
-                            <TableCell
-                              key={user.userId}
-                              align="center"
-                              sx={{ padding: "2px 1px" }}
-                            >
-                              {level && shouldShowLevel ? (
-                                <Box
+                      </TableRow>,
+                      // Competence rows for this category (only if expanded)
+                      ...(expandedCategories.has(categoryName)
+                        ? competences.map((competenceName) => {
+                            return (
+                              <TableRow key={competenceName} hover>
+                                <TableCell
+                                  component="th"
+                                  scope="row"
+                                  onClick={() => {
+                                    if (
+                                      selectedCompetences.includes(
+                                        competenceName
+                                      )
+                                    ) {
+                                      setSelectedCompetences(
+                                        selectedCompetences.filter(
+                                          (c) => c !== competenceName
+                                        )
+                                      );
+                                    } else {
+                                      setSelectedCompetences([
+                                        ...selectedCompetences,
+                                        competenceName,
+                                      ]);
+                                    }
+                                  }}
                                   sx={{
-                                    display: "flex",
-                                    justifyContent: "center",
-                                    alignItems: "center",
+                                    fontWeight: "medium",
+                                    backgroundColor:
+                                      selectedCompetences.includes(
+                                        competenceName
+                                      )
+                                        ? theme.palette.primary.dark
+                                        : theme.palette.grey[900],
+                                    color: theme.palette.common.white,
+                                    position: "sticky",
+                                    left: 0,
+                                    zIndex: 1,
+                                    borderRight: `1px solid ${theme.palette.divider}`,
+                                    fontSize: "0.7rem",
+                                    padding: "4px 6px",
+                                    maxWidth: 100,
+                                    width: 100,
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    whiteSpace: "nowrap",
+                                    cursor: "pointer",
+                                    "&:hover": {
+                                      backgroundColor:
+                                        selectedCompetences.includes(
+                                          competenceName
+                                        )
+                                          ? theme.palette.primary.main
+                                          : theme.palette.grey[800],
+                                    },
                                   }}
                                 >
-                                  <Tooltip
-                                    title={
-                                      <Box>
-                                        <Typography
-                                          variant="caption"
-                                          display="block"
-                                          sx={{ fontWeight: "bold" }}
-                                        >
-                                          {user.ownerName}
-                                        </Typography>
-                                        <Typography
-                                          variant="caption"
-                                          display="block"
-                                        >
-                                          {competenceName}
-                                        </Typography>
-                                        <Typography
-                                          variant="caption"
-                                          display="block"
+                                  {competenceName}
+                                </TableCell>
+                                {levelFilteredUsers.map((user) => {
+                                  const level =
+                                    competenceMatrix[competenceName]?.[
+                                      user.userId
+                                    ];
+                                  const shouldShowLevel =
+                                    selectedLevels.length === 0 ||
+                                    (level && selectedLevels.includes(level));
+                                  return (
+                                    <TableCell
+                                      key={user.userId}
+                                      align="center"
+                                      sx={{ padding: "2px 1px" }}
+                                    >
+                                      {level && shouldShowLevel ? (
+                                        <Box
                                           sx={{
-                                            color:
-                                              LEVEL_COLORS[
-                                                level as keyof typeof LEVEL_COLORS
-                                              ],
+                                            display: "flex",
+                                            justifyContent: "center",
+                                            alignItems: "center",
                                           }}
                                         >
-                                          {
-                                            LEVEL_LABELS[
-                                              level as keyof typeof LEVEL_LABELS
-                                            ]
-                                          }
-                                        </Typography>
-                                      </Box>
-                                    }
-                                  >
-                                    <Box
-                                      sx={{
-                                        width: 20,
-                                        height: 20,
-                                        borderRadius: "50%",
-                                        backgroundColor:
-                                          LEVEL_COLORS[
-                                            level as keyof typeof LEVEL_COLORS
-                                          ],
-                                        color: level === 1 ? "black" : "white",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        fontSize: "0.7rem",
-                                        fontWeight: "bold",
-                                        cursor: "pointer",
-                                      }}
-                                    >
-                                      {level}
-                                    </Box>
-                                  </Tooltip>
-                                </Box>
-                              ) : (
-                                <Box
-                                  sx={{
-                                    width: 20,
-                                    height: 20,
-                                    margin: "0 auto",
-                                  }}
-                                />
-                              )}
-                            </TableCell>
-                          );
-                        })}
-                      </TableRow>
-                    );
-                  }) : [])
-                  ]).flat()}
+                                          <Tooltip
+                                            title={
+                                              <Box>
+                                                <Typography
+                                                  variant="caption"
+                                                  display="block"
+                                                  sx={{ fontWeight: "bold" }}
+                                                >
+                                                  {user.ownerName}
+                                                </Typography>
+                                                <Typography
+                                                  variant="caption"
+                                                  display="block"
+                                                >
+                                                  {competenceName}
+                                                </Typography>
+                                                <Typography
+                                                  variant="caption"
+                                                  display="block"
+                                                  sx={{
+                                                    color:
+                                                      LEVEL_COLORS[
+                                                        level as keyof typeof LEVEL_COLORS
+                                                      ],
+                                                  }}
+                                                >
+                                                  {
+                                                    LEVEL_LABELS[
+                                                      level as keyof typeof LEVEL_LABELS
+                                                    ]
+                                                  }
+                                                </Typography>
+                                              </Box>
+                                            }
+                                          >
+                                            <Box
+                                              sx={{
+                                                width: 20,
+                                                height: 20,
+                                                borderRadius: "50%",
+                                                backgroundColor:
+                                                  LEVEL_COLORS[
+                                                    level as keyof typeof LEVEL_COLORS
+                                                  ],
+                                                color:
+                                                  level === 1
+                                                    ? "black"
+                                                    : "white",
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                                fontSize: "0.7rem",
+                                                fontWeight: "bold",
+                                                cursor: "pointer",
+                                              }}
+                                            >
+                                              {level}
+                                            </Box>
+                                          </Tooltip>
+                                        </Box>
+                                      ) : (
+                                        <Box
+                                          sx={{
+                                            width: 20,
+                                            height: 20,
+                                            margin: "0 auto",
+                                          }}
+                                        />
+                                      )}
+                                    </TableCell>
+                                  );
+                                })}
+                              </TableRow>
+                            );
+                          })
+                        : []),
+                    ])
+                    .flat()}
                 </TableBody>
               </>
             ) : (
@@ -1310,8 +1359,8 @@ export default function CompetenceOverview() {
                             if (selectedUsers.includes(user.ownerName)) {
                               setSelectedUsers(
                                 selectedUsers.filter(
-                                  (u) => u !== user.ownerName,
-                                ),
+                                  (u) => u !== user.ownerName
+                                )
                               );
                             } else {
                               setSelectedUsers([
@@ -1323,7 +1372,7 @@ export default function CompetenceOverview() {
                           sx={{
                             fontWeight: "medium",
                             backgroundColor: selectedUsers.includes(
-                              user.ownerName,
+                              user.ownerName
                             )
                               ? theme.palette.primary.dark
                               : theme.palette.grey[900],
@@ -1342,7 +1391,7 @@ export default function CompetenceOverview() {
                             cursor: "pointer",
                             "&:hover": {
                               backgroundColor: selectedUsers.includes(
-                                user.ownerName,
+                                user.ownerName
                               )
                                 ? theme.palette.primary.main
                                 : theme.palette.grey[800],
