@@ -1,3 +1,4 @@
+import { useState, useEffect, useMemo } from "react";
 import {
   Table,
   TableBody,
@@ -17,7 +18,9 @@ import {
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
-import type { CompetenceRow } from "../firebase";
+import CategoryFilter from "./CategoryFilter";
+import LevelLegend from "./LevelLegend";
+import { subscribeToSharedCategories, type Category, type CompetenceRow } from "../firebase";
 
 export type CompetenceTableProps = {
   competences: CompetenceRow[];
@@ -32,6 +35,42 @@ export default function CompetenceTable({
   onSave,
   existingCompetences = [],
 }: CompetenceTableProps) {
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedLevels, setSelectedLevels] = useState<number[]>([]);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToSharedCategories((cats: Category[]) => {
+      setCategories(cats);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const visibleCompetences = useMemo(() => {
+    let filtered = competences;
+
+    // Filter by category
+    if (selectedCategories.length > 0) {
+      filtered = filtered.filter((c) => {
+        if (!c.name.trim()) return true; // Always show empty rows being edited
+        return selectedCategories.some((categoryId) => {
+          const category = categories.find((cat) => cat.id === categoryId);
+          return category?.competences.includes(c.name.trim());
+        });
+      });
+    }
+
+    // Filter by level
+    if (selectedLevels.length > 0) {
+      filtered = filtered.filter((c) => {
+        if (!c.name.trim()) return true; // Always show empty rows being edited
+        return selectedLevels.includes(c.level);
+      });
+    }
+
+    return filtered;
+  }, [competences, selectedCategories, categories, selectedLevels]);
+
   // Filter out competences that are already added to avoid duplicates
   const getFilteredSuggestions = (currentIndex: number) => {
     const currentCompetenceNames = competences
@@ -43,17 +82,17 @@ export default function CompetenceTable({
     );
   };
 
-  const updateName = async (idx: number, name: string) => {
-    const nextRows = competences.map((row, i) =>
-      i === idx ? { ...row, name } : row
+  const updateName = async (id: string, name: string) => {
+    const nextRows = competences.map((row) =>
+      row.id === id ? { ...row, name } : row
     );
     onChange(nextRows);
     await onSave(nextRows);
   };
 
-  const updateLevel = async (idx: number, level: number) => {
-    const nextRows = competences.map((row, i) =>
-      i === idx ? { ...row, level } : row
+  const updateLevel = async (id: string, level: number) => {
+    const nextRows = competences.map((row) =>
+      row.id === id ? { ...row, level } : row
     );
     onChange(nextRows);
     await onSave(nextRows);
@@ -91,6 +130,17 @@ export default function CompetenceTable({
 
   return (
     <Box>
+      <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+        <LevelLegend
+          selectedLevels={selectedLevels}
+          onLevelsChange={setSelectedLevels}
+        />
+        <CategoryFilter
+          categories={categories}
+          selectedCategories={selectedCategories}
+          onCategoriesChange={setSelectedCategories}
+        />
+      </Box>
       {/* Desktop Table View */}
       <TableContainer
         sx={{ maxHeight: "calc(100vh - 80px)", overflow: "auto" }}
@@ -135,7 +185,7 @@ export default function CompetenceTable({
             </TableRow>
           </TableHead>
           <TableBody>
-            {competences.map((c, idx) => (
+            {visibleCompetences.map((c, idx) => (
               <TableRow key={c.id} hover>
                 <TableCell
                   component="th"
@@ -147,10 +197,10 @@ export default function CompetenceTable({
                     options={getFilteredSuggestions(idx)}
                     value={c.name}
                     onChange={async (_, newValue) =>
-                      updateName(idx, newValue || "")
+                      updateName(c.id, newValue || "")
                     }
                     onInputChange={async (_, newInputValue) =>
-                      updateName(idx, newInputValue)
+                      updateName(c.id, newInputValue)
                     }
                     renderInput={(params) => (
                       <TextField
@@ -167,9 +217,9 @@ export default function CompetenceTable({
                     <Radio
                       name={`level-${c.id}`}
                       checked={c.level === lvl}
-                      onChange={async () => updateLevel(idx, lvl)}
+                      onChange={async () => updateLevel(c.id, lvl)}
                       value={String(lvl)}
-                      inputProps={{ "aria-label": String(lvl) }}
+                      slotProps={{ input: { "aria-label": String(lvl) } }}
                     />
                   </TableCell>
                 ))}
@@ -178,7 +228,7 @@ export default function CompetenceTable({
                     aria-label="delete competence"
                     color="error"
                     onClick={async () => {
-                      const nextRows = competences.filter((_, i) => i !== idx);
+                      const nextRows = competences.filter((row) => row.id !== c.id);
                       onChange(nextRows);
                       await onSave(nextRows);
                     }}
@@ -206,7 +256,7 @@ export default function CompetenceTable({
 
       {/* Mobile Card View */}
       <Box className="mobile-show-cards">
-        {competences.map((c, idx) => (
+        {visibleCompetences.map((c, idx) => (
           <Card key={c.id} className="mobile-competence-card" elevation={2}>
             <CardContent className="mobile-competence-card-content">
               {/* First Line: Competence Input */}
@@ -216,10 +266,10 @@ export default function CompetenceTable({
                   options={getFilteredSuggestions(idx)}
                   value={c.name}
                   onChange={async (_, newValue) =>
-                    updateName(idx, newValue || "")
+                    updateName(c.id, newValue || "")
                   }
                   onInputChange={async (_, newInputValue) =>
-                    updateName(idx, newInputValue)
+                    updateName(c.id, newInputValue)
                   }
                   className="mobile-competence-autocomplete"
                   renderInput={(params) => (
@@ -238,7 +288,7 @@ export default function CompetenceTable({
                   size="small"
                   className="mobile-competence-delete"
                   onClick={async () => {
-                    const nextRows = competences.filter((_, i) => i !== idx);
+                    const nextRows = competences.filter((row) => row.id !== c.id);
                     onChange(nextRows);
                     await onSave(nextRows);
                   }}
@@ -253,7 +303,7 @@ export default function CompetenceTable({
                   row
                   value={String(c.level)}
                   onChange={async (e) =>
-                    updateLevel(idx, parseInt(e.target.value))
+                    updateLevel(c.id, parseInt(e.target.value))
                   }
                   className="mobile-level-radio-group"
                 >
