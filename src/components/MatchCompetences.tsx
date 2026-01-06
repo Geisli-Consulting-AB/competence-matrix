@@ -1,4 +1,6 @@
 import React, {useState, useRef, useEffect} from "react";
+import * as pdfjsLib from 'pdfjs-dist';
+import JSZip from "jszip";
 import {
     Box,
     Typography,
@@ -15,6 +17,9 @@ import {
     LinearProgress,
     Tooltip,
 } from "@mui/material";
+
+// Initialize pdfjs worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import AutoFixHighIcon from "@mui/icons-material/AutoFixHigh";
 import PersonIcon from "@mui/icons-material/Person";
@@ -177,7 +182,7 @@ const MatchCompetences: React.FC = () => {
         }
     };
 
-    const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
 
@@ -190,8 +195,64 @@ const MatchCompetences: React.FC = () => {
                 await handleAIParse(text);
             };
             reader.readAsText(file);
+        } else if (file.type === "application/pdf") {
+            setLoading(true);
+            setLoadingStatus("Extracting text from PDF...");
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const loadingTask = pdfjsLib.getDocument({data: arrayBuffer});
+                const pdf = await loadingTask.promise;
+                let fullText = "";
+
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    const pageText = textContent.items
+                        .map((item) => {
+                            if ('str' in item) return (item as { str: string }).str;
+                            return '';
+                        })
+                        .join(" ");
+                    fullText += pageText + "\n";
+                }
+
+                setJobDescription(fullText);
+                await handleAIParse(fullText);
+            } catch (err) {
+                console.error("Error reading PDF:", err);
+                setError("Failed to read PDF file. Please try a different file or copy-paste the text.");
+                setLoading(false);
+                setLoadingStatus(null);
+            }
+        } else if (file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || file.name.endsWith(".docx")) {
+            setLoading(true);
+            setLoadingStatus("Extracting text from DOCX...");
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const zip = await JSZip.loadAsync(arrayBuffer);
+                const content = await zip.file("word/document.xml")?.async("string");
+                
+                if (content) {
+                    const parser = new DOMParser();
+                    const xmlDoc = parser.parseFromString(content, "application/xml");
+                    const textNodes = xmlDoc.getElementsByTagName("w:t");
+                    let fullText = "";
+                    for (let i = 0; i < textNodes.length; i++) {
+                        fullText += textNodes[i].textContent + " ";
+                    }
+                    setJobDescription(fullText.trim());
+                    await handleAIParse(fullText.trim());
+                } else {
+                    throw new Error("Could not find word/document.xml in the DOCX file.");
+                }
+            } catch (err) {
+                console.error("Error reading DOCX:", err);
+                setError("Failed to read DOCX file. Please try a different file or copy-paste the text.");
+                setLoading(false);
+                setLoadingStatus(null);
+            }
         } else {
-            alert("Currently only .txt files are supported for upload.");
+            alert("Currently only .txt, .pdf and .docx files are supported for upload.");
         }
     };
 
@@ -211,8 +272,8 @@ const MatchCompetences: React.FC = () => {
                 Match Competences
             </Typography>
             <Typography variant="body1" sx={{mb: 3}}>
-                Paste a job description or upload a text file to see how your
-                competences match the requirements and who else in the team matches.
+                Paste a job description or upload a text/pdf/docx file to match requirements
+                to team user competences.
             </Typography>
 
             <Stack spacing={3}>
@@ -227,7 +288,7 @@ const MatchCompetences: React.FC = () => {
                         <input
                             type="file"
                             hidden
-                            accept=".txt"
+                            accept=".txt,.pdf,.docx"
                             onChange={handleFileUpload}
                             ref={fileInputRef}
                         />
@@ -258,7 +319,7 @@ const MatchCompetences: React.FC = () => {
                     )}
                     {!loading && (
                         <Typography variant="caption" color="text.secondary">
-                            Supported formats: .txt
+                            Supported formats: .txt, .pdf, .docx
                         </Typography>
                     )}
                 </Box>
