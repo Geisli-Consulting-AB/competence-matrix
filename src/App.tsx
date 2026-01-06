@@ -36,6 +36,7 @@ import CompetenceOverview from "./components/CompetenceOverview";
 import CategoryManagement from "./components/CategoryManagement";
 import CompetenceMapping from "./components/CompetenceMapping";
 import CVManagement from "./components/cv/CVManagement";
+import MatchCompetences from "./components/MatchCompetences";
 import { AdminPanel } from "./components/admin/AdminPanel";
 import { getCurrentUserRole } from "./utils/admin";
 
@@ -259,6 +260,7 @@ function App() {
                 <Tab label={isMobile ? "Manage" : "Manage Competences"} />
                 <Tab label="My Competences" />
                 <Tab label="CV" />
+                <Tab label="Match Competences" />
                 {isAdmin && <Tab label="Admin" />}
               </Tabs>
               <Button
@@ -303,7 +305,10 @@ function App() {
                   existingCompetences={existingCompetences}
                 />
               )}
-              {currentTab === 4 && isAdmin && <AdminPanel />}
+              {currentTab === 4 && (
+                <MatchCompetences />
+              )}
+              {currentTab === 5 && isAdmin && <AdminPanel />}
             </Box>
           </Paper>
         )}

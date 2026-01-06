@@ -1,0 +1,69 @@
+About the job
+Vill du vara med och skapa framtidens digitala bankupplevelse – i hela stacken – tillsammans med andra som brinner för teknik och samhällsnytta?
+
+
+
+Vi söker fler engagerade utvecklare som vill vara med och forma nästa generations digitala tjänster för sparande, investeringar och bank. Hos oss kombineras teknikintresse med samhällsengagemang – i team där gemenskap, samarbete och inkludering är en självklar del av vardagen. Vi tror på ett arbetsliv där det går att vara både ambitiös och mänsklig, där balans och meningsfullhet är lika viktiga som innovation.
+
+
+Teknisk skicklighet är förstås viktigt – men hos oss är det lika avgörande att du tycker om att samarbeta, dela kunskap och bidra till en öppen och omtänksam teamkultur.
+
+
+Om rollen
+
+Som Fullstackutvecklare hos oss arbetar du i ett agilt och självstyrande team med stort ansvar – från idé till produktion. Du tar ägarskap över dina lösningar i hela ledet och bidrar med både frontendutveckling i Angular och backendutveckling i Java.
+
+
+Du får jobba med modern Java, Mikrotjänstarkitektur och avancerade frontendlösningar i en miljö där Vi hela tiden lär av varandra, testar nytt och strävar efter att göra skillnad för riktiga användare. I rollen ligger flera viktiga uppgifter som att;
+
+
+Designa, utveckla och vidareutveckla moderna web-appar inom teamets domän
+Ta helhetsansvar för din kodbas i både frontend (Angular) och backend (Java)
+Delta i tekniska designprocesser och ta fram beslutsunderlag
+Säkerställa att frontend byggs enligt Avanzas best practices och UX-riktlinjer
+Bidra aktivt i teamets planering, samarbeten och kontinuerliga förbättringsarbete
+Automatisera och optimera affärsflöden i nära samarbete med teamet, Product Managers och verksamheten
+
+
+Så här jobbar vi
+
+Vi är ca 35 autonoma utvecklingsteam som har fullt ägarskap över sin produkt, sin roadmap och sina tekniska val. Vi arbetar datadrivet och iterativt, med fokus på att skapa verkligt värde för användarna och samtidigt bevara en hållbar utvecklingstakt.
+
+
+Parprogrammering och mobbprogrammering är en naturlig del av vår vardag, liksom gemensam design och kodgranskning. Lärande sker tillsammans, genom stöd och nyfikenhet – och vi firar våra framsteg, stora som små.
+
+
+Vi tror att du
+
+Har några års relevant arbetslivserfarenhet som Fullstackutvecklare
+Är bevandrad inom både frontend (Angular eller React), och backend (Java)
+Kan bygga och underhålla webbapplikationer i produktion
+Kompetens i HTML, CSS, JavaScript
+Skriver välstrukturerad, testbar och skalbar kod
+Är nyfiken, kommunikativ och trivs med att arbeta tillsammans med andra
+Har ett helhetstänk och vill bidra till både teamets och produktens utveckling
+Gillar en kultur där det är okej att fråga, dela, misslyckas och växa
+
+
+Har du också erfarenhet från techbolag, bank eller finans är det såklart meriterande. Även UX-erfarenhet eller samarbete med designers.
+
+
+En kultur för gemenskap och hållbarhet
+
+Vi tror att de bästa resultaten uppstår i trygga team där alla får komma till tals. Därför lägger vi stor vikt vid samarbete, öppenhet och arbetsglädje. Vi strävar efter jämställda team där alla känner sig trygga att vara sig själva och bidra med sin unika kompetens. Hos oss får du utrymme att utvecklas i din egen takt och kombinera arbetet med ett hållbart liv.
+
+
+Ansökan
+
+Vi hanterar ansökningar löpande, sista dag för ansökan är den 26/1.
+
+
+
+Välkommen med din ansökan!
+
+
+Erbjudanden från rekryteringsföretag/annonssäljare undanbedes.
+
+
+
+Avanza är Sveriges ledande plattform för sparande och placeringar. Vi drivs av att förändra branschen genom att utmana de stora bankerna och försäkringsbolagen på den svenska sparmarknaden. Vi vill vara tjänsten som förenklar och förbättrar spararnas ekonomi, oavsett om man älskar aktier eller bara vill ha ett bra sparande. Vår vision är att skapa en bättre framtid för miljoner människor. Därför står våra kunders bästa alltid i fokus, precis som det borde vara. Affärsidén är enkel – mer till dig, mindre till banken. En idé som gett oss Sveriges nöjdaste sparare 16 år i rad.
